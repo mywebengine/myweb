@@ -1,0 +1,24 @@
+<!doctype html>
+<html data-debug="true">
+	<head>
+		<title>scope - myweb/tpl</title>
+		<meta charset="utf-8" />
+	</head>
+	<body>
+		<h1>scope - example</h1>
+		<ul>
+			<li :for.val.idx="location.pathname.substr(1).split(`/`)" :scope="liScope">
+				<ul>
+					<li>
+						{{idx}} == {{liScope.idx}} => {{val}} == {{liScope.val}}
+					</li>
+					<li>
+						<div :inc.u="./scope/socpe-inc.html"></div>
+					</li>
+				</ul>
+			</li>
+		</ul>
+
+		<script src="main.js" type="module" async="async"></script>
+	</body>
+</html>

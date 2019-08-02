@@ -1,0 +1,9 @@
+﻿<div :inc.uq="bag.html"></div>
+<!--getProductsChanel-->
+<link :fetch="`shop/rest/products.json?page=` + (data.loc.param.page || 1)" data-onok="data.products = await this.json()" />
+<div :for.page="Array.from(`1`.repeat(data.loc.param.page || 1)).map((v, i) => i)" class="page">
+	<ul :if="data.products && data.products.length" class="products">
+		<div :inc.u="products/listing.html"></div>
+	</ul>
+</div>
+<button :on.click="location.href = `#/cat/page/${(data.loc.param.page || 1) * 1 + 1}`" class="more">More products</button>

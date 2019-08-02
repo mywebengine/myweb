@@ -1,0 +1,42 @@
+<!doctype html>
+<html data-debug="true">
+	<head>
+		<title>inc - myweb/tpl</title>
+		<meta charset="utf-8" />
+	</head>
+	<body>
+		<h1>incude - example</h1>
+		<script>
+			data = {
+				name: "About include",
+				inc3: "inc/inc3.html"
+			};
+			const incs = [1, 2, 3];
+		</script>
+		<fieldset>
+			<label for="inc3">data.inc3</label>
+			<select id="inc3" :attr.value="data.inc3" onchange="data.inc3 = this.value">
+				<option :for.num="incs" :attr.value="`inc/inc${num}.html`" :attr.selected="this.value == data.inc3"
+					:order=":for.num">
+					Include #{{num}}
+				</option>
+			</select>
+		</fieldset>
+		<div :inc.url="inc/inc1.html" data-name="Part1">
+			<p slot="slot1">Slot vlaue 1</p>
+		</div>
+		<div :inc.u="inc/inc2.html" data-name="Part2">
+			<p slot="slot1">Slot vlaue 2</p>
+		</div>
+		<div :inc="data.inc3" data-name="Part3">
+			<p slot="slot1">3</p>
+		</div>
+		<hr />
+		<h2>Chain include</h2>
+		<div :inc.u="inc/inc1.html" :inc="data.inc3" :inc.u3="./inc/inc3.html" data-name="Part chain">
+			<p slot="slot1">Slot value 3</p>
+		</div>
+
+		<script src="main.js" type="module" async="async"></script>
+	</body>
+</html>

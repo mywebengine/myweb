@@ -1,0 +1,23 @@
+﻿.modal {
+	display: none;
+}
+.modal.show {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: fixed;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+	background: rgba(0, 0, 0, 0.3);
+}
+.modal-body {
+	position: relative;
+	padding: 20px;
+	max-width: 90%;
+	max-height: 90%;
+	overflow: auto;
+	background: #fff;
+	box-shadow: 0 1px 5px 0 rgba(0, 0, 0, 0.2);
+}

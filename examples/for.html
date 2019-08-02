@@ -1,0 +1,42 @@
+<!doctype html>
+<html data-debug="true">
+	<head>
+		<title>for - myweb/tpl</title>
+		<meta charset="utf-8" />
+	</head>
+	<body>
+		<h1>for - example</h1>
+		<script>
+			data = {
+				text: "abcdefg",
+			};
+			data.arr = data.text.split("");
+		</script>
+		<h2>string as array</h2>
+		<fieldset>
+			<label for="text">data.text</label>
+			<input :attr.value="data.text" oninput="data.text = this.value" id="text" />
+		</fieldset>
+		<ul :if="data.text">
+			<li :for.val.idx="data.text">
+				{{idx * 1 + 1}}, {{val.toUpperCase()}}
+			</li>
+		</ul>
+		<h2>array</h2>
+		<fieldset>
+			<label for="arr">Unshift to data.arr</label>
+			<input oninput="data.arr.unshift(this.value)" id="arr" />
+		</fieldset>
+		<fieldset>
+			<label for="arr2">Push to data.arr</label>
+			<input oninput="data.arr.push(this.value)" id="arr2" />
+		</fieldset>
+		<ul :if="data.arr.length">
+			<li :for.val="data.arr">
+				{{val}}
+			</li>
+		</ul>
+
+		<script src="main.js" type="module" async="async"></script>
+	</body>
+</html>

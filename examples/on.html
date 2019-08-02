@@ -1,0 +1,28 @@
+<!doctype html>
+<html data-debug="true">
+	<head>
+		<title>on - myweb/tpl</title>
+		<meta charset="utf-8" />
+	</head>
+	<body>
+		<h1>on - example</h1>
+		<script>
+			data = {
+				text: "abcdefg"
+			};
+		</script>
+		<fieldset>
+			<label for="text">data.text</label>
+			<input :on.input="data.text = this.value" :attr.value="data.text" id="text" />
+		</fieldset>
+		<p>
+			{{data.text}}
+		</p>
+
+		<p>
+			<i>Use this template isn't good idea, becouse this pattern croaking applaing to SSR</i>
+		</p>
+
+		<script src="main.js" type="module" async="async"></script>
+	</body>
+</html>

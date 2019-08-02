@@ -1,0 +1,40 @@
+<!doctype html>
+<html data-debug="true" data-is-rendered="false">
+	<head>
+		<title>myweb/tpl ex1</title>
+		<meta charset="utf-8" />
+
+		<script>
+			data = {
+				red: "red"
+			};
+		</script>
+		<script src="main.js" type="module" async="async"></script>
+	
+		<meta :inc.u="./ctrl/modal.html" />
+	</head>
+	<body>
+		<fieldset>
+			<input :attr.value="data.val" oninput="data.val = this.value;" />
+		</fieldset>
+		<link :attr.data-method="data.m"
+			:fetch.u="./fetch/ex1.json"
+			:order=":attr.data-method :fetch.u"
+			data1-type="x-form"
+			data1-body="data.form"
+			data-onok="data.val = await this.json().newVal; console.log(`fetch onload`, this);"
+			data-onerror="!Modal || new Modal().show({text: this.status}); console.error(`error`, this, err, err.status);" />
+		<ul :if="data.val">
+			<li :for.txt.i="data.val">
+                                <span :attr.style="`color: ${data.red}`">
+                                	{{txt}}
+                                </span>
+			</li>
+		</ul>
+		<form onsubmit="data.m = `get`; data.form = new FormData(this); return false;">
+			<input name="a" value="123" required="" />
+			<input id="b" name="bb" value="456" />
+			<button>Send</button>
+		</form>
+	</body>
+</html>

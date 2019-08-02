@@ -1,0 +1,53 @@
+<!doctype html>
+<html data-debug="true">
+	<head>
+		<title>if - myweb/tpl</title>
+		<meta charset="utf-8" />
+	</head>
+	<body>
+		<h1>if (elseif, else), switch (case, default) - example</h1>
+		<script>
+			data = {
+				color: "red"
+			};
+		</script>
+		<fieldset>
+			<label for="color">data.color</label>
+			<input oninput="data.color = this.value" id="color" />
+		</fieldset>
+		<section>
+			<h2>if - example</h2>
+			<p :if="data.color == `red`">
+				RED
+			</p>
+			<p :elseif="data.color == `blue`">
+				BLUE
+			</p>
+			<p :elseif.color="data.color">
+				Color isn't red or blue, color is <b>{{color}}</b>
+			</p>
+			<p :else="">
+				Color is empty
+			</p>
+		</section>
+		<section>
+			<h2>switch - example</h2>
+			<p :switch="data.color" :case="`red`">
+				RED
+			</p>
+			<p :case="`blue`">
+				BLUE
+			</p>
+			<p :default="">
+				<span :if.c="data.color">
+					Color isn't red or blue, color is <b>{{c}}</b>
+				</span>
+				<span :else="data.color">
+					Color is empty
+				</span>
+			</p>
+		</section>
+
+		<script src="main.js" type="module" async="async"></script>
+	</body>
+</html>

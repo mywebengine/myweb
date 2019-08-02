@@ -1,0 +1,30 @@
+﻿<div :inc.uq="nav.html"></div>
+<div>
+	<div :if="data.bag && data.bag.length">
+		<ul class="bag-products">
+			<div :inc.u="order/listing.html"></div>
+		</ul>
+		<h3 class="price">Order sum: {{data.bag.reduce((sum, p) => sum + p.price * (p.amount || 1), 0)}}</h3>
+		<!--submitChanel-->
+		<link :fetch.u="shop/rest/submit.json" data-method="post" data-type="form" data-body="data.orderData" data-onok="onOrderSubmit(await this.json())" data-onerror="alert(err)"/>
+		<form onsubmit="data.orderData = new FormData(this); return false">
+			<fieldset class="required">
+				<label for="name">Name</label>
+				<input id="name" name="name" type="text" required="" />
+			</fieldset>
+			<fieldset>
+				<label for="tel">Tel.</label>
+				<input type="tel" name="tel" />
+			</fieldset>
+			<fieldset>
+				<div></div>
+				<div>
+					<button>Send order</button>
+				</div>
+			</fieldset>
+		</form>
+	</div>
+	<div :else="">
+		<h1>Order is empty</h1>
+	</div>
+</div>

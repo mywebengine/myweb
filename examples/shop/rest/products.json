@@ -1,0 +1,30 @@
+﻿[
+	{
+		"id": 1,
+		"name": "Product #1",
+		"image": "1.jpg",
+		"price": 100,
+		"description": "Information about product #1 in product card. This information very interested text about product."
+	},
+	{
+		"id": 2,
+		"name": "Product #2",
+		"image": "2.jpg",
+		"price": 200,
+		"description": "Information about product #2 in product card. This information very interested text about product."
+	},
+	{
+		"id": 3,
+		"name": "Product #3",
+		"image": "3.jpg",
+		"price": 300,
+		"description": "Information about product #3 in product card. This information very interested text about product."
+	},
+	{
+		"id": 4,
+		"name": "Product #4",
+		"image": "4.jpg",
+		"price": 400,
+		"description": "Information about product #4 in product card. This information very interested text about product."
+	}
+]

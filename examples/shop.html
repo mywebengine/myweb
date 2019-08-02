@@ -1,0 +1,23 @@
+<!doctype html>
+<html data-debug="true">
+	<head>
+		<title :html.text="getPageTitle()">shop - myweb/tpl</title>
+		<meta charset="utf-8" />
+		<link href="shop/style.css" rel="stylesheet" />
+		<script src="shop/main.js" type="module" async="async"></script>
+		<link :inc.u="./ctrl/modal.html" />
+		<!--bagChanel-->
+		<link :fetch.u="shop/rest/bag.json" data-method="post" data-body="data.bagData" data-onok="onBag(await this.json());" data-onerror="alert(err)"/>
+	</head>
+	<body>
+		<h1>shop - example</h1>
+		<div :if="data.loc.name == `order` && data.loc.args[1] == `confirm`" :inc.u="shop/order/confirm.html"></div>
+		<div :elseif="data.loc.name == `order`">
+			<div :inc.u="shop/order.html"></div>
+		</div>
+		<div :elseif="(data.loc.name == `` && data.loc.args.length == 1) || data.loc.name == `cat`">
+			<div :inc.u="shop/products.html"></div>
+		</div>
+		<div :else="" :inc.u="shop/not-found.html"></div>
+	</body>
+</html>

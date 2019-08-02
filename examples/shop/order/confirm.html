@@ -1,0 +1,10 @@
+﻿<div>
+	<div :inc.u="../nav.html"></div>
+	<div :if="data.curOrder">
+		<h1>You'r order confirmation</h1>
+		<p>It's ok, your order number {{data.curOrder.number}}</p>
+	</div>  	
+	<div :else="">
+		<h1>You not have current order</h1>
+	</div>
+</div>

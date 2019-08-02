@@ -1,0 +1,14 @@
+﻿HELLOW
+<li :attr.style="`color: ${data.red}`">
+	222222 --- {{ii.i}}
+</li>
+<script>
+
+self.addEventListener(inc_mount_on_this_file, function(evt) {
+	console.info("LI MOUNT", evt.detail.$body);
+	if (!evt.detail.$body.parentNode.tagName) {
+		evt.detail.$body.firstElementChild.style.color = "blue";
+	}
+});
+
+</script>

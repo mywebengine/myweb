@@ -1,0 +1,57 @@
+<!doctype html>
+<html data-debug="true">
+	<head>
+		<title>todo list - myweb/tpl</title>
+		<meta charset="utf-8" />
+	</head>
+	<body>
+		<h1>todo list - example</h1>
+		<script>
+			data = {};//Object data is default proxy, initing then load "tpl"
+			function onAdd(todo, form = document.forms.addForm) {
+				console.info("This is REST was fake. And then request is fake todo object, becouse request will be replaced.", todo);
+				data.todos.push(todo = {name: document.forms.addForm.elements.name.value});
+				form.reset();
+			}
+		</script>
+		<!--addChanel-->
+		<link :fetch.u="todo/submit.json" data-method="post" data-type="form" data-body="data.addData" data-onok="onAdd(await this.json())" data-onerror="alert(err)" />
+		<form name="addForm" onsubmit="data.addData = new FormData(this); return false">
+			<fieldset>
+				<label for="name">New todo</label>
+				<input id="name" name="name" required="" />
+				<button>Add</button>
+			</fieldset>
+		</form>
+		<!--getChanel-->
+		<link :fetch.u="todo/todos.json" data-onok="data.todos = await this.json()" data-onerror="alert(err)"/>
+		<ul :if="data.todos && data.todos.length" class="todos">
+			<li :for.todo.idx="data.todos" :attr.class="todo.ok ? `todos-item todos-item-ok` : `todos-item`">
+				<input type="checkbox" :attr.checked="todo.ok" :attr.onchange="`data.todos[${idx}].ok = this.checked; console.log(this.checked, data.todos[${idx}])`" />
+				<div :html="todo.name"></div>
+				<button :attr.onclick="`data.todos.splice(${idx}, 1)`">Remove</button>
+			</li>
+		</ul>
+		<style>
+			html {
+				--gap: 10px;
+			}
+			.todos {
+				padding: 0;
+			}
+			.todos-item {
+				display: grid;
+				grid-template-columns: auto	1fr	auto;
+				grid-gap: var(--gap);
+				padding: var(--gap);
+				border-bottom: solid 1px silver;
+			}
+			.todos-item-ok {
+				background: green;
+				color: white;
+			}
+		</style>
+
+		<script src="main.js" type="module" async="async"></script>
+	</body>
+</html>
