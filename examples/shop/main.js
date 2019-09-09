@@ -2,14 +2,14 @@
 import {getLoc} from "../../util.js";
 
 self.data = {
-	loc: getLoc(self.location.hash),
+	loc: getLoc(location.hash, true),
 	bagData: null,
 	curOrder: (sessionStorage.getItem("curOrder") || "").json()
 };
 
 self.onhashchange = function() {
 	while (self.curWin && self.curWin.close());
-	self.data.loc = getLoc(self.location.hash);
+	self.data.loc = getLoc(location.hash);
 }
 self.onbeforeunload = function() {
 	if (!self.data.bag) {
@@ -80,5 +80,5 @@ self.onOrderSubmit = function(order) {
 	delete self.data.orderData;
 	self.data.bag = [];
 	localStorage.setItem("curOrder", JSON.stringify(self.data.curOrder = order));
-	self.location.hash = "/order/confirm";
+	location.hash = "/order/confirm";
 }

@@ -18,9 +18,9 @@
 			<input :attr.value="data.val" oninput="data.val = this.value;" />
 		</fieldset>
 		<link :attr.data-method="data.m"
-			:fetch.u="./json/ex1.json"
-			:order=":attr.data-method :fetch.u"
-			data-body="data.form"
+			_fetch.u="./json/ex1.json"
+			_order=":attr.data-method :fetch.u"
+			data-:body="data.form"
 			data-onok="data.val = this.newVal; console.log(`fetch onload`, this);"
 			data-onerror="!Modal || new Modal().show({text: err}); console.error(`error`, this, err, err.status);" />
 		<ul :if="data.val">

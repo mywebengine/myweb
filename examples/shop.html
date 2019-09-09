@@ -7,7 +7,7 @@
 		<script src="shop/main.js" type="module" async="async"></script>
 		<link :inc.u="./ctrl/modal.html" />
 		<!--bagChanel-->
-		<link :fetch.u="shop/rest/bag.json" data-method="post" data-body="data.bagData" data-onok="onBag(await this.json());" data-onerror="alert(err)"/>
+		<link :fetch.u="shop/rest/bag.json" data-method="post" data-:body="data.bagData" data-onok="onBag(await this.json());" data-onerror="alert(err)"/>
 	</head>
 	<body>
 		<h1>shop - example</h1>

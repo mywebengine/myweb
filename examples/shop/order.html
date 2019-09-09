@@ -6,7 +6,7 @@
 		</ul>
 		<h3 class="price">Order sum: {{data.bag.reduce((sum, p) => sum + p.price * (p.amount || 1), 0)}}</h3>
 		<!--submitChanel-->
-		<link :fetch.u="shop/rest/submit.json" data-method="post" data-type="form" data-body="data.orderData" data-onok="onOrderSubmit(await this.json())" data-onerror="alert(err)"/>
+		<link :fetch.u="shop/rest/submit.json" data-method="post" data-type="form" data-:body="data.orderData" data-onok="onOrderSubmit(await this.json())" data-onerror="alert(err)"/>
 		<form onsubmit="data.orderData = new FormData(this); return false">
 			<fieldset class="required">
 				<label for="name">Name</label>

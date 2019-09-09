@@ -1,11 +1,14 @@
 /*!
- * myweb/util.js v1.0.0
+ * myweb/util.js v0.9.0
  * (c) 2019 Aleksey Zobnev
  * Released under the MIT License.
+ * https://github.com/mywebengine/myweb
  */
 import {tplProxyTargetPropName} from "./tpl/const.js";
 
 export const spaceRe = /\s+/g;
+export const dRe = /\d/g;
+export const DRe = /\D/g;
 
 export function getId(i) {
 	return i[getId.propName] || (i[getId.propName] = (++getId.curVal).toString());
@@ -66,6 +69,13 @@ export function $goCopy($from, $to, func) {
 	if ($from.isCustomHTML) {
 		return $to;
 	}
+//--	if ($from.content) {
+//		$from = $from.content;
+//	}
+//	const $ret = $to;
+//	if ($to.content) {
+//		$to = $to.content;
+//	}
 	const len = $from.children.length;
 	for (let i = 0; i < len; i++) {
 		$goCopy($from.children[i], $to.children[i], func);
@@ -87,6 +97,7 @@ export function get$first($e, isCmpFunc, p) {
 	}
 	return $e;
 }
+/*-- in for*/
 export function get$eIdx($e) {
 	let i = 0;
 	for (let $i = $e.parentNode.firstChild; $i != $e; $i = $i.nextSibling) {
@@ -138,7 +149,7 @@ export function getMustacheBlocks(text) {
 	return blocks;
 }
 self.getMustacheBlocks = getMustacheBlocks;
-
+/*
 export function getLocalNumber(val, fmt) {
 	if (!val || typeof(val) != "string") {
 		return val;
@@ -159,16 +170,18 @@ export function getLocalNumber(val, fmt) {
 	return val * 1;
 }
 //getLocalNumber.locale = "en-Us";
-getLocalNumber.dotSymbol = (0.1).toLocaleString(getLocalNumber.locale).indexOf(".") == -1 ? "," : ".";
+getLocalNumber.dotSymbol = (0.1).toLocaleString(getLocalNumber.locale).indexOf(".") == -1 ? "," : ".";*/
+/*
 export function formatFunc(val, fmt) {
 	if (val === "" || isNaN(val)) {
 		return "";
 	}
-	return Number(val).toLocaleString(getLocalNumber.locale, {
+//	return Number(val).toLocaleString(navigator.language, {
+	return Number(val).toLocaleString(undefined, {
 		maximumFractionDigits: fmt ? fmt.scale : 0//,
 //		useGrouping: false
 	});
-}
+}*/
 
 export function normalizeURL(url) {
 	url = url.trim();
@@ -176,11 +189,11 @@ export function normalizeURL(url) {
 		return new URL(url).href;
 	}
 	if (url[0] != "/") {
-		const lastSlashIdx = self.location.pathname.lastIndexOf("/")
-		if (lastSlashIdx == self.location.pathname.length - 1) {
-			url = self.location.pathname + url;
+		const lastSlashIdx = location.pathname.lastIndexOf("/")
+		if (lastSlashIdx == location.pathname.length - 1) {
+			url = location.pathname + url;
 		} else if (lastSlashIdx != -1)  {
-			url = self.location.pathname.substr(0, lastSlashIdx + 1) + url;
+			url = location.pathname.substr(0, lastSlashIdx + 1) + url;
 		}
 	}
 	return normalizeURL.getBase(url);
@@ -193,7 +206,7 @@ normalizeURL.getBase = function(url) {
 	}
 	return url.replace(normalizeURL.reSlash, "/").trim();
 }
-normalizeURL.reHost = /^(https*:\/\/|ws:\/\/|\/\/).+?(\/|$)/;
+normalizeURL.reHost = /^(\w*\:\/\/+|\/\/+).+?(\/|$)/;
 normalizeURL.reSlash = /\/\/+/g;
 normalizeURL.reUp = /[^\.\/]+\/+\.\.\//;
 normalizeURL.reThis = /\/\.\//;
@@ -224,7 +237,7 @@ export function getURL(url, topURL) {
 		}
 	}
 	if (url.search(normalizeURL.reHost) == -1) {
-		url = self.location.origin + url;
+		url = location.origin + url;
 	}
 	return normalizeURL(url);
 }
@@ -234,21 +247,53 @@ export function isURI(url) {
 	return url.search(normalizeURL.reHost) == -1 && url[0] != "/";
 }
 
-export function getLoc(url, defPageName = "") {
-	url = url.trim();
-	url = (url.indexOf("#") == 0 ? url.substr(1) : url.replace(normalizeURL.reHost, "")).replace(getLoc.reTrimSlash, "");
+export function getLoc(url, byHash, defPageName = "") {
+	const u = new URL(url);
+	url = (byHash ? u.hash.substr(1) : u.pathname).replace(getLoc.reTrimSlash, "");
 	const loc = {
 		url,
 		args: url.split("/"),
-		param: {}
+		param: {},
+		query: {}
 	};
 	loc.name = loc.args[0] || defPageName;
 	for (let i = 1, len = loc.args.length; i < len; i += 2) {
 		loc.param[loc.args[i]] = loc.args[i + 1];
 	}
+	for (const [n, v] of u.searchParams) {
+		loc.query[n] = v;
+	}
 	return loc;
 }
 getLoc.reTrimSlash = /(^\/|\/$)/g;
+/*
+export function setLoc(loc, url, defPageName = "") {
+	url = url.trim();
+	url = (url.indexOf("#") == 0 ? url.substr(1) : url.replace(normalizeURL.reHost, "")).replace(getLoc.reTrimSlash, "");
+	loc.url = url;
+	if (loc.args) {
+		loc.args.splice(0);
+	} else {
+		loc.args = [];
+	}
+	const args = url.split("/");
+	const argsLen = args.length;
+	for (let i = 0; i < argsLen; i++) {
+		loc.args.push(args[i]);
+	}
+	if (loc.param) {
+		for (const i in loc.param) {
+			delete loc.param[i];
+		}
+	} else {
+		loc.param = {};
+	}
+	for (let i = 1; i < argsLen; i += 2) {
+		loc.param[loc.args[i]] = loc.args[i + 1];
+	}
+	loc.name = loc.args[0] || defPageName;
+	return loc;
+}*/
 
 function hideEnum(obj, pName) {
 	Object.defineProperty(obj, pName, {
@@ -282,7 +327,28 @@ if (!String.prototype.q) {
 			hideEnum(o, n);
 		}
 	}
-//}
+//} 
+	self.LocaleNumber = function(n) {
+		if (!this) {
+			return new self.LocaleNumber(n);
+		}
+		this.value = n;
+	}
+	self.LocaleNumber.prototype = {
+		valueOf: function() {
+			return Number(this.value);
+		},
+		toString: function() {
+			return Number(this.value).toLocaleString();
+		}
+	};
+
+	String.localeDotSymbol = (0.1).toLocaleString().indexOf(".") == -1 ? "," : ".";
+	String.prototype.toNumber = function() {
+		const dotIdx = this.lastIndexOf(String.localeDotSymbol);
+		return Number(dotIdx == -1 ? this.replace(DRe, "") : this.substr(0, dotIdx).replace(DRe, "")  + "." + this.substr(dotIdx + 1));
+	}
+	hideEnum(String.prototype, "toNumber");
 //if (!String.prototype.json) {
 	String.prototype.json = function() {
 		try {
@@ -296,11 +362,21 @@ if (!String.prototype.q) {
 	String.prototype.copyToClipboard = function() {
 		const $f = document.createElement("input");
 		$f.type = "text";
-		$f.value = text;
+		$f.contentEditable = true;
+		$f.value = this;
 		$f.style.position = "absolute";
 		$f.style.left = "-1000px";
 		document.body.appendChild($f);
 		$f.select();
+/*
+		const range = document.createRange();
+		range.selectNodeContents($f);
+		const sel = self.getSelection();
+		sel.removeAllRanges();
+		sel.addRange(range);*/
+		$f.setSelectionRange(0, this.length); // A big number, to cover anything that could be inside the element.
+
+
 		document.execCommand("copy");
 		$f.parentNode.removeChild($f);
 	}
@@ -313,13 +389,33 @@ if (!String.prototype.q) {
 	HTMLElement.prototype[tplProxyTargetPropName] = true;
 	Text.prototype[tplProxyTargetPropName] = true;
 //}
-//if (!FormData.prototype.toJSON) {
+}
+if (!FormData.prototype.toJSON) {
 	FormData.prototype.toJSON = function() {
 		const obj = {};
-		for (const [name, value] of this) {
+		for (const [name, value] of this.entries()) {
 			obj[name] = value;
 		}
 		return obj;
 	}
 //	hideEnum(FormData.prototype, "toJSON");
+}
+if (!HTMLFormElement.prototype.toJSON) {
+	HTMLFormElement.prototype.toJSON = function() {
+		const obj = {};
+		const elsLen = this.elements.length;
+		for (let i = 0; i < elsLen; i++) {
+			obj[this.elements[i].name || this.elements[i].id] = this.elements[i].value;
+		}
+		return obj;
+	}
+//	hideEnum(HTMLFormElement.prototype, "toJSON");
+}
+
+self.del = function(o, n) {
+	const v = o[n];
+	delete o[n];
+//	const v = Reflect.get(o, n);
+//	Reflect.deleteProperty(o, n);
+	return v;
 }

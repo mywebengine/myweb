@@ -1,4 +1,5 @@
-﻿import {normalizeURL} from "../../util.js";
+﻿import {cmdPref} from "../const.js";
+import {normalizeURL} from "../../util.js";
 
 if (!self.AsyncFunction) {
 	self.AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
@@ -9,7 +10,7 @@ export default {
 		const url = fetch_get.call(this, req);
 //console.log("fetch url", url);
 		const body = fetch_getVal.call(this, req, "body");
-		if (!url || ((req.$src.dataset.body || req.$src.dataset[":body"]) && body === undefined)) {
+		if (!url || ((req.$src.dataset.body || req.$src.dataset[cmdPref + "body"]) && body === undefined)) {
 			return {
 				isLast: true
 			};
@@ -72,13 +73,13 @@ function fetch_getVal(req, name, res) {
 			return;
 		}
 	}
-	if (expr = req.$src.dataset[":" + name]) {
+	if (expr = req.$src.dataset[cmdPref + name]) {
 		const r = this.eval({
 			$src: req.$src,
 			scope: req.scope,
 			expr
 		});
-//console.log(6666, req.$src.dataset[":" + name], r);
+//console.log(6666, req.$src.dataset[cmdPref + name], r);
 		return r;
 	}
 }
@@ -88,7 +89,7 @@ function fetch_execAsync(req, name, res) {
 		return;
 	}
 //todo разобраться с обработкой ошибок
-	new self.AsyncFunction("tpl", "req", "try {" + expr + "} catch(err) {console.log(11111111111, err); tpl.check(err, req)}").call(res, this, req);
+	new self.AsyncFunction("tpl", "req", "try {" + expr + "} catch(err) {console.log('!! async func error', err); tpl.check(err, req)}").call(res, this, req);
 //	try {
 //		new self.AsyncFunction(str).call(res);
 //	} catch (err) {

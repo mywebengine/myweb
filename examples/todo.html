@@ -15,7 +15,7 @@
 			}
 		</script>
 		<!--addChanel-->
-		<link :fetch.u="todo/submit.json" data-method="post" data-type="form" data-body="data.addData" data-onok="onAdd(await this.json())" data-onerror="alert(err)" />
+		<link :fetch.u="todo/submit.json" data-method="post" data-type="form" data-:body="data.addData" data-onok="onAdd(await this.json())" data-onerror="alert(err)" />
 		<form name="addForm" onsubmit="data.addData = new FormData(this); return false">
 			<fieldset>
 				<label for="name">New todo</label>

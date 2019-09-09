@@ -51,11 +51,11 @@ self.data = d;
 		<script src="inc2.js"></script-->
 
 		<div data-param-before="BBB"
-			:inc.uri="./header.html" data-param-after="AAA"
-			:attr.data-param2="data.arr.length"></div>
+			_inc.uri="./header.html" data-param-after="AAA"
+			_attr.data-param2="data.arr.length"></div>
 
 		<div :inc="data.h || `./header.html`"
-			:attr.data-param2="data.val"></div>
+			_attr.data-param2="data.val"></div>
 
 
 		<div :inc.url="edit.html" :attr.data-value="1 + 5 + 'a'"></div>
@@ -66,12 +66,12 @@ self.data = d;
 		<fieldset a="112">
 			<label>
 				<input type="checkbox"
-					:attr.checked="data.isShow"
+					_attr.checked="data.isShow"
 					onchange="data.isShow = this.checked;" /> isShow
 			</label>
 			<label>
 				<input type="checkbox"
-					:attr.checked="data.isShow2"
+					_attr.checked="data.isShow2"
 					onchange="data.isShow2 = this.checked;" /> isShow2
 			</label>
 		</fieldset>
@@ -87,24 +87,24 @@ self.data = d;
 				oninput="data.arr2.unshift(this.value);" />
 			<datalist id="browsers">
 				<option :attr.value="val.name || val || 0"
-					:for.val="data.arr"
-					:html="val.name || val" 
-					:order=":for.val :attr.value"></option>
+					_for.val="data.arr"
+					_html="val.name || val" 
+					_order=":for.val :attr.value"></option>
 			</datalist>
 			<select>
 				<option :for.val.i.aa="data.arr" 
-					:attr.value="i" 
-					:html.text="val.name || val" 
-					:1order=":for.val.i :attr.value :html"></option>
+					_attr.value="i" 
+					_html.text="val.name || val" 
+					_1order=":for.val.i :attr.value :html"></option>
 			</select>
 		</fieldset>
 		<div :if.f="data.isShow">
 			<span :attr.style="`color: ${data.red};`">SHOW ({{f}})</span>
 		</div>
 		<div :if.f="data.isShow2"
-			:attr.style="`color: ${data.green};`"
-			:html.text="`Show2 (${f})`"
-			:order=":if.f :html.text :attr.style">
+			_attr.style="`color: ${data.green};`"
+			_html.text="`Show2 (${f})`"
+			_order=":if.f :html.text :attr.style">
 		</div>
 
 		<h3>if else</h3>
@@ -134,18 +134,18 @@ self.data = d;
 		<ul :if="data.arr.length > 0">
 			<li :for.val.i="data.arr" :scope="ii">
 				<span :attr.data-prop-in-prop="`!`"
-					:html="`${i * 1 + 1}) ${val.name || val} ${this.dataset.propInProp} >${ii.i * 1 + 1}) ${ii.val.name || ii.val}<`"
-					:attr.style="`color: ${val > 0 ? data.green : data.red};`"
-					:attr.onclick="`alert('attr!-${(val.name || val).q()}');`"></span>
+					_html="`${i * 1 + 1}) ${val.name || val} ${this.dataset.propInProp} >${ii.i * 1 + 1}) ${ii.val.name || ii.val}<`"
+					_attr.style="`color: ${val > 0 ? data.green : data.red};`"
+					_attr.onclick="`alert('attr!-${(val.name || val).q()}');`"></span>
 			</li>
 		</ul>
 		1
 		<ul :if="data.arr2.length > 0">
 			<div :inc.u="li.html"
-				:for.txt.i="data.arr2"
-				:scope="ii"
-				:on.click="console.info(`${ii.txt}`, this);"
-				:order=":for.txt.i :inc.u :scope">
+				_for.txt.i="data.arr2"
+				_scope="ii"
+				_on.click="console.info(`${ii.txt}`, this);"
+				_order=":for.txt.i :inc.u :scope">
 				<span slot="a1" :html="txt"></span>
 				<span slot="a2" :html="ii.txt.toString().toUpperCase()"></span>
 			</div>
@@ -153,10 +153,10 @@ self.data = d;
 		2
 		<ul :if="data.arr2.length > 0">
 			<div :inc.u="li2.html"
-				:for.txt.i="data.arr2"
-				:scope="ii"
-				:on.click="console.info(`${ii.txt}`, this);"
-				:order=":for.txt.i :inc.u :scope">
+				_for.txt.i="data.arr2"
+				_scope="ii"
+				_on.click="console.info(`${ii.txt}`, this);"
+				_order=":for.txt.i :inc.u :scope">
 			</div>
 		</ul>
 		<div>
@@ -165,8 +165,8 @@ self.data = d;
 			<div class="first">First3</div>
 			<div :for.val.key="data.arr">
 				<span :html="`${key} => ${val.name}`"
-					:attr.onclick="`alert('attr!-${key.q()}')`;"
-					:on.click="return console.log(this); alert(`attr!-${(val.name || val)}`);"></span>
+					_attr.onclick="`alert('attr!-${key.q()}')`;"
+					_on.click="return console.log(this); alert(`attr!-${(val.name || val)}`);"></span>
 			</div>
 		</div>
 	</body>

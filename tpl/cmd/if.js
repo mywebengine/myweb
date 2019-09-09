@@ -1,22 +1,16 @@
-﻿import {copy} from "../../util.js";
-import {inc_get$els} from "./inc.js";
+import {ifCmdName, elseifCmdName, elseCmdName, switchCmdName, caseCmdName, defaultCmdName} from "../const.js";
+import {copy} from "../../util.js";
+import {inc_isInc, inc_get$els, inc_getFirstElement} from "./inc.js";
 
 export const ifCmd = {
 	render(req) {
-		return if_get.call(this, req, this.renderTag.bind(this), this.show.bind(this), this.hide.bind(this));
+		return if_get.call(this, req, this.renderTag.bind(this), this.show.bind(this), this.hide.bind(this), f => f, ifCmdName, elseifCmdName, elseCmdName);
 	},
 	linker(req) {
-		return if_get.call(this, req, this.linker.bind(this), $e => $e, $e => $e);
+		return if_get.call(this, req, this.linker.bind(this), $e => $e, $e => $e, ifCmdName, elseifCmdName, elseCmdName);
 	},
 	getScope: if_getScope
 };
-/*
-export const elseifCmd = {
-	getScope: if_getScope
-};
-export const elseCmd = {
-	getScope: if_getScope
-};*/
 export const switchCmd = {
 	render(req) {
 		return switch_get.call(this, req, this.renderTag.bind(this));
@@ -26,13 +20,6 @@ export const switchCmd = {
 	},
 	getScope: if_getScope
 };
-/*
-export const caseCmd = {
-	getScope: if_getScope
-};
-export const defaultCmd = {
-	getScope: if_getScope
-};*/
 function if_getScope(req) {
 	const varName = req.args[0];
 	if (varName) {
@@ -40,121 +27,132 @@ function if_getScope(req) {
 	}
 	return req.scope;
 }
-function if_get(req, goFunc, showFunc, hideFunc, testFunc = f => f, ifCmdName = ":if", elseifCmdName = ":elseif", elseCmdName = ":else") {
-	let $e = req.$src;
-//console.log(11111, $e, req);
-	if (req.cmd != ifCmdName) {
-		for (; $e; $e = $e.previousElementSibling) {
-			let f;
-			for (const [n, v] of this.getAttrs($e)) {
-				const [cmdName, args] = this.getCmdArgs(n);
-				if (cmdName == ifCmdName) {
-					f = true;
-					req.str = n;
-					req.expr = v;
-					req.args = args;
-					break;
-				}
-			}
-			if (f) {
-				break;
-			}
-		}	
+function if_get(req, renderFunc, showFunc, hideFunc, testFunc = f => f, ifCmdName, elseifCmdName, elseCmdName, $e) {
+	if (!$e) {
+		$e = if_make$first.call(this, req, ifCmdName, elseifCmdName, elseCmdName);
 	}
 	let isLast;
 	if (req.value = testFunc(this.eval(req))) {
-//console.log(4444, req);
-		[$e, isLast] = if_go.call(this, req, showFunc($e), goFunc);
-//console.log(4444, req, $e, isLast);
+		[$e, isLast] = if_render.call(this, req, showFunc($e), renderFunc);
 	} else {
-//console.log(5555, req);
-		[$e, isLast] = [hideFunc($e), true];
-//console.log(5555, req, $e, isLast);
+		$e = hideFunc($e);
+		isLast = true;
 	}
-//	req.$src = $e;
-//alert(req.expr);
+//	for (const n of this.getAttrsBefore(this.getAttrs($e), req.str).keys()) {
+	for (const n of this.getAttrs($e).keys()) {
+		if (n == req.str) {
+			break;
+		}
+		const [cmdName] = this.getCmdArgs(n);
+		if ((cmdName == ifCmdName && ifCmdName != switchCmdName) || cmdName == elseifCmdName || cmdName == elseCmdName) {
+			//is single
+			return {
+				$e,
+				isLast
+			};
+		}
+	}
 	for (let $i = $e.nextElementSibling; $i; $i = $i.nextElementSibling) {
-		let f;
+		let isElse;
 		for (const [n, v] of this.getAttrs($i)) {
 			const [cmdName, args] = this.getCmdArgs(n);
-			if (cmdName == elseifCmdName) {
-				f = true;
-				if (req.value) {
-					$e = $i = hideFunc($i);
-//console.log(cmdName, $e);
-					break;
-				}
-				req.str = n;
-				req.expr = v;
-				req.args = args;
-				req.$srcForErr = $i;
-				if (req.value = testFunc(this.eval(req))) {
-//console.log(1114444, req);
-					[$i, isLast] = if_go.call(this, req, showFunc($i), goFunc);
-//console.log(1114444, req, $i, isLast);
-				} else {
-					$i = hideFunc($i);
-//console.log(1115555, req, $i);
-				}
-				$e = $i;
-//console.log(cmdName, $e);
-				break;
-			} else if (cmdName == elseCmdName) {
-//--				f = true;
-				if (req.value) {
-					$e = $i = hideFunc($i);
-//console.log(cmdName, $e);
-//console.log(1114444, req, $i, isLast);
-					break;
-				}
-				req.str = n;
-				req.expr = v;
-				req.args = args;
-				req.$srcForErr = $i;
-//console.log(1115555, req);
-				[$i, isLast] = if_go.call(this, req, $i = showFunc($i), goFunc);
-
-				$e = $i;
-//console.log(cmdName, $e);
+			if (cmdName == ifCmdName) {
+				isElse = true;
+				break;//следующий это новый ИФ
+			}
+			isElse = cmdName == elseCmdName;
+			if (!isElse && cmdName != elseifCmdName) {
+				continue;//еще нельзя понять, что делать
+			}
+			if (req.value) {
+				[$i, $e] = if_apply.call(this, $i, n, hideFunc);
+				isLast = true;
 				break;
 			}
+			req.cmdName = cmdName;
+			req.str = n;
+			req.expr = v;
+			req.args = args;
+			req.$srcForErr = $i;
+			if (isElse || (req.value = testFunc(this.eval(req)))) {
+				[$i, $e] = if_apply.call(this, $i, n, showFunc);
+				[$i, isLast] = if_render.call(this, req, $i, renderFunc);
+			} else {
+				[$i, $e] = if_apply.call(this, $i, n, hideFunc);
+				isLast = true;
+			}
+			break;
 		}
-		if (!f) {
+		if (isElse) {
 			break;
 		}
 	}
-//console.log("finish", $e, isLast);
 	return {
 		$e,
 		isLast
 	};
 }
-function if_go(req, $e, goFunc) {
+function if_make$first(req, ifCmdName, elseifCmdName, elseCmdName) {
+	if (req.cmdName == ifCmdName) {
+		return req.$src;
+	}
+	for (let $i = req.$src.previousElementSibling; $i; $i = $i.previousElementSibling) {
+		let isNext;
+		for (const [n, v] of this.getAttrs($i)) {
+			const [cmdName, args] = this.getCmdArgs(n);
+			if (cmdName == elseifCmdName) {// || cmdName == elseCmdName) {
+				isNext = true;
+				break;
+			}
+			if (cmdName == ifCmdName) {
+				req.cmdName = cmdName;
+				req.str = n;
+				req.expr = v;
+				req.args = args;
+				return $i;
+			}
+		}
+		if (!isNext) {
+			req.$srcForErr = $i;
+			this.check(new Error(">>>Tpl if:01:Invalid structure: if or elseif-comand not found"), req);
+			return;
+		}
+	}
+	this.check(new Error(">>>Tpl if:02:Invalid structure: if-command not found"), req);
+}
+function if_render(req, $e, renderFunc) {
 	const varName = req.args[0];
-//--	if (!varName) {
-//		return [$e];
-//	}
 	const scope = copy(req.scope);
 	if (varName) {
 		scope[varName] = req.value;
 	}
-//	const attrsAfter = this.getAttrsAfter(this.getAttrs($e), req.str);
-//console.log($e, attrsAfter, this.getAttrs($e), req.str);
-	return [goFunc($e, scope, this.getAttrsAfter(this.getAttrs($e), req.str)), true];
+	return [renderFunc($e, scope, this.getAttrsAfter(this.getAttrs($e), req.str)), true];
 }
-function switch_get(req, goFunc) {
-	const expression = this.eval(req);
-	const showFunc = this.show.bind(this);
-	const hideFunc = this.hide.bind(this);
-	for (const [n, v] of this.getAttrs(req.$src)) {
+function if_apply($i, n, applyFunc) {
+	if (inc_isInc.call(this, $i, n)) {
+		const $els = inc_get$els.call(this, $i);
+		const $elsLen = $els.length;
+		for (let i = 0; i < $elsLen; i++) {
+			if (!($els[i] instanceof Comment)) {
+				$i = applyFunc($els[i]);
+			}
+		}
+		return [$i, $els[$elsLen - 1]];
+	}
+	$i = applyFunc($i);
+	return [$i, $i];
+}
+function switch_get(req, renderFunc) {
+	const $first = if_make$first.call(this, req, switchCmdName, caseCmdName, defaultCmdName);
+	for (const [n, v] of this.getAttrsAfter(this.getAttrs($first), req.str)) {
 		const [cmdName, args] = this.getCmdArgs(n);
-		if (cmdName == ":case") {
-			req.cmd = ":switch";
+		if (cmdName == caseCmdName) {
+			const expression = this.eval(req);
 			req.str = n;
 			req.expr = v;
 			req.args = args;
-			return if_get.call(this, req, goFunc, showFunc, hideFunc, f => f == expression, ":switch", ":case", ":default");
+			return if_get.call(this, req, renderFunc, this.show.bind(this), this.hide.bind(this), f => f == expression, switchCmdName, caseCmdName, defaultCmdName, $first);
 		}
 	}
-	this.check(new Error(">>>Tpl switch:01: Need use case cmmand"), req);
+	this.check(new Error(">>>Tpl switch:01:Invalide structure: case-cmmand not found"), req);
 }

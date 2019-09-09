@@ -1,13 +1,17 @@
 /*!
- * myweb/tpl.js v0.9.0
+ * myweb/util.js v0.9.0
  * (c) 2019 Aleksey Zobnev
  * Released under the MIT License.
+ * https://github.com/mywebengine/myweb
  */
-import {cmdArgsBegin, cmdArgsDiv, incCmdName, orderCmdName, scopeCmdName, htmlCmdName, textCmdName, renderEventName, resVarName, tplProxyTargetPropName} from "./tpl/const.js";
+import {cmdArgsBegin, cmdArgsDiv,
+	incCmdName, orderCmdName, scopeCmdName, htmlCmdName, textCmdName,
+	attrCmdName, forCmdName, fetchCmdName, onCmdName,
+	ifCmdName, elseifCmdName, elseCmdName, switchCmdName, caseCmdName, defaultCmdName,
+	renderEventName, resVarName, tplProxyTargetPropName} from "./tpl/const.js";
 import {getId, wrapDeep, $goCopy, $goTagsDeep, getMustacheBlocks, spaceRe} from "./util.js";
 
 import scopeCmd from "./tpl/cmd/scope.js";
-//import {ifCmd, elseifCmd, elseCmd, switchCmd, caseCmd, defaultCmd} from "./tpl/cmd/if.js";
 import {ifCmd, switchCmd} from "./tpl/cmd/if.js";
 import forCmd from "./tpl/cmd/for.js";
 import attrCmd from "./tpl/cmd/attr.js";
@@ -28,8 +32,9 @@ export class Tpl {
 		this.$srcByVarProp = new WeakMap();
 
 		this.sync = 0;
-		this.renderStack = new Map();
+		this.renderStack = new Set();
 		this.renderAsyncStack = new Map();
+		this.renderAsyncParamsStack = new Map();
 
 		this._reqCmd = new Map();
 		this._func = new Map();
@@ -66,6 +71,9 @@ export class Tpl {
 //if (this.getReqCmd(n)) {
 //	console.log("render" + n, v, $src, scope);
 //}
+//if (this.ii > 0 && this.ii++ > 800) {
+//this.ii=1; alert(1); return;
+//}
 			const res = this.execRender($src, n, v, scope);
 			if (!res) {
 				continue;
@@ -94,29 +102,8 @@ export class Tpl {
 	}
 	removeAllOnRenderStack($e) {
 		this.renderStack.delete($e);
-		this.renderAsyncStack.delete($e);
+//		this.renderAsyncStack.delete($e);
 	}
-/*
-	removeAllOnRenderStack($e, id = $e[getId.propName]) {
-		this.renderStack.delete(id);
-		this.renderAsyncStack.delete(id);
-		for (const stack of [this.renderAsyncStack, this.renderStack]) {
-			this.removeOnRenderStack(stack, $e, id);
-		}
-	}
-	removeOnRenderStack(stack, $e, id) {
-		const $srcMap = stack.get(id);
-		if ($srcMap) {
-//			for (const [$src, r] of $srcMap) {
-//				r.resolve($src);
-//			}
-			$srcMap.delete($e);
-			if (!$srcMap.size) {
-				stack.delete(id);
-//				console.log("del", id);
-			}
-		}
-	}*/
 	renderText($src, scope) {//когда рендерится - то он делает это в фрагменте и родители выше фрагмента не доступны
 		if ($src.isTextRendered) {
 			return $src;
@@ -173,25 +160,31 @@ console.log("!!!!!!! is not tag", $src);
 		return $src;
 	}
 	async($src = this.$src, delay = this.delay, scope, attr) {
-		const already = this.renderAsyncStack.get($src);
+//console.log(123, $src);
+		const already = this.renderAsyncParamsStack.get($src);
+//		const already = this.renderAsyncStack.get($src);
 		if (already) {
 			this._newSync = ++this.sync;
-			already.promise;
+			return already.promise;
 		}
 		const r = {
 			scope,
 			attr
 		};
-		this.renderAsyncStack.set($src, r);
+		this.renderStack.add($src);
+//		this.renderAsyncStack.set($src, r);
+		this.renderAsyncParamsStack.set($src, r);
 		return r.promise = new Promise((resolve, reject) => {
 			r.resolve = resolve;
 			r.reject = reject;
+//console.log(1);
 			setTimeout(this._async.bind(this, ++this.sync, delay), delay);
 		});
 	}
 	_async(sync, delay) {
 		if (this._newSync) {
 			this._newSync = undefined;
+//todo console.log(11);
 			setTimeout(this._async.bind(this, ++this.sync, delay), delay);
 			return;
 		}
@@ -199,25 +192,23 @@ console.log("!!!!!!! is not tag", $src);
 			return;
 		}
 if (self.debug) {
-console.log("tpl async stack", Array.from(this.renderAsyncStack.keys()));
+//console.log("tpl async stack", Array.from(this.renderAsyncStack.keys()));
+console.log("tpl async stack", Array.from(this.renderStack.keys()));
 //alert(1);
 }
 		this.onbeforeasync();
-this.isNotRender = function($src) {
-			let $p = $src;
-			while ($p = $p.parentNode) {
-				if ($p instanceof DocumentFragment) {
-//console.log(222222, $p);
-					return $p;
-				}
-			}
-}
-		for (const [$src, r] of this.renderAsyncStack) {
+//		for (const [$src, r] of this.renderAsyncStack) {
+		for (const $src of this.renderStack.keys()) {
 			if (this.isNotRender($src)) {
 				this.removeAllOnRenderStack($src);
 //				r.resolve();
 				continue;
 			}
+			const r = this.renderAsyncParamsStack.get($src);
+
+
+//console.log("_list =>", Array.from(this.renderAsyncStack.keys()));
+//alert(1);
 //console.log("_async begin", $src, r);//, this.get$srcDescr($src));
 //			if ($src.parentNode) { //может так получиться, что элемент который нужно рендерить будет заменен другим, и тогда его не нужно рендерить
 				try {
@@ -231,44 +222,19 @@ this.isNotRender = function($src) {
 //console.log("_async =>", $src);
 		}
 //console.log("_async_end =>");
-		this.renderAsyncStack.clear();
+//		this.renderAsyncStack.clear();
+		this.renderStack.clear();
+		this.renderAsyncParamsStack.clear();
 		this.onasync();
 	}
-/*
-	async($src = this.$src, delay = this.delay, scope, attr) {
-		const already = this.renderAsyncStack.get($src);
-		if (already) {
-			this._newSync = ++this.sync;
-			return $src;
-		}
-		this.renderAsyncStack.set($src, {
-			scope,
-			attr
-		});
-		setTimeout(this._async.bind(this, ++this.sync, delay), delay);
-		return $src;
-	}
-	_async(sync, delay) {
-		if (this._newSync) {
-			this._newSync = undefined;
-			setTimeout(this._async.bind(this, ++this.sync, delay), delay);
-			return;
-		}
-		if (sync != this.sync) {
-			return;
-		}
-console.log("_async stack", Array.from(this.renderAsyncStack.keys()));
-		this.onbeforeasync();
-		for (const [$src, r] of this.renderAsyncStack) {
-//console.log("_async begin", $src, r, $src.parentNode, this.get$srcDescr($src));
-			if ($src.parentNode) { //может так получиться, что элемент который нужно рендерить будет заменен другим, и тогда его не нужно рендерить
-				this.render($src, r.scope, r.attr);
+	isNotRender($e) {
+		while ($e = $e.parentNode) {
+			if ($e instanceof DocumentFragment) {
+//console.log(222222, $i);
+				return $e;
 			}
-//console.log("_async =>", $src);
 		}
-		this.renderAsyncStack.clear();
-		this.onasync();
-	}*/
+	}
 	onbeforeasync() {
 	}
 	onasync() {
@@ -336,16 +302,18 @@ console.log("_async stack", Array.from(this.renderAsyncStack.keys()));
 	}
 	getReq($src, str, expr, scope) {
 		const reqCmd = this.getReqCmd(str);
-		if (reqCmd) {
-			return {
-				cmd: reqCmd.cmd,
-				args: reqCmd.args,
-				str,
-				expr,
-				$src,
-				scope
-			};
+		if (!reqCmd) {
+			return;
 		}
+		return {
+			cmdName: reqCmd.cmdName,
+			cmd: reqCmd.cmd,
+			args: reqCmd.args,
+			str,
+			expr,
+			$src,
+			scope
+		};
 	}
 	getReqCmd(str) {
 		const already = this._reqCmd.get(str);
@@ -359,27 +327,13 @@ console.log("_async stack", Array.from(this.renderAsyncStack.keys()));
 			return;
 		}
 		const reqCmd = {
+			cmdName,
 			cmd,
 			args
 		};
 		this._reqCmd.set(str, reqCmd);
 		return reqCmd;
-//11		const reqCmd = this._getReqCmd(cmdName, args);
-//		this._reqCmd.set(str, reqCmd || false);
-//		if (reqCmd) {
-//			return reqCmd;
-//		}
 	}
-/*11
-	_getReqCmd(cmdName, args) {
-		const cmd = this.getCommand(cmdName);
-		if (cmd) {
-			return {
-				cmd,
-				args
-			};
-		}
-	}*/
 	getCmdArgs(str) {
 		const i = str.indexOf(cmdArgsBegin);
 		return i != -1 ? [str.substr(0, i), str.substr(i + 1).split(cmdArgsDiv)] : [str, []];
@@ -388,19 +342,6 @@ console.log("_async stack", Array.from(this.renderAsyncStack.keys()));
 	cloneNode($e) {
 		return $e instanceof HTMLElement ? $goCopy($e, $e.cloneNode(true), this.copyDescr.bind(this)) : $e.cloneNode(true);
 	}
-/*--
-	cloneNode($e) {
-		return $goClone($e, document.createDocumentFragment(), this._clone.bind(this)).firstChild;
-	}
-	_clone($from, $to) {
-		if ($from.tagName) {
-			$to = $to.appendChild(document.createElement($from.tagName));
-			this.copyDescr($from, $to);
-			return $to;
-		}
-//		$to.appendChild(document.createTextNode($from.textContent));
-		$to.appendChild($from.cloneNode());
-	}*/
 	replaceChild($new, $old) {
 		return $goTagsDeep($old.parentNode.replaceChild($new, $old), this.clearTagProps.bind(this));
 	}
@@ -419,19 +360,22 @@ console.log("_async stack", Array.from(this.renderAsyncStack.keys()));
 	}
 //!!!<--
 	setAttribute($e, name, value) {
-///console.log(1111111, $e, name, value)
+//todo атрибут нелльзя создать, если в нем есть некорректные символы - решение ниже слишком исбыточное, на мой взгляд
+//		for (let i = name.indexOf("$"); i > 0; i = name.indexOf("$")) {
+//			name = name.substr(0, i) + name.substr(i + 1);
+//		}
 		$e.setAttribute(name, value);
 		this.getAttrs($e).set(name, value);
 		switch (name) {
 			case "value":
 				if (value) {
 					$e.value = value;
-				} else {
+//				} else {
 //					delete $e.value;
 				}
 			break;
 			case "checked":
-				$e.checked = !!value;
+				$e.checked = value != "false";
 			break;
 		}
 	}
@@ -457,6 +401,7 @@ console.log("_async stack", Array.from(this.renderAsyncStack.keys()));
 			return d.attr;
 //		}
 	}
+/*
 	getAttrsBefore(attr, name) {
 		const a = new Map();
 		for (const [n, v] of attr) {
@@ -466,7 +411,7 @@ console.log("_async stack", Array.from(this.renderAsyncStack.keys()));
 			a.set(n, v);
 		}
 		return a;
-	}
+	}*/
 	getAttrsAfter(attr, name) {
 		const a = new Map();
 		let f;
@@ -483,11 +428,6 @@ console.log("_async stack", Array.from(this.renderAsyncStack.keys()));
 		return this.descr.get($e[getId.propName]);
 	}
 	createTagDescr($e) {
-///!!_parent
-//		if (!($e instanceof HTMLElement)) {
-//			return;
-//		}
-
 		const d = {
 			id: getId($e),
 			attr: this.createAttr($e),
@@ -522,47 +462,49 @@ console.log("_async stack", Array.from(this.renderAsyncStack.keys()));
 		}
 		return attr;
 	}
-	getTopURLBy$src($src, incStr) {
+	getTopURLBy$src($src) {
 		for (let $i = $src.parentNode; $i; $i = $i.parentNode) {
-//		for (let $i = $src; $i; $i = $i.parentNode) {
 			const d = this.get$srcDescr($i);
 			if (!d) {
 				continue;
 			}
-//			if (incStr && d.inc_url) {
-			if (d.inc_url) {
-				const topURL = d.inc_url[incStr];
-				if (topURL) {
-					return topURL;
-				}
-			}
 			if (d.tpl_url) {
 				return d.tpl_url;
+			}
+			let topURL;
+			for (const [n, v] of d.attr) {
+				const [cmdName] = this.getCmdArgs(n);
+				if (cmdName == incCmdName) {
+					topURL = getIncVal($i, n);
+				}
+			}
+			if (topURL) {
+				return topURL;
 			}
 		}
 	}
 	show($e) {
-//console.log(456, $e);
+		this.removeAllOnRenderStack($e);
 		if ($e.nodeName != "TEMPLATE") {
 			return $e;
 		}
-//		const $new = $e.content.firstElementChild;
 		const $new = $e.content.firstChild;
 		this.moveProps($e, $new);
 		$e.parentNode.replaceChild($new, $e);
+//--		this.replaceChild($new, $e);
 		return $new;
 	}
 	hide($e) {
 		if ($e.nodeName == "TEMPLATE") {
+			this.removeAllOnRenderStack($e);
 			return $e;
 		}
-//		const $p = $e.parentNode;
-
 		$goTagsDeep($e, this.removeAllOnRenderStack.bind(this));
 
 		const $new = document.createElement("template");
 		this.moveProps($e, $new);
 		$e.parentNode.replaceChild($new, $e);
+//--		this.replaceChild($new, $e);
 		this.appendChild($new.content, $e);
 
 //		$new.content._parentNode = $p;
@@ -573,9 +515,11 @@ console.log("_async stack", Array.from(this.renderAsyncStack.keys()));
 		if (!($from instanceof HTMLElement && $to instanceof HTMLElement)) {
 			return;
 		}
-//like as ssr
-		for (const [name, value] of this.getAttrs($from)) {
-			this.setAttribute($to, name, value);
+//like as ssr and for-cmd
+//		for (const [name, value] of this.getAttrs($from)) {
+//			this.setAttribute($to, name, value);
+		for (const attr of $from.attributes) {
+			this.setAttribute($to, attr.name, attr.value);
 		}
 		const d = this.get$srcDescr($from);
 		if (!d) {
@@ -645,9 +589,11 @@ console.log("_async stack", Array.from(this.renderAsyncStack.keys()));
 			const $srcByVarProp = this.$srcByVarProp.get(t);
 			if ($srcByVarProp) {
 				for (const [propName, $srcSet] of $srcByVarProp) {
-					$srcSet.delete(d.id);
-					if (!$srcSet.size) {
-						$srcByVarProp.delete(propName);
+					if ($srcSet.has(d.id)) {
+						$srcSet.delete(d.id);
+						if (!$srcSet.size) {
+							$srcByVarProp.delete(propName);
+						}
 					}
 				}
 				if (!$srcByVarProp.size) {
@@ -662,7 +608,6 @@ console.log("_async stack", Array.from(this.renderAsyncStack.keys()));
 		for (const i in req.scope) {
 			args.push(req.scope[i]);
 		}
-//		const argsStr = Object.keys(req.scope).join(",");
 		let argsStr = "";
 		for (const i in req.scope) {
 			if (argsStr) {
@@ -675,9 +620,6 @@ console.log("_async stack", Array.from(this.renderAsyncStack.keys()));
 		this.curReq = req;
 		try {
 			val = this.getEvalFunc(req, req.expr, argsStr).apply(req.$src, args);
-//if (req.expr == "!!console.log(data.curOrder) || data.curOrder") {
-//	console.log(2333, val);
-//}
 		} catch (err) {
 			this.check(err, req);
 			return;
@@ -692,7 +634,6 @@ console.log("_async stack", Array.from(this.renderAsyncStack.keys()));
 			return f;
 		}
 		const funcBody = expr.trimLeft().indexOf("return") == 0 ? expr : "const " + resVarName + " = " + expr + "; return " + resVarName + ";"
-//console.log(funcBody, argsStr);
 		try {
 			f = new Function(argsStr, funcBody);
 		} catch (err) {
@@ -707,11 +648,11 @@ console.log("_async stack", Array.from(this.renderAsyncStack.keys()));
 		}
 		const $src = req.$srcForErr || req.$src;
 		const errMsg = ($src.getLineNo ? " in " + $src.getLineNo() : "") + "\n\t" +  req.str + " => " + req.expr + "\n\t$src => ";
-		console.error(">>>Tpl error" + errMsg, $src, req);
+		console.error(res, "\n>>>Tpl error" + errMsg, $src, req);
 		if (fileName) {
 			res = new Error(res, fileName, lineNum, colNum);
 		}
-console.log(11111111, res, req, fileName, lineNum, colNum);
+//console.log(11111111, res, req, fileName, lineNum, colNum);
 //todo error
 		const onError = $src.dataset.onerror;
 		if (onError) {
@@ -730,14 +671,6 @@ console.log(11111111, res, req, fileName, lineNum, colNum);
 	getProxyItem(obj) {
 		return new Proxy(obj, this.getProxyItemHandler());
 	}
-/*
-	getProxyTarget(val) {
-		for (let i; val instanceof Object && (i = val[tplProxyTargetPropName]) && i != val[tplProxyTargetPropName]; val = wrapDeep(i, this.getProxyTarget.bind(this)));
-		return val;
-	}
-	skipProxy(val) {
-		return val instanceof Object ? val[tplProxyTargetPropName] = val : val;
-	}*/
 	getProxyItemHandler() {
 		return {
 			get: this.proxyGet.bind(this),
@@ -745,7 +678,7 @@ console.log(11111111, res, req, fileName, lineNum, colNum);
 			deleteProperty: this.proxyDeleteProperty.bind(this)
 		};
 	}
-	proxyGet(t, n) {
+	proxyGet(t, n, r) {
 		if (n == tplProxyTargetPropName) {//"tplProxyTarget") {
 			return t;
 		}
@@ -757,14 +690,15 @@ console.log(11111111, res, req, fileName, lineNum, colNum);
 		}
 		const $src = this.curReq.$src;
 		const $srcId = $src[getId.propName];
-//console.log('get', n, t, $src);
+//console.log('get', n, t, r, $src);
+/*
 if (!this.descr.has($srcId)) {
 	console.error("err get", n, t, $src);
 	throw 2222222222222;
-}
-		let $srcByVarProp = this.$srcByVarProp.get(t);
+}*/
+		let $srcByVarProp = this.$srcByVarProp.get(r);
 		if (!$srcByVarProp) {
-			this.$srcByVarProp.set(t, $srcByVarProp = new Map());
+			this.$srcByVarProp.set(r, $srcByVarProp = new Map());
 		}
 		let $srcByProp = $srcByVarProp.get(n);
 		if (!$srcByProp) {
@@ -777,21 +711,25 @@ if (!this.descr.has($srcId)) {
 		}
 
 		const varBy$src = this.descr.get($srcId).target;
-		if (!varBy$src.has(t)) {
-			varBy$src.add(t);
+		if (!varBy$src.has(r)) {
+			varBy$src.add(r);
 //console.log('get2', "p." + n, t, $srcId, $src, tpl.$srcByVarProp.get(d) && tpl.$srcByVarProp.get(d).get("isShow"));
 		}
 
 		if (v instanceof Object) {
-			t = v;
-			if (!varBy$src.has(t)) {
-				varBy$src.add(t);
+//console.log(1, t, n, r);
+			if (!v[tplProxyTargetPropName]) {
+				v = wrapDeep(v, this.getProxyItem.bind(this));
+			}
+			r = v;
+			if (!varBy$src.has(r)) {
+				varBy$src.add(r);
 //console.log('get3', "p." + n, t, $src, tpl.$srcByVarProp.get(d) && tpl.$srcByVarProp.get(d).get("isShow"));
 			}
 		}
-		let $srcByVar = this.$srcByVar.get(t);
+		let $srcByVar = this.$srcByVar.get(r);
 		if (!$srcByVar) {
-			this.$srcByVar.set(t, $srcByVar = new Set());
+			this.$srcByVar.set(r, $srcByVar = new Set());
 		}
 		if (!$srcByVar.has($srcId)) {
 			$srcByVar.add($srcId);
@@ -801,10 +739,13 @@ if (!this.descr.has($srcId)) {
 		return v;
 	}
 	proxySet(t, n, v, r) {
+		const old = Reflect.get(t, n);
 //console.log('set', t, n, v);//, Object.getOwnPropertyDescriptor(t, n));
-		if (v === Reflect.get(t, n) && (!v || Object.getOwnPropertyDescriptor(t, n).enumerable)) {
+		if (v === old && (!v || Object.getOwnPropertyDescriptor(t, n).enumerable)) {
+//console.log("1", v, n);
 			return true;
 		}
+		this.clearVars(old);
 		if (v instanceof Object && !v[tplProxyTargetPropName]) {
 			v = wrapDeep(v, this.getProxyItem.bind(this));
 		}
@@ -814,24 +755,27 @@ if (!this.descr.has($srcId)) {
 		return this.set$srcByVar(t, n, v, r);
 	}
 	proxyDeleteProperty(t, n, r) {
+		const old = Reflect.get(t, n);
 		if (!Reflect.deleteProperty(t, n)) {
 			return false;
 		}
+		this.clearVars(old);
+//alert(2 + n);
 //console.log('del', t, n);
 		return this.set$srcByVar(t, n, undefined, r);
 	}
 	set$srcByVar(t, n, v, r) {
 //console.info('0 rByProp', n, v, t, this.$srcByVar.get(r));
-		const $srcByVarProp = this.$srcByVarProp.get(t);
+		const $srcByVarProp = this.$srcByVarProp.get(r);
 		if ($srcByVarProp) {
 			const $srcIdSet = $srcByVarProp.get(n);
 			if ($srcIdSet) {
-//console.info('1 rByProp', "name", n, "value", v, "target", t, "$srcIdSet", $srcIdSet);
+//console.info('1 rByProp', "name", n, "value", v, "target", r, "$srcIdSet", $srcIdSet);
 				this.renderBy$srcIdSet($srcIdSet);
 				return true;
 			}
 		}
-		const $srcIdSet = this.$srcByVar.get(r) || this.$srcByVar.get(t);
+		const $srcIdSet = this.$srcByVar.get(r);// || this.$srcByVar.get(t);
 		if ($srcIdSet) {
 //console.info('2 rByT', "name", n, "value", v, "target", t, "$srcIdSet", $srcIdSet);
 			this.renderBy$srcIdSet($srcIdSet);
@@ -839,6 +783,9 @@ if (!this.descr.has($srcId)) {
 		}
 		return true;
 	}
+//рендер стэк нам нужен для того что бы из рендера можно было удаляить элементы из него
+//?? можно ли использовать один стэк?
+//-- asyncBy$srcId и addToRenderStack - очень похожи ...
 	renderBy$srcIdSet($srcIdSet) {
 //console.info('ss', $srcIdSet);
 		if (this.delay >= 0) {
@@ -851,15 +798,20 @@ if (!this.descr.has($srcId)) {
 			this.addToRenderStack(id);
 		}
 //console.log("stek", this.renderStack);
-		for (const [$src, id] of this.renderStack) {
-			if (this.has$srcId(id, $src)) {
+//		for (const [$src, id] of this.renderStack) {
+//			if (this.has$srcId(id, $src)) {
+		for (const $src of this.renderStack.keys()) {
+//			if (this.has$srcId($src)) {
 				this.render($src);
 //				$src.render();
-			}
+//			}
 			this.renderStack.delete($src);
 		}
 //console.log("stek", this.renderStack);
-		this.renderStack.clear();
+//todo think about
+		if (this.renderStack.size) {
+			this.renderStack.clear();
+		}
 	}
 	asyncBy$srcId(id) {
 		const $srcSet = this.$srcById.get(id);
@@ -886,14 +838,14 @@ if (!this.descr.has($srcId)) {
 		}
 		if (this.descr.get(id).isAsOne) {
 			for (const $i of $srcSet) {
-//				this.renderStack.add($i);
-				this.renderStack.set($i, id);
+				this.renderStack.add($i);
+//				this.renderStack.set($i, id);
 				return;
 			}
 		} else {
 			for (const $i of $srcSet) {
-//				this.renderStack.add($i);
-				this.renderStack.set($i, id);
+				this.renderStack.add($i);
+//				this.renderStack.set($i, id);
 			}
 		}
 	}
@@ -901,7 +853,29 @@ if (!this.descr.has($srcId)) {
 		const $srcSet = this.$srcById.get(id);
 		return $srcSet && $srcSet.has($src);
 	}
-
+	clearVars(t) {
+		if (!(t instanceof Object)) {
+			return;
+		}
+		if (t instanceof Array) {
+			const iLen = t.length;
+			for (let i = 0; i < iLen; i++) {
+				this.clearVars(t[i]);
+			}
+		} else {
+			for (const i in t) {
+				this.clearVars(t[i]);
+			}
+		}
+		if (this.$srcByVar.has(t)) {
+//console.log("$srcByVar", t);
+			this.$srcByVar.delete(t);
+		}
+		if (this.$srcByVarProp.has(t)) {
+//console.log("$srcByVarProp", t);
+			this.$srcByVarProp.delete(t);
+		}
+	}
 	getCommand(name) {
 		return Tpl.cmd.get(name);
 	}
@@ -913,23 +887,23 @@ Tpl.cmd = new Map();
 
 Tpl.addCommand(scopeCmdName, scopeCmd);
 Tpl.addCommand(htmlCmdName, htmlCmd);
-Tpl.addCommand(":attr", attrCmd);
+Tpl.addCommand(attrCmdName, attrCmd);
+ 
+Tpl.addCommand(ifCmdName, ifCmd);
+Tpl.addCommand(elseifCmdName, ifCmd);
+Tpl.addCommand(elseCmdName, ifCmd);
 
-Tpl.addCommand(":if", ifCmd);
-Tpl.addCommand(":elseif", ifCmd);
-Tpl.addCommand(":else", ifCmd);
+Tpl.addCommand(switchCmdName, switchCmd);
+Tpl.addCommand(caseCmdName, switchCmd);
+Tpl.addCommand(defaultCmdName, switchCmd);
 
-Tpl.addCommand(":switch", switchCmd);
-Tpl.addCommand(":case", switchCmd);
-Tpl.addCommand(":default", switchCmd);
-
-Tpl.addCommand(":for", forCmd);
+Tpl.addCommand(forCmdName, forCmd);
 Tpl.addCommand(incCmdName, incCmd);
-Tpl.addCommand(":fetch", fetchCmd);
+Tpl.addCommand(fetchCmdName, fetchCmd);
 
-Tpl.addCommand(":on", onCmd);
+Tpl.addCommand(onCmdName, onCmd);
 /*
-Tpl.addCommand(":a1", {
+Tpl.addCommand("_a1", {
 	render: function(req) {
 		const $e = req.$src;
 console.log(req);

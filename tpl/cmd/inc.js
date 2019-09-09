@@ -1,7 +1,8 @@
 import {incCmdName, scopeCmdName, orderCmdName, incValAttrName} from "../const.js";
 import {/*getId, */copy, normalizeURL, getURL, isURI/*, $goTagsDeep*/, spaceRe} from "../../util.js";
 import createArrFragment from "../../arrfr.js";
-import {getForKeyName} from "./for.js";
+
+import pimport from "../../pimport.js";
 
 export const inc_cache = new Map();
 self.ii = inc_cache;
@@ -9,29 +10,13 @@ const inc_waitingStack = new Map();
 
 const inc_loadEventName = "inc_load";
 const inc_mountEventName = "inc_mount";
+const inc_renderEventName = "inc_render";
 
-const inc_url_on_this_fileStr = "inc_url_on_this_file";
-const inc_load_on_this_fileStr = "inc_load_on_this_file";
-const inc_mount_on_this_fileStr = "inc_mount_on_this_file";
-
-const inc_url_on_this_fileRe = new RegExp(inc_url_on_this_fileStr, "g");
-const inc_load_on_this_fileRe = new RegExp(inc_load_on_this_fileStr, "g");
-const inc_mount_on_this_fileRe = new RegExp(inc_mount_on_this_fileStr, "g");
-
-if (!self.isDynamicImportSupport) {
-	try {
-		new Function('import("")');
-		self.isDynamicImportSupport = true;
-	} catch (err) {
-		console.error("Don't support dynamic import");
-	}
-}
 self.isOldEdge = navigator.userAgent.search("Edge/1\\d+\\.") != -1;
 
 export default {
 	render: function(req) {
 		const include = inc_get.call(this, req);
-//console.log(include.url);
 		if (!include) {
 			return {
 				isLast: true				
@@ -39,7 +24,6 @@ export default {
 		}
 		const oldVal = getIncVal(req.$src, req.str);
 		if (oldVal && oldVal == include.url) {
-//		if (include.readyState == "complete") {
 			return {
 				$e: inc_included.call(this, req, include),
 				isLast: true
@@ -51,17 +35,9 @@ export default {
 				isLast: true
 			};
 		}
-		const $els = inc_get$els.call(this, req.$src, req.str);
-//		const $elsLen = $els.length;
-		const $e = $els[$els.length - 1];
-/*--
-		const d = this.get$srcDescr(req.$src);
-		if (d && d.inc_url && d.inc_url[req.str]) {
-alert(req.str);
-			delete d.inc_url[req.str];
-		}*/
+		const $e = inc_getLastElement.call(this, req.$src)
 //!!зачем удалять старое значение?
-//- нужно уджалить для того что бы inc_get$els смогла правильно отработать
+//- нужно ужалить для того что бы inc_get$els смогла правильно отработать
 // - хотя, если удалить этот атрибут то inc_isRenderdInc вернет ложь, а это означает, что $els будет из одного тега - а это не врено
 /*
 		const attr = this.getAttrs(req.$src);
@@ -104,16 +80,9 @@ alert(req.str);
 							include
 						}
 					};
-					self.dispatchEvent(new CustomEvent(inc_loadEventName + include.url, ep));
-					self.dispatchEvent(new CustomEvent(inc_loadEventName, ep));
-//!!include.wait не понятно зачем, если есть возможнатсь делать обычный import
-					if (include.wait) {
-						include.wait.then(() => {
-							inc_loadInc.call(this, include);
-						});
-					} else {
-						inc_loadInc.call(this, include);
-					}
+					dispatchEvent(inc_loadEventName + include.url, include);
+					dispatchEvent(inc_loadEventName, include);
+					inc_loadInc.call(this, include);
 //				}
 			});
 		return {
@@ -128,23 +97,18 @@ alert(req.str);
 				isLast: true				
 			};
 		}
-		const $els = inc_get$els.call(this, req.$src, req.str);
+		const $els = inc_get$els.call(this, req.$src);
 		const $elsLen = $els.length;
 		for (let i = 0; i < $elsLen; i++) {
 			const $i = $els[i];
 			if ($i instanceof HTMLElement) {
-				const d = this.get$srcDescr($i);
-//1				d.inc_oldVal = include;
-//				d.inc_renderedByStr = req.str;
-				if (!d.inc_url) {
-					d.inc_url = {};
-				}
-				d.tpl_url = d.inc_url[req.str] = include.url;
-				this.linker($i, req.scope, this.getAttrsAfter(this.getAttrs($i), req.str), include.url);
+				this.linker($i, req.scope, this.getAttrsAfter(this.getAttrs($i), req.str));
 			}
 		}
 //todo может быть нужно запускать событие поле того как всё что рендерится будет готово?
-		inc_dispatchMountEvent.call(this, req, include, createArrFragment($els));
+		const $body = createArrFragment($els);
+		dispatchMountEvent(include, $body);
+		dispatchEvent(inc_renderEventName + include.url, include, $body);
 		return {
 			$e: $els[$elsLen - 1],
 			isLast: true
@@ -156,10 +120,7 @@ function inc_get(req) {
 	if (!url) {
 		return;
 	}
-//	let u = url;
-//	url = getURL(url, isURI(url) ? this.getTopURLBy$src(req.$src, req.str) : undefined);
-	url = getURL(url, this.getTopURLBy$src(req.$src, req.str));
-//console.log("==", u, url, this.getTopURLBy$src(req.$src, req.str));
+	url = getURL(url, this.getTopURLBy$src(req.$src));
 	let include = inc_cache.get(url);
 	if (!include) {
 		inc_cache.set(url, include = {
@@ -213,85 +174,74 @@ function inc_createFragment(req, include, html) {
 	include.$tags.push(...$wrap.querySelectorAll("style"));
 	const $scripts = $wrap.querySelectorAll("script");
 	if ($scripts.length) {
-		include.$tags.push(...$scripts);
 		return inc_createScripts.call(this, req, include, $scripts)
 			.then(() => createFragmentByWrap(include, $wrap));
 	}
 	return createFragmentByWrap(include, $wrap);
 }
 function inc_createScripts(req, include, $scripts) {
+	include.$tags.push(...$scripts);
 	const scripts = [];
 	for (const $i of $scripts) {
 		scripts.push(inc_createScript.call(this, req, include, $i));
 	}
-	return Promise.all(scripts)
-		.then(scripts => {
-			const scriptsLen = scripts.length;
-			for (let i = 0; i < scriptsLen; i++) {
-				if (!inc_runScript.call(this, req, scripts[i].text, scripts[i].url, scripts[i].$e)) {
-					break;
-				}
-			}
-		});
+	return Promise.all(scripts);
 }
 function inc_createScript(req, include, $e) {
-	const uri = $e.getAttribute("src");
-	if (!uri) {
-		return {
-			text: ($e.textContent = prepareScriptText(include, $e.textContent, include.url)),
-			$e
-		};
-	}
-	const url = getURL(uri, include.url);
-	if ($e.type == "module") {
-//		return import(url);
-		try {
-			return eval("import(\"" + url.qq() + "\")");
-		} catch (err) {
-			this.check(err, req);
-			return;
-		}
-	}
-	if (uri != url) {
+	const origURL = $e.getAttribute("src");
+	const url = origURL ? getURL(origURL, include.url) : undefined;
+	if (url && url != origURL) {
 		$e.setAttribute("src", url);
 	}
-	return new Promise((resolve) => {//, reject) => {
-		fetch(url)
-			.then(res => {
-				if (res.ok) {
-					return res.text();
-				}
-				this.check(new Error(">>>Tpl inc:inc_createScripts:01: Request stat " + res.status), req);
-			})
-			.then(text => {
-				resolve({
-					text: prepareScriptText(include, text, url),
-					url: $e.src,
-					$e
+	if ($e.type == "module") {
+		if (url) {
+			return pimport(url)
+				.catch(err => {
+					inc_check.call(this, err, req, $e, url);
 				});
+		}
+		const uurl = URL.createObjectURL(new Blob([$e.textContent], {
+			type: "text/javascript"
+		}));
+		return pimport(uurl)
+			.catch(inc_check.bind(this, req, $e))
+			.then(() => {
+				if (!self.debug) {
+					URL.revokeObjectURL(uurl);
+				}
 			});
-	});
+	}
+	if (!url) {
+		inc_runScript.call(this, req, $e.textContent, $e, url);
+		return;
+	}
+	return fetch(url)
+		.then(res => {
+			if (res.ok) {
+				return res.text();
+			}
+			this.check(new Error(">>>Tpl inc:inc_createScripts:01: Request stat " + res.status), req);
+		})
+		.then(text => {
+			inc_runScript.call(this, req, text, $e, url);
+		});
 }
-function prepareScriptText(include, text, url) {
-	return text
-		.replace(inc_url_on_this_fileRe, '"' + url.qq() + '"')
-		.replace(inc_load_on_this_fileRe, '"' + (inc_loadEventName + include.url).qq() + '"')
-		.replace(inc_mount_on_this_fileRe, '"' + (inc_mountEventName + include.url).qq() + '"');
-}
-function inc_runScript(req, text, url, $e) {
+function inc_runScript(req, text, $e, url) {
 	try {
 		new Function(text).call($e);
-		return true;
 	} catch (err) {
-		if (url) {
-			this.check(err, req, url, err.lineNumber, err.columnNumber);
-		} else if ($e && $e.getLineNo) {
-			const line = $e.getLineNo();
-			const numIdx = line.lastIndexOf(":");
-			this.check(err, req, self.location.origin + normalizeURL(line.substr(0, numIdx)), Number(line.substr(numIdx + 1)) - 1 + err.lineNumber);
-		} else {
-			this.check(err, req);
-		}
+		inc_check.call(this, err, req, $e, url);
+	}
+}
+function inc_check(err, req, $e, url) {
+	if (url) {
+		this.check(err, req, url, err.lineNumber, err.columnNumber);
+	} else if ($e && $e.getLineNo) {
+		const line = $e.getLineNo();
+		const numIdx = line.lastIndexOf(":");
+		this.check(err, req, location.origin + normalizeURL(line.substr(0, numIdx)), Number(line.substr(numIdx + 1)) - 1 + err.lineNumber);
+	} else {
+		this.check(err, req);
 	}
 }
 function createFragmentByWrap(include, $wrap) {
@@ -302,12 +252,6 @@ function createFragmentByWrap(include, $wrap) {
 	while ($i = $wrap.firstChild) {
 		$fr.appendChild($i);
 	}
-//	if ($fr.lastChild instanceof Text) {
-//		$fr.appendChild(document.createComment("inc_end" + include.url));
-//	}
-//	for (let i = include.$tags.length - 1; i > -1; i--) {
-//		include.$tags[i].parentNode.removeChild
-//	}
 	return $fr;
 }
 function appendHeadTags(include) {
@@ -327,39 +271,33 @@ function joinText($src) {
 	}
 }
 function inc_include(req, include) {
-	let $els = inc_get$els.call(this, req.$src, req.str);
+	let $els = inc_get$els.call(this, req.$src);
 	let $elsLen = $els.length;
-//console.log(11111000, req.str, $els);
 	const $new = inc_cloneFragment.call(this, req, include);
 	const $parent = $els[0].parentNode;
 	const $lastNext = $els[$elsLen - 1].nextSibling;
-	if (!$lastNext || !($lastNext instanceof Comment) || $lastNext.textContent.indexOf("inc_end") != 0) {
-		const str = inc_getStr.call(this, this.getAttrs(req.$src));
-		$new.insertBefore(document.createComment("inc_begin" + str), $new.firstChild);
-		$new.appendChild(document.createComment("inc_end" + str));
+	if (!($lastNext && $lastNext instanceof Comment && $lastNext.textContent == "inc_end")) {
+		$new.insertBefore(document.createComment("inc_begin"), $new.firstChild);
+		$new.appendChild(document.createComment("inc_end"));
 	}
 	const stack = inc_waitingStack.get(include.url);
 	for (let i = 0; i < $elsLen; i++) {
 		if (stack) {
-			stack.delete($els[i]); //для того чтобы: когда динамическая вставка имеет несколько елементов в корне -> в списке асинхронного рендероа находятся все элементы
+			stack.delete($els[i]);//для того чтобы: когда динамическая вставка имеет несколько элементов в корне -> в списке асинхронного рендероа находятся все элементы
 		}
-		this.removeAllOnRenderStack($els[i]);
 		this.removeChild($els[i]);
 	}
-
 	$els = Array.from($new.childNodes);
 	$elsLen = $els.length;
-//console.log(11111, req.str, $els);
 	this.insertBefore($parent, $new, $lastNext);
-	let $e = $els[0], $next;
+	let $e = $els[0];
 	while ($e) {
 		if ($e instanceof HTMLElement) {
-//console.log(123, req, $e, $newEls, this.getAttrsAfter(this.getAttrs($e), req.str));
 			$e = this.renderTag($e, req.scope, this.getAttrsAfter(this.getAttrs($e), req.str));
 		} else if ($e instanceof Text) {
 			$e = this.renderText($e, req.scope);
 		}
-		$next = $e.nextSibling;
+		const $next = $e.nextSibling;
 		if (!$next || $next == $lastNext) {
 			break;
 		}
@@ -372,69 +310,79 @@ function inc_include(req, include) {
 //			$i.parentNode.removeChild($i);
 //		}
 //	}
-//todo можетабытьанужно запускать событие поле того как всё что рендеритсяабудетаготово?
-	inc_dispatchMountEvent.call(this, req, include, createArrFragment($els));
-//alert(1);
+//todo может быть нужно запускать событие поле того как всё что рендерится будет готово?
+	const $body = createArrFragment($els);
+	dispatchMountEvent(include, $body);
+	dispatchEvent(inc_renderEventName + include.url, include, $body);
 	return $e;
 }
 function inc_included(req, include) {
-	const $els = inc_get$els.call(this, req.$src, req.str);
+	const $els = inc_get$els.call(this, req.$src);
 	const $elsLen = $els.length;
 	const $lastNext = $els[$elsLen - 1].nextSibling;
-	let $e = $els[0], $next;
+	let $e = $els[0];
 	while ($e) {
 		if ($e instanceof HTMLElement) {
 			$e = this.renderTag($e, req.scope, this.getAttrsAfter(this.getAttrs($e), req.str));
 //--		} else if ($e instanceof Text) {
 //			$e = this.renderText($e, req.scope);
 		}
-		$next = $e.nextSibling;
+		const $next = $e.nextSibling;
 		if (!$next || $next == $lastNext) {
 			break;
 		}
 		$e = $next;
 	}
+	const $body = createArrFragment($els);
 	if (!req.$src.inc_isMounted) {
-//todo можетабытьанужно запускать событие поле того как всё что рендеритсяабудетаготово?
-		inc_dispatchMountEvent.call(this, req, include, createArrFragment($els));
+//todo может быть нужно запускать событие поле того как всё что рендерится будет готово?
+		dispatchMountEvent(include, $body);
 	}
+	dispatchEvent(inc_renderEventName + include.url, include, $body);
 	return $e;
 }
-export function inc_get$els($e, str) {
+export function inc_get$els($e) {
 	const d = this.get$srcDescr($e);
-//	if (!d.inc_url) {
-//		return [$e];
-//	}
-/*
-	const oldVal = getIncVal($e, str);
-//console.log(oldVal, $e, str);
-	if (!oldVal) {
-		return [$e];
-	}*/
 	if (!inc_isRenderdInc.call(this, $e)) {
 		return [$e];
 	}
-	str = inc_getStr.call(this, d.attr);
-
 	const $els = [];
 	for (let $i = $e; $i; $i = $i.previousSibling) {
 		$els.push($i);
-		if ($i instanceof Comment && $i.textContent == "inc_begin" + str) {
+		if ($i instanceof Comment && $i.textContent == "inc_begin") {
 			break;
 		}
 	}
 	$els.reverse();
 	for (let $i = $e.nextSibling; $i; $i = $i.nextSibling) {
 		$els.push($i);
-		if ($i instanceof Comment && $i.textContent == "inc_end" + str) {
+		if ($i instanceof Comment && $i.textContent == "inc_end") {
 			break;
 		}
 	}
-//console.log(11111, $els);
 	return $els;
 }
-export function inc_isInc($e) {
-	for (const n of this.getAttrs($e).keys()) {
+export function inc_getFirstElement($e) {
+	const $els = inc_get$els.call(this, $e);
+	const $elsLen = $els.length;
+	for (let i = 0; i < $elsLen; i++) {
+		if ($els[i] instanceof HTMLElement) {
+			return $els[i];
+		}
+	}
+}
+export function inc_getLastElement($e) {
+	const $els = inc_get$els.call(this, $e);
+	const $elsLen = $els.length;
+	for (let i = $elsLen - 1; i > -1; i--) {
+		if ($els[i] instanceof HTMLElement) {
+			return $els[i];
+		}
+	}
+}
+export function inc_isInc($e, afterAttrName) {
+	const attr = this.getAttrs($e);
+	for (const n of (afterAttrName ? this.getAttrsAfter(attr, afterAttrName) : attr).keys()) {
 		const [cmdName] = this.getCmdArgs(n);
 		if (cmdName == incCmdName) {
 			return true;
@@ -450,54 +398,17 @@ export function inc_isRenderdInc($e) {
 		}
 	}
 }
-function inc_getStr(attr) {
-return "";
-/*
-//if (!str) {
-	for (const n of attr.keys()) {
-		const [cmdName] = this.getCmdArgs(n);
-		if (cmdName == incCmdName) {
-			return n;
-		}
-	}
-//}*/
-}
 function inc_cloneFragment(req, include) {
 	const $fr = include.$fr.cloneNode(true);
-//		const str = inc_getStr.call(this, this.getAttrs(req.$src));
-//		$fr.insertBefore(document.createComment("inc_begin" + str), $fr.firstChild);
-//		$fr.appendChild(document.createComment("inc_end" + str));
 	makeSlots(req, $fr);
-
 	const d = this.get$srcDescr(req.$src);
-	if (!d.inc_url) {
-		d.inc_url = {};
-	}
-	d.inc_url[req.str] = include.url;
-
 	let descr = include.descrById.get(d.id);
 	if (!descr) {
 		include.descrById.set(d.id, descr = []);
 	}
-/*
-	const $srcAttr = this.getAttrsBefore(d.attr, req.str);
-	$srcAttr.set(req.str, req.expr);
-	$srcAttr.set(orderCmdName, Array.from($srcAttr.keys()).join(" "));
-	for (const [n, v] of $srcAttr) {
-		if (d.attr.has(getIncValName(n))) {
-			$srcAttr.set(getIncValName(n), d.attr.get(getIncValName(n)));
-		} else if (d.attr.has(getForKeyName(n))) {
-			$srcAttr.set(getForKeyName(n), d.attr.get(getForKeyName(n)));
-		}
-	}
-	if (d.attr.has(scopeCmdName) && !$srcAttr.has(scopeCmdName)) {
-		$srcAttr.set(scopeCmdName, d.attr.get(scopeCmdName));
-	}
-	const $srcOrder = $srcAttr.get(orderCmdName);// || Array.from($srcAttr.keys()).join(" ");*/
 	const $srcAttr = d.attr;
 	const $srcOrder = $srcAttr.get(orderCmdName) || Array.from($srcAttr.keys()).join(" ");
 	const $srcScope = $srcAttr.get(scopeCmdName) || "";
-
 	for (let $i = $fr.firstElementChild, i = 0, iOrder, iScope; $i; $i = $i.nextElementSibling, i++) {
 		if (iOrder = $i.getAttribute(orderCmdName)) {
 			iOrder = $srcOrder + " " + iOrder;
@@ -521,13 +432,16 @@ function inc_cloneFragment(req, include) {
 			$i.setAttribute(scopeCmdName, Array.from(new Set(iScope.split(spaceRe))).join(" "));
 		}
 
-		for (const [n, v] of $srcAttr) {
-			if (!$i.getAttribute(n)) {
-//todo атрибут нелльзя создать, если в нем есть некорректные символы
-				$i.setAttribute(n, v);
+//		for (const [n, v] of $srcAttr) {
+//			if (!$i.getAttribute(n)) {
+//				$i.setAttribute(n, v);
+//			}
+//		}
+		for (const a of req.$src.attributes) {
+			if (!$i.getAttribute(a.name)) {
+				$i.setAttribute(a.name, a.value);
 			}
 		}
-//console.log(44, $i, getIncValName(req.str));
 		$i.setAttribute(getIncValName(req.str), include.url);
 /*
 		$goTagsDeep($i, $i => {
@@ -543,13 +457,8 @@ function inc_cloneFragment(req, include) {
 		}
 		const newD = descr[i];
 		this.setDescrWithVars(d, $i, newD.id);
-////		const newD = this.get$srcDescr($i);
-//		newD.inc_oldVal = include;
-//		newD.inc_renderedByStr = req.str;
-		newD.inc_url = d.inc_url;
-		newD.tpl_url = include.url;
 //!!for
-		newD.for_oldLastVal = d.for_oldLastVal;	
+		newD.for_oldLastVal = d.for_oldLastVal;
 	}
 	return $fr;
 }
@@ -597,7 +506,7 @@ function makeSlots(req, $e) {
 		$toFree.appendChild($i);
 	}
 }
-function inc_dispatchMountEvent(req, include, $body) {
+function dispatchEvent(evtName, include, $body) {
 	const ep = {
 		detail: {
 			tpl: this,
@@ -605,8 +514,11 @@ function inc_dispatchMountEvent(req, include, $body) {
 			$body
 		}
 	};
-	self.dispatchEvent(new CustomEvent(inc_mountEventName + include.url, ep));
-	self.dispatchEvent(new CustomEvent(inc_mountEventName, ep));
+	self.dispatchEvent(new CustomEvent(evtName, ep));
+}
+function dispatchMountEvent(include, $body) {
+	dispatchEvent(inc_mountEventName + include.url, include, $body);
+	dispatchEvent(inc_mountEventName, include, $body);
 	const $first = $body.firstElementChild;
 	if ($first) {
 		$first.inc_isMounted = true;
@@ -618,11 +530,10 @@ function getIncValName(str) {
 export function getIncVal($e, str) {
 	return $e.getAttribute(getIncValName(str));
 }
-export function getIncENV(incURL, importURL) {
-	incURL = getURL(incURL, importURL);
+export function getIncEventName(uri, topURL) {
 	return {
-		inc_url_on_this_file: incURL,
-		inc_load_on_this_file: inc_loadEventName + incURL,
-		inc_mount_on_this_file: inc_mountEventName + incURL
+		inc_load: inc_loadEventName + getURL(uri, topURL),
+		inc_mount: inc_mountEventName + getURL(uri, topURL),
+		inc_render: inc_renderEventName + getURL(uri, topURL),
 	};
 }

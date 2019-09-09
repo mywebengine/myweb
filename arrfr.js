@@ -1,4 +1,10 @@
-﻿export default function createArrFragment($arr) {
+﻿/*!
+ * myweb/util.js v0.9.0
+ * (c) 2019 Aleksey Zobnev
+ * Released under the MIT License.
+ * https://github.com/mywebengine/myweb
+ */
+export default function createArrFragment($arr) {
 	return new ArrFragment($arr);
 }
 class ArrFragment {

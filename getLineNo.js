@@ -1,7 +1,8 @@
 /*!
- * myweb/getLineNo.js v1.0.0
+ * myweb/util.js v0.9.0
  * (c) 2019 Aleksey Zobnev
  * Released under the MIT License.
+ * https://github.com/mywebengine/myweb
  */
 export function markLines($src = document.documentElement, url = window.location.pathname) {
 	if ($src.getLineNo()) {

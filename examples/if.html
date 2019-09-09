@@ -8,41 +8,43 @@
 		<h1>if (elseif, else), switch (case, default) - example</h1>
 		<script>
 			data = {
-				color: "red"
+				color: "blue1"
 			};
 		</script>
 		<fieldset>
 			<label for="color">data.color</label>
-			<input oninput="data.color = this.value" id="color" />
+			<input _attr.value="data.color" oninput="data.color = this.value" id="color" />
 		</fieldset>
 		<section>
 			<h2>if - example</h2>
-			<p :if="data.color == `red`">
+			<p _if="data.color == `red`">
 				RED
 			</p>
-			<p :elseif="data.color == `blue`">
+			<p _elseif="data.color == `blue`"
+				_if.a="data.color !== `red`">
 				BLUE
 			</p>
-			<p :elseif.color="data.color">
+			<p _elseif.color="data.color">
 				Color isn't red or blue, color is <b>{{color}}</b>
 			</p>
-			<p :else="">
+			<p _else="">
 				Color is empty
 			</p>
 		</section>
 		<section>
 			<h2>switch - example</h2>
-			<p :switch="data.color" :case="`red`">
+			<p _switch="data.color" _case="`red`">
 				RED
 			</p>
-			<p :case="`blue`">
-				BLUE
+			<p _case.a="`blue`"
+				_switch="data.color" _case.d="`blue`">
+				BLUE -{{a}}
 			</p>
-			<p :default="">
-				<span :if.c="data.color">
+			<p _default="">
+				<span _if.c="data.color">
 					Color isn't red or blue, color is <b>{{c}}</b>
 				</span>
-				<span :else="data.color">
+				<span _else="data.color">
 					Color is empty
 				</span>
 			</p>

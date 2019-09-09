@@ -18,8 +18,8 @@
 			<input :attr.value="data.val" oninput="data.val = this.value;" />
 		</fieldset>
 		<link :attr.data-method="data.m"
-			:fetch.u="./fetch/ex1.json"
-			:order=":attr.data-method :fetch.u"
+			_fetch.u="./fetch/ex1.json"
+			_order=":attr.data-method :fetch.u"
 			data1-type="x-form"
 			data1-body="data.form"
 			data-onok="data.val = await this.json().newVal; console.log(`fetch onload`, this);"

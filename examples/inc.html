@@ -17,7 +17,7 @@
 			<label for="inc3">data.inc3</label>
 			<select id="inc3" :attr.value="data.inc3" onchange="data.inc3 = this.value">
 				<option :for.num="incs" :attr.value="`inc/inc${num}.html`" :attr.selected="this.value == data.inc3"
-					:order=":for.num">
+					_order=":for.num">
 					Include #{{num}}
 				</option>
 			</select>
