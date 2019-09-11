@@ -1,5 +1,5 @@
 /*!
- * myweb/util.js v0.9.0
+ * myweb/getLineNo.js v0.9.0
  * (c) 2019 Aleksey Zobnev
  * Released under the MIT License.
  * https://github.com/mywebengine/myweb
@@ -56,21 +56,19 @@ markLines._mark = function(req, $e) {
 markLines.lineNoAttrName = "debug:line";
 
 self.markLines = markLines;
-
 HTMLElement.prototype.getLineNo = function() {
 	return this.getAttribute(markLines.lineNoAttrName);
 }
 
 export default new Promise((resolve, reject) => {
-	if (document.readyState == "loading") {
-		addEventListener("DOMContentLoaded", () => {
-			markLines()
-				.then(resolve)
-				.catch(reject);
-		});
-	} else {
+	const f = () => {
 		markLines()
 			.then(resolve)
 			.catch(reject);
+	}
+	if (document.readyState == "loading") {
+		document.addEventListener("DOMContentLoaded", f);
+	} else {
+		f();
 	}
 });

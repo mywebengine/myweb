@@ -64,52 +64,16 @@ export function $goTagsDeep($e, func) {
 	return $e;
 }
 export function $goCopy($from, $to, func) {
-//console.log($from, $to);
 	func($from, $to);
 	if ($from.isCustomHTML) {
 		return $to;
 	}
-//--	if ($from.content) {
-//		$from = $from.content;
-//	}
-//	const $ret = $to;
-//	if ($to.content) {
-//		$to = $to.content;
-//	}
 	const len = $from.children.length;
 	for (let i = 0; i < len; i++) {
 		$goCopy($from.children[i], $to.children[i], func);
 	}
 	return $to;
 }
-/*--
-export function $goClone($from, $to, func) {
-	const $p = func($from, $to);
-	for ($from = $from.firstChild; $from; $from = $from.nextSibling) {
-		$goClone($from, $p, func);
-	}
-	return $to;
-}*/
-
-export function get$first($e, isCmpFunc, p) {
-	for (let $i = $e.previousElementSibling; $i && isCmpFunc($i, p); $i = $i.previousElementSibling) {
-		$e = $i;
-	}
-	return $e;
-}
-/*-- in for*/
-export function get$eIdx($e) {
-	let i = 0;
-	for (let $i = $e.parentNode.firstChild; $i != $e; $i = $i.nextSibling) {
-		i++;
-	}
-	return i;
-}
-/*--
-export function stm(f, delay) {
-	setTimeout(f, delay);
-}*/
-
 export function getMustacheBlocks(text) {
 	const textLen = text.length;
 	const blocks = [];
@@ -266,34 +230,6 @@ export function getLoc(url, byHash, defPageName = "") {
 	return loc;
 }
 getLoc.reTrimSlash = /(^\/|\/$)/g;
-/*
-export function setLoc(loc, url, defPageName = "") {
-	url = url.trim();
-	url = (url.indexOf("#") == 0 ? url.substr(1) : url.replace(normalizeURL.reHost, "")).replace(getLoc.reTrimSlash, "");
-	loc.url = url;
-	if (loc.args) {
-		loc.args.splice(0);
-	} else {
-		loc.args = [];
-	}
-	const args = url.split("/");
-	const argsLen = args.length;
-	for (let i = 0; i < argsLen; i++) {
-		loc.args.push(args[i]);
-	}
-	if (loc.param) {
-		for (const i in loc.param) {
-			delete loc.param[i];
-		}
-	} else {
-		loc.param = {};
-	}
-	for (let i = 1; i < argsLen; i += 2) {
-		loc.param[loc.args[i]] = loc.args[i + 1];
-	}
-	loc.name = loc.args[0] || defPageName;
-	return loc;
-}*/
 
 function hideEnum(obj, pName) {
 	Object.defineProperty(obj, pName, {
@@ -375,7 +311,6 @@ if (!String.prototype.q) {
 		sel.removeAllRanges();
 		sel.addRange(range);*/
 		$f.setSelectionRange(0, this.length); // A big number, to cover anything that could be inside the element.
-
 
 		document.execCommand("copy");
 		$f.parentNode.removeChild($f);

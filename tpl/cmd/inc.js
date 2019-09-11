@@ -206,7 +206,7 @@ function inc_createScript(req, include, $e) {
 		return pimport(uurl)
 			.catch(inc_check.bind(this, req, $e))
 			.then(() => {
-				if (!self.debug) {
+				if (!this.isDebug) {
 					URL.revokeObjectURL(uurl);
 				}
 			});

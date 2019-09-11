@@ -1,5 +1,5 @@
 /*!
- * myweb/util.js v0.9.0
+ * myweb/tpl.js v0.9.0
  * (c) 2019 Aleksey Zobnev
  * Released under the MIT License.
  * https://github.com/mywebengine/myweb
@@ -33,7 +33,7 @@ export class Tpl {
 
 		this.sync = 0;
 		this.renderStack = new Set();
-		this.renderAsyncStack = new Map();
+//		this.renderAsyncStack = new Map();
 		this.renderAsyncParamsStack = new Map();
 
 		this._reqCmd = new Map();
@@ -80,11 +80,13 @@ export class Tpl {
 			}
 //console.log("render", n, v, $src, res);
 			if (res.$e) {
-				this.removeAllOnRenderStack($src);
+//				this.removeAllOnRenderStack($src);
+				this.renderStack.delete($src);
 				$src = res.$e;
 			}
 			if (res.isLast) {
-				this.removeAllOnRenderStack($src);
+//				this.removeAllOnRenderStack($src);
+				this.renderStack.delete($src);
 //console.log("render exit", $src, $src.nextSibling, $src.previousSibling, attr);
 				return $src;
 			}
@@ -95,15 +97,17 @@ export class Tpl {
 					$i = this.render($i, scope);
 				}
 			}
-			this.removeAllOnRenderStack($src);
+//			this.removeAllOnRenderStack($src);
+			this.renderStack.delete($src);
 		}
 //console.log("render exit1", $src, attr);
 		return $src;
 	}
+/*--?
 	removeAllOnRenderStack($e) {
 		this.renderStack.delete($e);
 //		this.renderAsyncStack.delete($e);
-	}
+	}*/
 	renderText($src, scope) {//когда рендерится - то он делает это в фрагменте и родители выше фрагмента не доступны
 		if ($src.isTextRendered) {
 			return $src;
@@ -191,16 +195,15 @@ console.log("!!!!!!! is not tag", $src);
 		if (sync != this.sync) {
 			return;
 		}
-if (self.debug) {
-//console.log("tpl async stack", Array.from(this.renderAsyncStack.keys()));
-console.log("tpl async stack", Array.from(this.renderStack.keys()));
-//alert(1);
-}
+		if (this.isDebug) {
+			console.log("tpl async stack", Array.from(this.renderStack.keys()));
+		}
 		this.onbeforeasync();
 //		for (const [$src, r] of this.renderAsyncStack) {
 		for (const $src of this.renderStack.keys()) {
 			if (this.isNotRender($src)) {
-				this.removeAllOnRenderStack($src);
+//				this.removeAllOnRenderStack($src);
+				this.renderStack.delete($src);
 //				r.resolve();
 				continue;
 			}
@@ -484,7 +487,8 @@ console.log("tpl async stack", Array.from(this.renderStack.keys()));
 		}
 	}
 	show($e) {
-		this.removeAllOnRenderStack($e);
+//		this.removeAllOnRenderStack($e);
+		this.renderStack.delete($e);
 		if ($e.nodeName != "TEMPLATE") {
 			return $e;
 		}
@@ -496,10 +500,12 @@ console.log("tpl async stack", Array.from(this.renderStack.keys()));
 	}
 	hide($e) {
 		if ($e.nodeName == "TEMPLATE") {
-			this.removeAllOnRenderStack($e);
+//			this.removeAllOnRenderStack($e);
+			this.renderStack.delete($e);
 			return $e;
 		}
-		$goTagsDeep($e, this.removeAllOnRenderStack.bind(this));
+//		$goTagsDeep($e, this.removeAllOnRenderStack.bind(this));
+		$goTagsDeep($e, this.renderStack.delete.bind(this.renderStack));
 
 		const $new = document.createElement("template");
 		this.moveProps($e, $new);
@@ -570,7 +576,8 @@ console.log("tpl async stack", Array.from(this.renderStack.keys()));
 			return;
 		}
 
-		this.removeAllOnRenderStack($e);
+//		this.removeAllOnRenderStack($e);
+		this.renderStack.delete($e);
 
 		const $srcById = this.$srcById.get(d.id);
 		$srcById.delete($e);
@@ -902,21 +909,55 @@ Tpl.addCommand(incCmdName, incCmd);
 Tpl.addCommand(fetchCmdName, fetchCmd);
 
 Tpl.addCommand(onCmdName, onCmd);
-/*
-Tpl.addCommand("_a1", {
-	render: function(req) {
-		const $e = req.$src;
-console.log(req);
-		$e.innerHTML = this.eval(req);
-		return {
-			$e
-		};
-	}
-});*/
 
-self.Tpl = Tpl;
+//self.Tpl = Tpl;
 export default self.tpl = new Tpl();
-/*
-HTMLElement.prototype.render = Text.prototype.render = function(delay) {
-	return delay >= 0 && self.tpl.async(this, delay) || self.tpl.render(this);
-}*/
+self.data = self.tpl.getProxy(self.data);
+
+let isDynamicImport;
+try {
+	new Function("import('')");
+	isDynamicImport = true;
+} catch (err) {
+}
+
+//!!for Edge
+//const url = new URL(import.meta.url);
+const url = new URL(document.querySelector("script[src*='tpl.js'").src);
+self.tpl.isDebug = url.search.indexOf("debug") != -1;
+function main() {
+	self.tpl.go();
+}
+function debug() {
+	self.tpl.onbeforeasync = function() {
+		this.time = performance.now();
+	}
+	self.tpl.onasync = function() {
+		console.log('render time: ', performance.now() - this.time);
+	}
+//!!for Edge
+//	import(url.origin + url.pathname.replace("tpl.js", "getLineNo.js")).then(m => m.default).then(main);
+	try {
+		eval('import(url.origin + url.pathname.replace("tpl.js", "getLineNo.js")).then(m => m.default).then(main);');
+	} catch (err) {
+		main();
+	}
+}
+function onload() {
+	if (self.tpl.isDebug) {
+		debug();
+	} else {
+		main();
+	}
+}
+if (url.search.indexOf("ondomready") == -1) {
+	if (document.readyState == "complete") {
+		onload();
+	} else {
+		self.addEventListener("load", onload);
+	}
+} else if (document.readyState == "loading") {
+	document.addEventListener("DOMContentLoaded", onload);
+} else {
+	onload();
+}

@@ -209,7 +209,7 @@ function for_get(req, renderFunc) {
 		keysLen: keys.length
 	};
 }
-export function for_get$first(req, $e) {
+function for_get$first(req, $e) {
 	const [forStrs, forStrsLast] = for_getForStrs.call(this, req, $e);
 	for (let $i = $e; $i; $i = $i.previousElementSibling) {
 		const idx = getForIdx($i, req.str);
@@ -406,18 +406,15 @@ function for_copyDescr($els, fromIdx, toIdx) {
 function for_clone$e(req, $fr, $src, $before, idx) {
 	const $new = [];
 	const $srcLen = $src.length;
-//--	const idxName = getForIdxName(req.str);
 	for (let j = 0; j < $srcLen; j++) {
-		const $c = this.insertBefore($fr, this.cloneNode($src[j]), $before);
-//--		$c.setAttribute(idxName, (idx + 1) * -1);
-		$new.push($c);
+		$new.push(this.insertBefore($fr, this.cloneNode($src[j]), $before));
 	}
 	return $new;
 }
-export function getForIdxName(str) {
+function getForIdxName(str) {
 	return forIdxAttrName + "_" + str;
 }
-export function getForIdx($e, str) {
+function getForIdx($e, str) {
 	return $e.getAttribute(getForIdxName(str));
 }
 //todo

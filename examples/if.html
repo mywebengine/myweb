@@ -1,16 +1,17 @@
 <!doctype html>
-<html data-debug="true">
+<html>
 	<head>
 		<title>if - myweb/tpl</title>
 		<meta charset="utf-8" />
-	</head>
-	<body>
-		<h1>if (elseif, else), switch (case, default) - example</h1>
 		<script>
 			data = {
 				color: "blue1"
 			};
 		</script>
+		<script src="../tpl.js?ondomready&debug" type="module" async="async"></script>
+	</head>
+	<body>
+		<h1>if (elseif, else), switch (case, default) - example</h1>
 		<fieldset>
 			<label for="color">data.color</label>
 			<input _attr.value="data.color" oninput="data.color = this.value" id="color" />
@@ -49,7 +50,5 @@
 				</span>
 			</p>
 		</section>
-
-		<script src="main.js" type="module" async="async"></script>
 	</body>
 </html>

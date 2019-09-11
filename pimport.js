@@ -1,5 +1,5 @@
 ﻿/*!
- * myweb/util.js v0.9.0
+ * myweb/pimport.js v0.9.0
  * (c) 2019 Aleksey Zobnev
  * Released under the MIT License.
  * https://github.com/mywebengine/myweb
@@ -37,7 +37,7 @@ export default function pimport(url) {
 			}
 
 		}
-//for Edge
+//!!for Edge
 		$script.onerror = () => {
 			clear($script, key);
 			reject(new Error("Failed to import: " + url));
