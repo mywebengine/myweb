@@ -3,15 +3,16 @@
 	<head>
 		<title>for - myweb/tpl</title>
 		<meta charset="utf-8" />
-	</head>
-	<body>
-		<h1>for - example</h1>
+		<script src="../tpl.js?ondomready&debug" type="module" async="async"></script>
 		<script>
 			data = {
 				text: "baa",
 			};
 			data.arr = data.text.split("");
 		</script>
+	</head>
+	<body>
+		<h1>for - example</h1>
 		<!--h2>string as array</h2>
 		<fieldset>
 			<label for="text">data.text</label>
@@ -39,7 +40,7 @@
 
 		<h2>Chain</h2>
 		<ul :if="data.arr.length">
-			<li _for.foo="data.arr"
+			<li _for.foo="data.arr" _order="_for.foo _if _for.bar"
 				_if="isNaN(foo)"
 					_for.bar="foo + `1`">
 						{{bar.toUpperCase()}}
@@ -55,7 +56,5 @@
 						</span>
 			</li>
 		</ul-->
-
-		<script src="main.js" type="module" async="async"></script>
 	</body>
 </html>

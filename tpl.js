@@ -923,7 +923,8 @@ try {
 
 //!!for Edge
 //const url = new URL(import.meta.url);
-const url = new URL(document.querySelector("script[src*='tpl.js'").src);
+const $s = document.querySelector("script[src*='tpl.js'");
+const url = $s ? new URL($s.src) : "";
 self.tpl.isDebug = url.search.indexOf("debug") != -1;
 function main() {
 	self.tpl.go();
@@ -934,6 +935,10 @@ function debug() {
 	}
 	self.tpl.onasync = function() {
 		console.log('render time: ', performance.now() - this.time);
+	}
+	if (!url) {
+		main();
+		return;
 	}
 //!!for Edge
 //	import(url.origin + url.pathname.replace("tpl.js", "getLineNo.js")).then(m => m.default).then(main);
