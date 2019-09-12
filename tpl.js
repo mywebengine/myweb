@@ -8,7 +8,7 @@ import {cmdArgsBegin, cmdArgsDiv,
 	incCmdName, orderCmdName, scopeCmdName, htmlCmdName, textCmdName,
 	attrCmdName, forCmdName, fetchCmdName, onCmdName,
 	ifCmdName, elseifCmdName, elseCmdName, switchCmdName, caseCmdName, defaultCmdName,
-	renderEventName, resVarName, tplProxyTargetPropName} from "./tpl/const.js";
+	renderEventName, tplProxyTargetPropName} from "./tpl/const.js";
 import {getId, wrapDeep, $goCopy, $goTagsDeep, getMustacheBlocks, spaceRe} from "./util.js";
 
 import scopeCmd from "./tpl/cmd/scope.js";
@@ -264,24 +264,23 @@ console.log("!!!!!!! is not tag", $src);
 //!!!! для того что бы в скоуп не попали переменн цикла
 //		const $path = [];
 //!!_parent		for (; $e = $e.parentNode || $e._parentNode; $path.push($e));
-		for (; $e = $e.parentNode; $path.push($e));
+		for (; $e; $path.push($e), $e = $e.parentNode);
 		const scope = {};
 		for (let i = $path.length - 2; i > -1; i--) {
 			//scope = 
 			this.getScopeItem($path[i], scope);
 		}
-//console.log(11111111, $path, scope);
 		return scope;
 	}
 	getScopeItem($e, scope) {
 //!!_partent
-		if ($e instanceof HTMLElement) {
+//		if ($e instanceof HTMLElement) {
 			const attr = this.getAttrs($e);
 			for (const [n, v] of attr) {
 				//scope = 
 				this.execGetScope($e, n, v, scope);
 			}
-		}
+//		}
 		return scope;
 	}
 	execRender($src, attrName, attrValue, scope) {
@@ -640,7 +639,8 @@ console.log("!!!!!!! is not tag", $src);
 		if (f) {
 			return f;
 		}
-		const funcBody = expr.trimLeft().indexOf("return") == 0 ? expr : "const " + resVarName + " = " + expr + "; return " + resVarName + ";"
+//		const funcBody = expr.trimLeft().indexOf("return") == 0 ? expr : "const " + resVarName + " = " + expr + "; return " + resVarName + ";";
+		const funcBody = expr.indexOf("return") == -1 ? "return " + expr : expr;
 		try {
 			f = new Function(argsStr, funcBody);
 		} catch (err) {
@@ -921,10 +921,11 @@ try {
 } catch (err) {
 }
 
-//!!for Edge
-//const url = new URL(import.meta.url);
 const $s = document.querySelector("script[src*='tpl.js'");
 const url = $s ? new URL($s.src) : "";
+//!!for Edge
+//const url = new URL(import.meta.url);
+
 self.tpl.isDebug = url.search.indexOf("debug") != -1;
 function main() {
 	self.tpl.go();
@@ -955,13 +956,14 @@ function onload() {
 		main();
 	}
 }
+/*
 if (url.search.indexOf("ondomready") == -1) {
 	if (document.readyState == "complete") {
 		onload();
 	} else {
 		self.addEventListener("load", onload);
 	}
-} else if (document.readyState == "loading") {
+} else */if (document.readyState == "loading") {
 	document.addEventListener("DOMContentLoaded", onload);
 } else {
 	onload();

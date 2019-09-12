@@ -25,6 +25,6 @@ export const incValAttrName = cmdPref + "inc-val";
 
 export const renderEventName = "tpl_render";
 
-export const resVarName = "__re$__";
+//--export const resVarName = "__re$__";
 
 export const tplProxyTargetPropName = Symbol();

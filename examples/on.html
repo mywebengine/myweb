@@ -3,26 +3,23 @@
 	<head>
 		<title>on - myweb/tpl</title>
 		<meta charset="utf-8" />
-	</head>
-	<body>
-		<h1>on - example</h1>
+		<script src="../tpl.js?debug" type="module" async="async"></script>
 		<script>
 			data = {
 				text: "abcdefg"
 			};
 		</script>
+	</head>
+	<body>
+		<h1>on - example</h1>
 		<fieldset>
 			<label for="text">data.text</label>
-			<input :on.input="data.text = this.value" :attr.value="data.text" id="text" />
+			<input _on.input="data.text = this.value" _attr.value="data.text" id="text" />
 		</fieldset>
-		<p>
-			{{data.text}}
-		</p>
-
-		<p>
-			<i>Use this template isn't good idea, becouse this pattern croaking applaing to SSR</i>
-		</p>
-
-		<script src="main.js" type="module" async="async"></script>
+		<ul>
+			<li _for.val.idx="data.text" _if.str="`${idx} => ${val}`">
+				<a href="#" _on.click="const s = 123; alert(str + s); return false" _html.text="str"></a>
+			</li>
+		</ul>
 	</body>
 </html>

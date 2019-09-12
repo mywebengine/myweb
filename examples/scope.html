@@ -3,22 +3,21 @@
 	<head>
 		<title>scope - myweb/tpl</title>
 		<meta charset="utf-8" />
+		<script src="../tpl.js?debug" type="module" async="async"></script>
 	</head>
 	<body>
 		<h1>scope - example</h1>
 		<ul>
-			<li :for.val.idx="location.pathname.substr(1).split(`/`)" :scope="liScope">
+			<li _for.val.idx="location.pathname.substr(1).split(`/`)" _scope="liScope">
 				<ul>
 					<li>
 						{{idx}} == {{liScope.idx}} => {{val}} == {{liScope.val}}
 					</li>
 					<li>
-						<div :inc.u="./scope/socpe-inc.html"></div>
+						<div _inc.u="./scope/socpe-inc.html"></div>
 					</li>
 				</ul>
 			</li>
 		</ul>
-
-		<script src="main.js" type="module" async="async"></script>
 	</body>
 </html>

@@ -166,7 +166,7 @@ export default {
 		}
 		let key;
 		let i = 0;
-		for (const k in req.value) {
+		for (const k in value) {
 			if (i == idx) {
 				key = k;
 				break;
