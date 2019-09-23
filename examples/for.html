@@ -1,5 +1,5 @@
 <!doctype html>
-<html data-debug="true">
+<html>
 	<head>
 		<title>for - myweb/tpl</title>
 		<meta charset="utf-8" />
@@ -19,8 +19,8 @@
 			<input _attr.value="data.text" oninput="data.text = this.value" id="text" />
 		</fieldset>
 		<ul :if="data.text">
-			<li _for.val.idx="data.text">
-				{{idx * 1 + 1}}, {{val.toUpperCase()}}
+			<li _for.val.key="data.text">
+				{{key * 1 + 1}}, {{val.toUpperCase()}}
 			</li>
 		</ul-->
 		<h2>array</h2>

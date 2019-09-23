@@ -1,5 +1,5 @@
 <!doctype html>
-<html data-debug="true">
+<html>
 	<head>
 		<title>on - myweb/tpl</title>
 		<meta charset="utf-8" />
@@ -17,8 +17,8 @@
 			<input _on.input="data.text = this.value" _attr.value="data.text" id="text" />
 		</fieldset>
 		<ul>
-			<li _for.val.idx="data.text" _if.str="`${idx} => ${val}`">
-				<a href="#" _on.click="const s = 123; alert(str + s); return false" _html.text="str"></a>
+			<li _for.val.key="data.text" _if.str="`${key} => ${val}`">
+				<a href="#" _on.click="const s = key + 123; alert(`${str}, s => ${s}`); return false" _html.text="str"></a>
 			</li>
 		</ul>
 	</body>

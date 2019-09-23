@@ -8,8 +8,9 @@ import {cmdArgsBegin, cmdArgsDiv,
 	incCmdName, orderCmdName, scopeCmdName, htmlCmdName, textCmdName,
 	attrCmdName, forCmdName, fetchCmdName, onCmdName,
 	ifCmdName, elseifCmdName, elseCmdName, switchCmdName, caseCmdName, defaultCmdName,
-	renderEventName, tplProxyTargetPropName} from "./tpl/const.js";
-import {getId, wrapDeep, $goCopy, $goTagsDeep, getMustacheBlocks, spaceRe} from "./util.js";
+	renderEventName, tplProxyTargetPropName,
+	resVarName} from "./tpl/const.js";
+import {getId, wrapDeep, $goCopy, $goTagsDeep, getMustacheBlocks, spaceRe, trimSlashRe} from "./util.js";
 
 import scopeCmd from "./tpl/cmd/scope.js";
 import {ifCmd, switchCmd} from "./tpl/cmd/if.js";
@@ -286,7 +287,11 @@ console.log("!!!!!!! is not tag", $src);
 	execRender($src, attrName, attrValue, scope) {
 		const req = this.getReq($src, attrName, attrValue, scope);
 		if (req && req.cmd.render) {
+//try {
 			return req.cmd.render.call(this, req);
+//} catch(err) {
+//	alert(err);
+//}
 		}
 	}
 	execLinker($src, attrName, attrValue, scope) {
@@ -448,16 +453,18 @@ console.log("!!!!!!! is not tag", $src);
 		const attr = new Map();
 		const order = $e.getAttribute(orderCmdName);
 		if (order) {
-			order.trim().split(spaceRe).forEach(n => {
-				const v = $e.getAttribute(n);
-				if (v) {
-					attr.set(n, v);
-				}
-			});
+			const o = order.trim().split(spaceRe);
+			const oLen = o.length;
+			for (let i = 0; i < oLen; i++) {
+				attr.set(o[i], $e.getAttribute(o[i]));
+			}
 		}
-		const attrsLen = $e.attributes.length;
+//		const attrsLen = $e.attributes.length;
+		const attrs = Array.from($e.attributes);
+		const attrsLen = attrs.length;
 		for (let i = 0; i < attrsLen; i++) {
-			const a = $e.attributes.item(i);
+//			const a = $e.attributes.item(i);
+			const a = attrs[i];
 			if (!attr.has(a.name)) {
 				attr.set(a.name, a.value);
 			}
@@ -523,9 +530,16 @@ console.log("!!!!!!! is not tag", $src);
 //like as ssr and for-cmd
 //		for (const [name, value] of this.getAttrs($from)) {
 //			this.setAttribute($to, name, value);
-		for (const attr of $from.attributes) {
+//		for (const attr of $from.attributes) {
+//!!!!!!!!!attributes
+//try {
+		const attrs = Array.from($from.attributes);
+		for (const attr of attrs) {
 			this.setAttribute($to, attr.name, attr.value);
 		}
+//} catch(err) {
+//	alert(err);
+//}
 		const d = this.get$srcDescr($from);
 		if (!d) {
 			return;
@@ -579,6 +593,10 @@ console.log("!!!!!!! is not tag", $src);
 		this.renderStack.delete($e);
 
 		const $srcById = this.$srcById.get(d.id);
+		if (!$srcById) {
+//todo проверить почему так
+			return;
+		}
 		$srcById.delete($e);
 		if ($srcById.size) {
 			return;
@@ -609,7 +627,7 @@ console.log("!!!!!!! is not tag", $src);
 		}
 	}
 
-	eval(req) {
+	eval(req, isOnlyRun) {
 		const args = [];
 		for (const i in req.scope) {
 			args.push(req.scope[i]);
@@ -622,16 +640,23 @@ console.log("!!!!!!! is not tag", $src);
 				argsStr = i;
 			}
 		}
-		let val;
-		this.curReq = req;
+		if (!isOnlyRun) {
+			this.curReq = req;
+			let val;
+			try {
+				val = this.getEvalFunc(req, req.expr, argsStr).apply(req.$src, args);
+			} catch (err) {
+				this.check(err, req);
+				return;
+			}
+			delete this.curReq;
+			return val;
+		}
 		try {
-			val = this.getEvalFunc(req, req.expr, argsStr).apply(req.$src, args);
+			return this.getEvalFunc(req, req.expr, argsStr).apply(req.$src, args);
 		} catch (err) {
 			this.check(err, req);
-			return;
 		}
-		delete this.curReq;
-		return val;
 	}
 	getEvalFunc(req, expr, argsStr) {
 		const fKey = expr + (argsStr || "");
@@ -639,8 +664,8 @@ console.log("!!!!!!! is not tag", $src);
 		if (f) {
 			return f;
 		}
-//		const funcBody = expr.trimLeft().indexOf("return") == 0 ? expr : "const " + resVarName + " = " + expr + "; return " + resVarName + ";";
-		const funcBody = expr.indexOf("return") == -1 ? "return " + expr : expr;
+		const funcBody = expr.trimLeft().indexOf("return") == 0 ? expr : "const " + resVarName + " = " + expr + "; return " + resVarName + ";";
+//		const funcBody = expr.indexOf("return") == -1 ? "return " + expr : expr;
 		try {
 			f = new Function(argsStr, funcBody);
 		} catch (err) {
@@ -689,7 +714,8 @@ console.log("!!!!!!! is not tag", $src);
 		if (n == tplProxyTargetPropName) {//"tplProxyTarget") {
 			return t;
 		}
-		const v = Reflect.get(t, n);
+//		const v = Reflect.get(t, n);
+		const v = t[n];
 //		if (!this.curReq || !Reflect.has(t, n)) {// && symbol)) {
 //		if (!this.curReq) {// || !t.hasOwnProperty(n)) {
 		if (!this.curReq) {
@@ -746,7 +772,8 @@ if (!this.descr.has($srcId)) {
 		return v;
 	}
 	proxySet(t, n, v, r) {
-		const old = Reflect.get(t, n);
+//		const old = Reflect.get(t, n);
+		const old = t[n];
 //console.log('set', t, n, v);//, Object.getOwnPropertyDescriptor(t, n));
 		if (v === old && (!v || Object.getOwnPropertyDescriptor(t, n).enumerable)) {
 //console.log("1", v, n);
@@ -762,7 +789,8 @@ if (!this.descr.has($srcId)) {
 		return this.set$srcByVar(t, n, v, r);
 	}
 	proxyDeleteProperty(t, n, r) {
-		const old = Reflect.get(t, n);
+//		const old = Reflect.get(t, n);
+		const old = t[n];
 		if (!Reflect.deleteProperty(t, n)) {
 			return false;
 		}
@@ -883,6 +911,31 @@ if (!this.descr.has($srcId)) {
 			this.$srcByVarProp.delete(t);
 		}
 	}
+
+	getLoc(url, defPageName = "") {
+		url = new URL(url);
+		const loc = this.getLoc_parsePath(url.href, url.pathname, defPageName);
+		loc.hash = this.getLoc_parsePath(url.hash, url.hash.substr(1), defPageName);
+		for (const [n, v] of url.searchParams) {
+			loc.query[n] = v;
+		}
+		return loc;
+	}
+	getLoc_parsePath(href, path, defPageName) {
+		const loc = {
+			href,
+			path,
+			args: path.replace(trimSlashRe, "").split("/"),
+			param: {},
+			query: {}
+		};
+		loc.name = loc.args[0] || defPageName;
+		for (let i = 1, len = loc.args.length; i < len; i += 2) {
+			loc.param[loc.args[i]] = loc.args[i + 1];
+		}
+		return loc;
+	}
+
 	getCommand(name) {
 		return Tpl.cmd.get(name);
 	}
@@ -913,20 +966,11 @@ Tpl.addCommand(onCmdName, onCmd);
 //self.Tpl = Tpl;
 export default self.tpl = new Tpl();
 self.data = self.tpl.getProxy(self.data);
+self.data.loc = self.tpl.getLoc(location.href);
+self.addEventListener("hashchange", () => {
+	self.data.loc = self.tpl.getLoc(location.href);
+});
 
-let isDynamicImport;
-try {
-	new Function("import('')");
-	isDynamicImport = true;
-} catch (err) {
-}
-
-const $s = document.querySelector("script[src*='tpl.js'");
-const url = $s ? new URL($s.src) : "";
-//!!for Edge
-//const url = new URL(import.meta.url);
-
-self.tpl.isDebug = url.search.indexOf("debug") != -1;
 function main() {
 	self.tpl.go();
 }
@@ -956,15 +1000,23 @@ function onload() {
 		main();
 	}
 }
-/*
-if (url.search.indexOf("ondomready") == -1) {
-	if (document.readyState == "complete") {
-		onload();
+
+//!!for Edge
+//const url = new URL(import.meta.url);
+const $s = document.querySelectorAll("script")[0];
+let url;
+if ($s) {
+	url = new URL($s.src);
+}
+self.tpl.isDebug = url && url.search.indexOf("debug") != -1;
+if (url && url.search.indexOf("onload") == -1) {
+	if (!document.readyState || document.readyState == "loading") {
+		document.addEventListener("DOMContentLoaded", onload);
 	} else {
-		self.addEventListener("load", onload);
+		onload();
 	}
-} else */if (document.readyState == "loading") {
-	document.addEventListener("DOMContentLoaded", onload);
+} else if (document.readyState != "complete") {
+	self.addEventListener("load", onload);
 } else {
 	onload();
 }

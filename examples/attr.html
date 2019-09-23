@@ -1,11 +1,9 @@
 <!doctype html>
-<html data-debug="true">
+<html>
 	<head>
 		<title>attr - myweb/tpl</title>
 		<meta charset="utf-8" />
-	</head>
-	<body>
-		<h1>attr - example</h1>
+		<script src="../tpl.js?debug" type="module" async="async"></script>
 		<script>
 			data = {
 				color: "black",
@@ -13,35 +11,36 @@
 				blue: "blue"
 			};
 		</script>
+	</head>
+	<body>
+		<h1>attr - example</h1>
 		<fieldset>
 			<label for="color">data.color</label>
-			<input :attr.value="data.color" oninput="data.color = this.value" id="color" />
+			<input _attr.value="data.color" oninput="data.color = this.value" id="color" />
 		</fieldset>
 		<fieldset>
 			<label for="red">data.red</label>
-			<select :attr.value="data.red" onchange="data.red = this.value" id="red">
+			<select _attr.value="data.red" onchange="data.red = this.value" id="red">
 				<option value="red">Red</option>
 				<option value="orange">Orange</option>
 				<option value="purple">Purple</option>
 			</select>
 		</fieldset>
-		<p :if.color="data.color == data.red" :attr.style="`color: ${data.red}`">
+		<p _if.color="data.color == data.red" _attr.style="`color: ${data.red}`">
 			RED
 		</p>
-		<p :elseif="data.color == data.blue" :attr.style="`color: ${data.blue}`">
+		<p _elseif="data.color == data.blue" _attr.style="`color: ${data.blue}`">
 			BLUE
 		</p>
-		<p :elseif.c="data.color" :attr.style="`color: ${c}`">
-			Color isn't <span :attr.style="`color: ${data.red}`">red</span> or <span :attr.style="`color: ${data.blue}`">blue</span>, color is <b>{{c}}</b>
+		<p _elseif.c="data.color" _attr.style="`color: ${c}`">
+			Color isn't <span _attr.style="`color: ${data.red}`">red</span> or <span _attr.style="`color: ${data.blue}`">blue</span>, color is <b>{{c}}</b>
 		</p>
-		<p :else="">
+		<p _else="">
 			Color is empty
 		</p>
 
 		<p>
 			<i>This example is half to half worked in the Edge, <a>haw to fix (soon)</a></i>
 		</p>
-
-		<script src="main.js" type="module" async="async"></script>
 	</body>
 </html>

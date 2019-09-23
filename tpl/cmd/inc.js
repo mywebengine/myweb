@@ -64,10 +64,23 @@ export default {
 				if (res.ok) {
 					return res.text();
 				}
-				const err = new Error(">>>Tpl inc:render:01: Request " + include.url + " stat " + res.status);
-				err.url = include.url;
-				err.status = res.status;
-				this.check(err, req);
+				if (req.$src.dataset.onerror) {
+					const url = this.eval({
+						$src: req.$src,
+						scope: copy(req.scope),
+						expr: req.$src.dataset.onerror
+					});
+					if (url) {
+						return fetch(url)
+							.then(res => {
+								if (res.ok) {
+									return res.text();
+								}
+								this.check(new Error(">>>Tpl inc:render:02: Request " + url + " stat " + res.status), req);
+							});
+					}
+				}
+				this.check(new Error(">>>Tpl inc:render:01: Request " + include.url + " stat " + res.status), req);//<-throw
 			})
 			.then(html => inc_createFragment.call(this, req, include, html))
 			.then($fr => {
@@ -382,7 +395,15 @@ export function inc_getLastElement($e) {
 }
 export function inc_isInc($e, afterAttrName) {
 	const attr = this.getAttrs($e);
-	for (const n of (afterAttrName ? this.getAttrsAfter(attr, afterAttrName) : attr).keys()) {
+//	for (const n of (afterAttrName ? this.getAttrsAfter(attr, afterAttrName) : attr).keys()) {
+	let f;
+	for (const n of attr.keys()) {
+		if (!f && afterAttrName) {
+			if (n == afterAttrName) {
+				f = true;
+			}
+			continue;
+		}
 		const [cmdName] = this.getCmdArgs(n);
 		if (cmdName == incCmdName) {
 			return true;
@@ -400,7 +421,9 @@ export function inc_isRenderdInc($e) {
 }
 function inc_cloneFragment(req, include) {
 	const $fr = include.$fr.cloneNode(true);
-	makeSlots(req, $fr);
+	if (!inc_isRenderdInc.call(this, req.$src)) {
+		makeSlots(req, $fr);
+	}
 	const d = this.get$srcDescr(req.$src);
 	let descr = include.descrById.get(d.id);
 	if (!descr) {
@@ -414,9 +437,13 @@ function inc_cloneFragment(req, include) {
 			iOrder = $srcOrder + " " + iOrder;
 		} else {
 			iOrder = $srcOrder;
-			const iAttrsLen = $i.attributes.length;
+//			const iAttrsLen = $i.attributes.length;
+//			for (let j = 0; j < iAttrsLen; j++) {
+//				iOrder += " " + $i.attributes.item(j).name;
+			const attrs = Array.from($i.attributes);
+			const iAttrsLen = attrs.length;
 			for (let j = 0; j < iAttrsLen; j++) {
-				iOrder += " " + $i.attributes.item(j).name;
+				iOrder += " " + attrs[j].name;
 			}
 		}
 		if (iOrder = iOrder.trim()) {
@@ -437,7 +464,8 @@ function inc_cloneFragment(req, include) {
 //				$i.setAttribute(n, v);
 //			}
 //		}
-		for (const a of req.$src.attributes) {
+//		for (const a of req.$src.attributes) {
+		for (const a of Array.from(req.$src.attributes)) {
 			if (!$i.getAttribute(a.name)) {
 				$i.setAttribute(a.name, a.value);
 			}

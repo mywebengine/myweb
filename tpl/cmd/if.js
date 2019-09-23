@@ -39,7 +39,7 @@ function if_get(req, renderFunc, showFunc, hideFunc, testFunc = f => f, ifCmdNam
 		isLast = true;
 	}
 //	for (const n of this.getAttrsBefore(this.getAttrs($e), req.str).keys()) {
-	for (const n of this.getAttrs($e).keys()) {
+	for (const n of this.getAttrs($e instanceof HTMLElement ? $e : $e.previousElementSibling).keys()) {
 		if (n == req.str) {
 			break;
 		}
@@ -144,7 +144,15 @@ function if_apply($i, n, applyFunc) {
 }
 function switch_get(req, renderFunc) {
 	const $first = if_make$first.call(this, req, switchCmdName, caseCmdName, defaultCmdName);
-	for (const [n, v] of this.getAttrsAfter(this.getAttrs($first), req.str)) {
+//	for (const [n, v] of this.getAttrsAfter(this.getAttrs($first), req.str)) {
+	let f;
+	for (const [n, v] of this.getAttrs($first)) {
+		if (!f) {
+			if (n == req.str) {
+				f = true;
+			}
+			continue;
+		}
 		const [cmdName, args] = this.getCmdArgs(n);
 		if (cmdName == caseCmdName) {
 			const expression = this.eval(req);

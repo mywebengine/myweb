@@ -17,14 +17,14 @@ export default {
 		return html_get.call(this, req, this.linker);
 	}
 };
-function html_get(req, func) {
+function html_get(req, renderFunc) {
 	req.$src.isCustomHTML = true;
 	const res = {
 		isLast: true
 	};
 	const attrsAfter = this.getAttrsAfter(this.getAttrs(req.$src), req.str);
 	if (attrsAfter.size) {
-		res.$e = func.call(this, req.$src, req.scope, attrsAfter);
+		res.$e = renderFunc.call(this, req.$src, req.scope, attrsAfter);
 	}
 	return res;
 }

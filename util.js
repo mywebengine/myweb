@@ -9,6 +9,7 @@ import {tplProxyTargetPropName} from "./tpl/const.js";
 export const spaceRe = /\s+/g;
 export const dRe = /\d/g;
 export const DRe = /\D/g;
+export const trimSlashRe = /(^\/|\/$)/g;
 
 export function getId(i) {
 	return i[getId.propName] || (i[getId.propName] = (++getId.curVal).toString());
@@ -211,26 +212,6 @@ export function isURI(url) {
 	return url.search(normalizeURL.reHost) == -1 && url[0] != "/";
 }
 
-export function getLoc(url, byHash, defPageName = "") {
-	const u = new URL(url);
-	url = (byHash ? u.hash.substr(1) : u.pathname).replace(getLoc.reTrimSlash, "");
-	const loc = {
-		url,
-		args: url.split("/"),
-		param: {},
-		query: {}
-	};
-	loc.name = loc.args[0] || defPageName;
-	for (let i = 1, len = loc.args.length; i < len; i += 2) {
-		loc.param[loc.args[i]] = loc.args[i + 1];
-	}
-	for (const [n, v] of u.searchParams) {
-		loc.query[n] = v;
-	}
-	return loc;
-}
-getLoc.reTrimSlash = /(^\/|\/$)/g;
-
 function hideEnum(obj, pName) {
 	Object.defineProperty(obj, pName, {
 		enumerable: false
@@ -264,6 +245,7 @@ if (!String.prototype.q) {
 		}
 	}
 //} 
+/*
 	self.LocaleNumber = function(n) {
 		if (!this) {
 			return new self.LocaleNumber(n);
@@ -277,7 +259,7 @@ if (!String.prototype.q) {
 		toString: function() {
 			return Number(this.value).toLocaleString();
 		}
-	};
+	};*/
 
 	String.localeDotSymbol = (0.1).toLocaleString().indexOf(".") == -1 ? "," : ".";
 	String.prototype.toNumber = function() {

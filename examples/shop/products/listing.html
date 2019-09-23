@@ -1,4 +1,4 @@
-﻿<li :for.product.idx="data.products" :attr.class="data.bag && data.bag.indexOf(product.id) == -1 ? `products-item` : `products-item products-item-isBuyed`">
+﻿<li :for.product="data.products" :attr.class="data.bag && data.bag.indexOf(product.id) == -1 ? `products-item` : `products-item products-item-isBuyed`">
 	<a :attr.onclick="`showProduct(${product.id})`">
 		<span class="products-item-image">
 			<img :attr.alt="`shop/${product.image}`" />

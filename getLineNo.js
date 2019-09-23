@@ -10,7 +10,7 @@ export function markLines($src = document.documentElement, url = window.location
 	}
 	return fetch(url)
 		.then(res => {
-			if (res.status == 200) {
+			if (res.ok) {
 				return res.text();
 			}
 			console.error(`markLines: request stat ${res.status}`);

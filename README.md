@@ -37,12 +37,11 @@
 ```html
 <script src="https://mywebengine.org/myweb/tpl.js?debug" type="module" async="async"></script>
 ```
-/*depricated
 ## Запуск шаблона 
-Поумолчанию шаблонищзатар начинает совю работу на стадии "onload", 
-но можно стартовать раньше - на "DOMContentLoaded", указав параметр **ondomready**.
+Поумолчанию шаблонищзатар начинает совю работу на стадии "DOMContentLoaded", 
+но можно стартовать позже - на "onload", указав параметр **onload**.
 ```html
-<script src="https://mywebengine.org/myweb/tpl.js?ondomready" type="module" async="async"></script>
+<script src="https://mywebengine.org/myweb/tpl.js?onload" type="module" async="async"></script>
 ```*/
 ## Синтаксис инструкций
 

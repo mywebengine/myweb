@@ -2,14 +2,13 @@
 import {getLoc} from "../../util.js";
 
 self.data = {
-	loc: getLoc(location.hash, true),
+//	loc: getLoc(location.hash, true),
 	bagData: null,
 	curOrder: (sessionStorage.getItem("curOrder") || "").json()
 };
 
 self.onhashchange = function() {
 	while (self.curWin && self.curWin.close());
-	self.data.loc = getLoc(location.hash);
 }
 self.onbeforeunload = function() {
 	if (!self.data.bag) {
