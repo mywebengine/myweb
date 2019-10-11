@@ -10,7 +10,7 @@ export default {
 		const {$els, $elsLen, keys, keysLen} = for_get.call(this, req, renderFunc);
 		if (!keysLen) {
 			for (let j = $els[0].length - 1; j > -1; j--) {
-				$els[0][j] = this.hide($els[0][j]);
+				$els[0][j] = this.hide($els[0][j], req.str);
 			}
 			for (let i = 1, j; i < $elsLen; i++) {
 				for (j = $els[i].length - 1; j > -1; j--) {
@@ -115,7 +115,8 @@ export default {
 		}
 		d.for_oldLastVal[req.str] = lastVal;
 		if (req._$fr) {
-			this.insertBefore(req._$frParent, req._$fr, req._$frBefore === undefined ? (req._$frBeforePrev ? req._$frBeforePrev.nextSibling : req._$frParent.firstChild) : req._$frBefore);
+//			this.insertBefore(req._$frParent, req._$fr, req._$frBefore === undefined ? (req._$frBeforePrev ? req._$frBeforePrev.nextSibling : req._$frParent.firstChild) : req._$frBefore);
+			req._$frParent.insertBefore(req._$fr, req._$frBefore === undefined ? (req._$frBeforePrev ? req._$frBeforePrev.nextSibling : req._$frParent.firstChild) : req._$frBefore);
 		}
 		const $l = $els[$els.length - 1];
 		return {
@@ -156,13 +157,15 @@ export default {
 	getScope: function(req) {
 		const idx = getForIdx(req.$src, req.str);
 		if (idx === null) {
-			return req.scope;
+//			return req.scope;
+			return false;
 		}
 		const value = this.eval(req);
 		if (!value) {
 //			this.check(new Error(">>>Tpl for:getScope:01: Object from foreach not exists"), req);
 //			return;
-			return req.scope;
+			return false;
+//			return req.scope;
 		}
 		let key;
 		let i = 0;
@@ -181,7 +184,8 @@ export default {
 		if (keyName) {
 			req.scope[keyName] = key;
 		}
-		return req.scope;
+//		return req.scope;
+		return true;
 	}
 };
 function for_get(req, renderFunc) {
@@ -358,7 +362,7 @@ function for_render(req, $els, keys, idx, renderFunc) {
 	$els[idx] = [];
 	while ($e) {
 		if ($e instanceof HTMLElement) {
-			$e = this.show($e);
+			$e = this.show($e, req.str);
 			const $prev = inc_isInc.call(this, $e, req.str) ? inc_get$els.call(this, $e)[0].previousSibling : $e.previousSibling;
 //			let $prev = $e.previousSibling;
 //console.log(123, req.str, idx, $prev, $e, $e.parentNode, $lastNext);
@@ -407,7 +411,8 @@ function for_clone$e(req, $fr, $src, $before, idx) {
 	const $new = [];
 	const $srcLen = $src.length;
 	for (let j = 0; j < $srcLen; j++) {
-		$new.push(this.insertBefore($fr, this.cloneNode($src[j]), $before));
+//		$new.push(this.insertBefore($fr, this.cloneNode($src[j]), $before));
+		$new.push($fr.insertBefore(this.cloneNode($src[j]), $before));
 	}
 	return $new;
 }

@@ -15,39 +15,11 @@ export default {
 				isLast: true
 			};
 		}
-		const headers = fetch_getVal.call(this, req, "headers") || {};
-		for (const i in headers) {
-			if (!headers[i] && headers[i] !== 0) {
-				delete headers[i];
-			}
-		}
+		const headers = fetch_getVal.call(this, req, "headers");
 		const type = req.$src.dataset.type;
-		if (type) {
-			switch (type.toUpperCase()) {
-				case "JSON":
-					headers["Content-Type"] = "application/json";
-				break;
-				case "FORM":
-					headers["Content-Type"] = "application/x-www-form-urlencoded";
-				break;
-			}
-		}
-		fetch(url, {
-			method: req.$src.dataset.method,
-			headers,
-			body: body,
-			mode: req.$src.dataset.mode,
-			credentials: req.$src.dataset.credentials,
-			cache: req.$src.dataset.cache,// || "default",
-			redirect: req.$src.dataset.cache// || "follow"
-		})
-			.then(res => {
-				fetch_execAsync.call(this, req, "onload", res);
-				if (res.ok) {
-					fetch_execAsync.call(this, req, "onok", res);
-				} else {
-					fetch_execAsync.call(this, req, "onerror", res);
-				}
+		Promise.all([body, headers, type])
+			.then(vals => {
+				fetch_render.call(this, req, url, ...vals);
 			});
 	},
 	linker(req) {
@@ -61,9 +33,46 @@ function fetch_get(req) {
 	}
 	return normalizeURL(url);
 }
+function fetch_render(req, url, body, headers = {}, type) {
+	for (const i in headers) {
+		if (!headers[i] && headers[i] !== 0) {
+			delete headers[i];
+		}
+	}
+	if (type) {
+		switch (type.toUpperCase()) {
+			case "JSON":
+				headers["Content-Type"] = "application/json";
+			break;
+			case "FORM":
+				headers["Content-Type"] = "application/x-www-form-urlencoded";
+			break;
+		}
+	}
+	fetch(url, {
+		method: req.$src.dataset.method,
+		headers,
+		body: body,
+		mode: req.$src.dataset.mode,
+		credentials: req.$src.dataset.credentials,
+		cache: req.$src.dataset.cache,// || "default",
+		redirect: req.$src.dataset.cache// || "follow"
+	})
+		.then(res => {
+			fetch_execAsync.call(this, req, "onload", res);
+			if (res.ok) {
+				fetch_execAsync.call(this, req, "onok", res);
+			} else {
+				fetch_execAsync.call(this, req, "onerror", res);
+			}
+		});
+}
 function fetch_getVal(req, name, res) {
 	let expr = req.$src.dataset[name];
 	if (expr) {
+//		if (expr.indexOf("await") != -1) {
+//			return fetch_execAsync.call(this, req, name, res);
+//		}
 //console.log(7777, expr, this.getEvalFunc(req, expr).toString());
 		try {
 			return this.getEvalFunc(req, expr).call(req.$src);

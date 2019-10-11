@@ -5,7 +5,7 @@ import createArrFragment from "../../arrfr.js";
 import pimport from "../../pimport.js";
 
 export const inc_cache = new Map();
-self.ii = inc_cache;
+//self.ii = inc_cache;
 const inc_waitingStack = new Map();
 
 const inc_loadEventName = "inc_load";
@@ -35,7 +35,9 @@ export default {
 				isLast: true
 			};
 		}
-		const $e = inc_getLastElement.call(this, req.$src)
+//		const $e = inc_getLastElement.call(this, req.$src);
+		const $els = inc_get$els.call(this, req.$src);
+		const $e = $els[$els.length - 1];
 //!!зачем удалять старое значение?
 //- нужно ужалить для того что бы inc_get$els смогла правильно отработать
 // - хотя, если удалить этот атрибут то inc_isRenderdInc вернет ложь, а это означает, что $els будет из одного тега - а это не врено
@@ -143,15 +145,6 @@ function inc_get(req) {
 		});
 	}
 	return include;
-}
-function inc_loadInc(include) {
-//	if (inc_waitingStack.has(include.url)) {
-		for (const req of inc_waitingStack.get(include.url).values()) {
-			inc_include.call(this, req, include);
-		}
-		inc_waitingStack.delete(include.url);
-//	}
-	include.readyState = "complete";
 }
 function inc_createFragment(req, include, html) {
 //self.isOldEdge = true;
@@ -283,26 +276,52 @@ function joinText($src) {
 		}
 	}
 }
+function inc_loadInc(include) {
+//	if (inc_waitingStack.has(include.url)) {
+		for (const req of inc_waitingStack.get(include.url).values()) {
+			if (!(req.$src.parentNode instanceof DocumentFragment)) {//пока мы загружались, кто-то мог нас скрыть
+				inc_include.call(this, req, include);
+			}
+		}
+		inc_waitingStack.delete(include.url);
+//	}
+	include.readyState = "complete";
+}
 function inc_include(req, include) {
 	let $els = inc_get$els.call(this, req.$src);
 	let $elsLen = $els.length;
 	const $new = inc_cloneFragment.call(this, req, include);
 	const $parent = $els[0].parentNode;
 	const $lastNext = $els[$elsLen - 1].nextSibling;
-	if (!($lastNext && $lastNext instanceof Comment && $lastNext.textContent == "inc_end")) {
+	if (!($lastNext instanceof Comment && $lastNext.textContent == "inc_end")) {
 		$new.insertBefore(document.createComment("inc_begin"), $new.firstChild);
 		$new.appendChild(document.createComment("inc_end"));
 	}
-	const stack = inc_waitingStack.get(include.url);
+	const wStack = inc_waitingStack.get(include.url);
+/*
 	for (let i = 0; i < $elsLen; i++) {
-		if (stack) {
-			stack.delete($els[i]);//для того чтобы: когда динамическая вставка имеет несколько элементов в корне -> в списке асинхронного рендероа находятся все элементы
+		if (wStack) {
+			wStack.delete($els[i]);//для того чтобы: когда динамическая вставка имеет несколько элементов в корне -> в списке асинхронного рендероа находятся все элементы
 		}
 		this.removeChild($els[i]);
+	}*/
+	if (wStack) {
+		for (let i = 0; i < $elsLen; i++) {
+			wStack.delete($els[i]);//для того чтобы: когда динамическая вставка имеет несколько элементов в корне -> в списке асинхронного рендероа находятся все элементы
+			this.removeChild($els[i]);
+		}
+	} else {
+		for (let i = 0; i < $elsLen; i++) {
+			this.removeChild($els[i]);
+		}
 	}
-	$els = Array.from($new.childNodes);
-	$elsLen = $els.length;
-	this.insertBefore($parent, $new, $lastNext);
+//	$els = Array.from($new.childNodes);//to createArrFragment
+	$els = Array($elsLen = $new.childNodes.length);
+	for (let i = 0; i < $elsLen; i++) {
+		$els[i] = $new.childNodes[i];
+	}
+//--	this.insertBefore($parent, $new, $lastNext);
+	$parent.insertBefore($new, $lastNext);
 	let $e = $els[0];
 	while ($e) {
 		if ($e instanceof HTMLElement) {
@@ -375,6 +394,7 @@ export function inc_get$els($e) {
 	}
 	return $els;
 }
+/*
 export function inc_getFirstElement($e) {
 	const $els = inc_get$els.call(this, $e);
 	const $elsLen = $els.length;
@@ -386,13 +406,12 @@ export function inc_getFirstElement($e) {
 }
 export function inc_getLastElement($e) {
 	const $els = inc_get$els.call(this, $e);
-	const $elsLen = $els.length;
-	for (let i = $elsLen - 1; i > -1; i--) {
+	for (let i = $els.length - 1; i > -1; i--) {
 		if ($els[i] instanceof HTMLElement) {
 			return $els[i];
 		}
 	}
-}
+}*/
 export function inc_isInc($e, afterAttrName) {
 	const attr = this.getAttrs($e);
 //	for (const n of (afterAttrName ? this.getAttrsAfter(attr, afterAttrName) : attr).keys()) {

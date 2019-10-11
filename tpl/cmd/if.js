@@ -1,6 +1,6 @@
 import {ifCmdName, elseifCmdName, elseCmdName, switchCmdName, caseCmdName, defaultCmdName} from "../const.js";
 import {copy} from "../../util.js";
-import {inc_isInc, inc_get$els, inc_getFirstElement} from "./inc.js";
+import {inc_isInc, inc_get$els/*, inc_getFirstElement*/} from "./inc.js";
 
 export const ifCmd = {
 	render(req) {
@@ -21,11 +21,15 @@ export const switchCmd = {
 	getScope: if_getScope
 };
 function if_getScope(req) {
-	const varName = req.args[0];
-	if (varName) {
-		req.scope[varName] = this.eval(req);
+	if (req.cmdName == elseCmdName) {
+		return true;
 	}
-	return req.scope;
+	const varName = req.args[0];
+	const res = this.eval(req);
+	if (varName) {
+		req.scope[varName] = res;
+	}
+	return !!res;
 }
 function if_get(req, renderFunc, showFunc, hideFunc, testFunc = f => f, ifCmdName, elseifCmdName, elseCmdName, $e) {
 	if (!$e) {
@@ -33,9 +37,9 @@ function if_get(req, renderFunc, showFunc, hideFunc, testFunc = f => f, ifCmdNam
 	}
 	let isLast;
 	if (req.value = testFunc(this.eval(req))) {
-		[$e, isLast] = if_render.call(this, req, showFunc($e), renderFunc);
+		[$e, isLast] = if_render.call(this, req, showFunc($e, req.str), renderFunc);
 	} else {
-		$e = hideFunc($e);
+		$e = hideFunc($e, req.str);
 		isLast = true;
 	}
 //	for (const n of this.getAttrsBefore(this.getAttrs($e), req.str).keys()) {
@@ -65,20 +69,31 @@ function if_get(req, renderFunc, showFunc, hideFunc, testFunc = f => f, ifCmdNam
 				continue;//еще нельзя понять, что делать
 			}
 			if (req.value) {
-				[$i, $e] = if_apply.call(this, $i, n, hideFunc);
+				[$i, $e] = if_apply.call(this, $i, n, $j => hideFunc($j, req.str));
 				isLast = true;
 				break;
 			}
+/*
+			if (isElse) {
+				[$i, $e] = if_apply.call(this, $i, n, $j => showFunc($j, req.str));
+				[$i, isLast] = if_render.call(this, req, $i, renderFunc);
+			} else if (req.value = testFunc(this.eval(req))) {
+			} else {
+				[$i, $e] = if_apply.call(this, $i, n, $j => hideFunc($j, req.str));
+				isLast = true;
+			}*/
+
 			req.cmdName = cmdName;
 			req.str = n;
 			req.expr = v;
 			req.args = args;
-			req.$srcForErr = $i;
+//			req.$srcForErr = $i;
+			req.$src = $i;
 			if (isElse || (req.value = testFunc(this.eval(req)))) {
-				[$i, $e] = if_apply.call(this, $i, n, showFunc);
+				[$i, $e] = if_apply.call(this, $i, n, $j => showFunc($j, req.str));
 				[$i, isLast] = if_render.call(this, req, $i, renderFunc);
 			} else {
-				[$i, $e] = if_apply.call(this, $i, n, hideFunc);
+				[$i, $e] = if_apply.call(this, $i, n, $j => hideFunc($j, req.str));
 				isLast = true;
 			}
 			break;
@@ -129,18 +144,18 @@ function if_render(req, $e, renderFunc) {
 	return [renderFunc($e, scope, this.getAttrsAfter(this.getAttrs($e), req.str)), true];
 }
 function if_apply($i, n, applyFunc) {
-	if (inc_isInc.call(this, $i, n)) {
-		const $els = inc_get$els.call(this, $i);
-		const $elsLen = $els.length;
-		for (let i = 0; i < $elsLen; i++) {
-			if (!($els[i] instanceof Comment)) {
-				$i = applyFunc($els[i]);
-			}
-		}
-		return [$i, $els[$elsLen - 1]];
+	if (!inc_isInc.call(this, $i, n)) {
+		$i = applyFunc($i);
+		return [$i, $i];
 	}
-	$i = applyFunc($i);
-	return [$i, $i];
+	const $els = inc_get$els.call(this, $i);
+	const $elsLen = $els.length;
+	for (let i = 0; i < $elsLen; i++) {
+		if (!($els[i] instanceof Comment)) {
+			$i = $els[i] = applyFunc($els[i]);
+		}
+	}
+	return [$i, $els[$elsLen - 1]];
 }
 function switch_get(req, renderFunc) {
 	const $first = if_make$first.call(this, req, switchCmdName, caseCmdName, defaultCmdName);

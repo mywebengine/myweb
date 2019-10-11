@@ -11,11 +11,12 @@ export const dRe = /\d/g;
 export const DRe = /\D/g;
 export const trimSlashRe = /(^\/|\/$)/g;
 
+export let idCurVal = 0;
 export function getId(i) {
-	return i[getId.propName] || (i[getId.propName] = (++getId.curVal).toString());
+	return i[getId.propName] || (i[getId.propName] = (++idCurVal).toString());
 }
 getId.propName = Symbol();
-getId.curVal = 0;
+self.getId = getId;
 
 export function copy(val) {
 	if (val instanceof Array) {
@@ -59,8 +60,8 @@ export function $goTagsDeep($e, func) {
 	if ($e.isCustomHTML) {
 		return $e;
 	}
-	for ($e = $e.firstElementChild; $e; $e = $e.nextElementSibling) {
-		$goTagsDeep($e, func);
+	for (let $i = $e.firstElementChild; $i; $i = $i.nextElementSibling) {
+		$goTagsDeep($i, func);
 	}
 	return $e;
 }
@@ -148,9 +149,13 @@ export function formatFunc(val, fmt) {
 	});
 }*/
 
+const normalizeURL_reHost = /^(\w*\:*\/\/+|\/\/+).+?(\/|$)/;
+const normalizeURL_reSlash = /\/\/+/g;
+const normalizeURL_reUp = /[^\.\/]+\/+\.\.\//g;
+const normalizeURL_reThis = /\/\.\//g;
 export function normalizeURL(url) {
 	url = url.trim();
-	if (url.search(normalizeURL.reHost) == 0) {
+	if (url.search(normalizeURL_reHost) == 0) {
 		return new URL(url).href;
 	}
 	if (url[0] != "/") {
@@ -161,20 +166,16 @@ export function normalizeURL(url) {
 			url = location.pathname.substr(0, lastSlashIdx + 1) + url;
 		}
 	}
-	return normalizeURL.getBase(url);
+	return normalizeURL_get(url);
 }
-normalizeURL.getBase = function(url) {
-	for (let re = [normalizeURL.reUp, normalizeURL.reThis], i = re.length - 1; i > -1; i--) {
-		while (url.search(re[i]) != -1) {
+function normalizeURL_get(url) {
+	for (let re = [normalizeURL_reSlash, normalizeURL_reUp, normalizeURL_reThis], i = re.length - 1; i > -1; i--) {
+//--		while (url.search(re[i]) != -1) {
 			url = url.replace(re[i], "/");
-		}
+//		}
 	}
-	return url.replace(normalizeURL.reSlash, "/").trim();
+	return url.trim();
 }
-normalizeURL.reHost = /^(\w*\:\/\/+|\/\/+).+?(\/|$)/;
-normalizeURL.reSlash = /\/\/+/g;
-normalizeURL.reUp = /[^\.\/]+\/+\.\.\//;
-normalizeURL.reThis = /\/\.\//;
 self.normalizeURL = normalizeURL;
 
 export function getURL(url, topURL) {
@@ -184,7 +185,7 @@ export function getURL(url, topURL) {
 			if (isURI(topURL)) {
 				topURL = normalizeURL(topURL);
 			}
-			let u = normalizeURL.getBase(url);
+			let u = normalizeURL_get(url);
 			while (u.indexOf(".") == 0) {
 				if (u.indexOf("./") == 0) {
 					u = u.substr(2);
@@ -201,7 +202,7 @@ export function getURL(url, topURL) {
 			url = normalizeURL(url);
 		}
 	}
-	if (url.search(normalizeURL.reHost) == -1) {
+	if (url.search(normalizeURL_reHost) == -1) {
 		url = location.origin + url;
 	}
 	return normalizeURL(url);
@@ -209,7 +210,7 @@ export function getURL(url, topURL) {
 self.getURL = getURL;
 export function isURI(url) {
 	url = url.trimLeft();
-	return url.search(normalizeURL.reHost) == -1 && url[0] != "/";
+	return url.search(normalizeURL_reHost) == -1 && url[0] != "/";
 }
 
 function hideEnum(obj, pName) {

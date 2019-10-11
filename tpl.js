@@ -17,7 +17,8 @@ import {ifCmd, switchCmd} from "./tpl/cmd/if.js";
 import forCmd from "./tpl/cmd/for.js";
 import attrCmd from "./tpl/cmd/attr.js";
 import htmlCmd from "./tpl/cmd/html.js";
-import incCmd, {getIncVal} from "./tpl/cmd/inc.js";
+//import incCmd, {getIncVal} from "./tpl/cmd/inc.js";
+import incCmd, {getIncVal, inc_get$els, inc_isInc} from "./tpl/cmd/inc.js";
 import fetchCmd from "./tpl/cmd/fetch.js";
 
 import onCmd from "./tpl/cmd/on.js";
@@ -33,9 +34,7 @@ export class Tpl {
 		this.$srcByVarProp = new WeakMap();
 
 		this.sync = 0;
-		this.renderStack = new Set();
-//		this.renderAsyncStack = new Map();
-		this.renderAsyncParamsStack = new Map();
+		this.renderStack = new Map();
 
 		this._reqCmd = new Map();
 		this._func = new Map();
@@ -70,25 +69,16 @@ export class Tpl {
 	renderTag($src, scope = this.getScope($src), attr = this.getAttrs($src)) {
 		for (const [n, v] of attr) {
 //if (this.getReqCmd(n)) {
-//	console.log("render" + n, v, $src, scope);
-//}
-//if (this.ii > 0 && this.ii++ > 800) {
-//this.ii=1; alert(1); return;
+//	console.log("render" + n, v);//, $src, scope);
 //}
 			const res = this.execRender($src, n, v, scope);
 			if (!res) {
 				continue;
 			}
-//console.log("render", n, v, $src, res);
 			if (res.$e) {
-//				this.removeAllOnRenderStack($src);
-				this.renderStack.delete($src);
 				$src = res.$e;
 			}
 			if (res.isLast) {
-//				this.removeAllOnRenderStack($src);
-				this.renderStack.delete($src);
-//console.log("render exit", $src, $src.nextSibling, $src.previousSibling, attr);
 				return $src;
 			}
 		}
@@ -98,17 +88,9 @@ export class Tpl {
 					$i = this.render($i, scope);
 				}
 			}
-//			this.removeAllOnRenderStack($src);
-			this.renderStack.delete($src);
 		}
-//console.log("render exit1", $src, attr);
 		return $src;
 	}
-/*--?
-	removeAllOnRenderStack($e) {
-		this.renderStack.delete($e);
-//		this.renderAsyncStack.delete($e);
-	}*/
 	renderText($src, scope) {//когда рендерится - то он делает это в фрагменте и родители выше фрагмента не доступны
 		if ($src.isTextRendered) {
 			return $src;
@@ -124,11 +106,13 @@ export class Tpl {
 		for (let i = 0; i < blocksLen; i++) {
 			const b = blocks[i];
 			if (b.expr) {
-				const $i = this.appendChild($fr, document.createElement("span"));
+//--				const $i = this.appendChild($fr, document.createElement("span"));
+				const $i = $fr.appendChild(document.createElement("span"));
 				this.setAttribute($i, textCmdName, text.substring(b.begin, b.end));
 				this.renderTag($i, scope);
 			} else {
-				this.appendChild($fr, document.createTextNode(text.substring(b.begin, b.end)))
+//--				this.appendChild($fr, document.createTextNode(text.substring(b.begin, b.end)))
+				$fr.appendChild(document.createTextNode(text.substring(b.begin, b.end)))
 					.isTextRendered = true;
 			}
 		}
@@ -164,80 +148,53 @@ console.log("!!!!!!! is not tag", $src);
 		}
 		return $src;
 	}
-	async($src = this.$src, delay = this.delay, scope, attr) {
-//console.log(123, $src);
-		const already = this.renderAsyncParamsStack.get($src);
-//		const already = this.renderAsyncStack.get($src);
+	async($src = this.$src, delay = this.delay || 0, scope, attr) {
+		const already = this.renderStack.get($src);
 		if (already) {
-			this._newSync = ++this.sync;
+			setTimeout(this._async.bind(this, ++this.sync), delay);
 			return already.promise;
 		}
-		const r = {
+		const p = {
 			scope,
 			attr
 		};
-		this.renderStack.add($src);
-//		this.renderAsyncStack.set($src, r);
-		this.renderAsyncParamsStack.set($src, r);
-		return r.promise = new Promise((resolve, reject) => {
-			r.resolve = resolve;
-			r.reject = reject;
-//console.log(1);
-			setTimeout(this._async.bind(this, ++this.sync, delay), delay);
+		this.renderStack.set($src, p);
+		return p.promise = new Promise((resolve, reject) => {
+			p.resolve = resolve;
+			p.reject = reject;
+			setTimeout(this._async.bind(this, ++this.sync), delay);
 		});
 	}
-	_async(sync, delay) {
-		if (this._newSync) {
-			this._newSync = undefined;
-//todo console.log(11);
-			setTimeout(this._async.bind(this, ++this.sync, delay), delay);
-			return;
-		}
+	_async(sync) {
 		if (sync != this.sync) {
 			return;
 		}
-		if (this.isDebug) {
-			console.log("tpl async stack", Array.from(this.renderStack.keys()));
-		}
 		this.onbeforeasync();
-//		for (const [$src, r] of this.renderAsyncStack) {
-		for (const $src of this.renderStack.keys()) {
-			if (this.isNotRender($src)) {
-//				this.removeAllOnRenderStack($src);
-				this.renderStack.delete($src);
-//				r.resolve();
+
+		if (this.isDebug) {
+			console.log("tpl async stack", this.renderStack);
+		}
+
+		for (const [$i, r] of this.renderStack) {
+//console.log("_async begin", $i, r);
+			if (r.isDel) {
 				continue;
 			}
-			const r = this.renderAsyncParamsStack.get($src);
-
-
-//console.log("_list =>", Array.from(this.renderAsyncStack.keys()));
-//alert(1);
-//console.log("_async begin", $src, r);//, this.get$srcDescr($src));
-//			if ($src.parentNode) { //может так получиться, что элемент который нужно рендерить будет заменен другим, и тогда его не нужно рендерить
-				try {
-					this.render($src, r.scope, r.attr);
-				} catch (err) {
-					r.reject(err);
-					break;
-				}
-//			}
-			r.resolve();
-//console.log("_async =>", $src);
-		}
-//console.log("_async_end =>");
-//		this.renderAsyncStack.clear();
-		this.renderStack.clear();
-		this.renderAsyncParamsStack.clear();
-		this.onasync();
-	}
-	isNotRender($e) {
-		while ($e = $e.parentNode) {
-			if ($e instanceof DocumentFragment) {
-//console.log(222222, $i);
-				return $e;
+			try {
+				this.render($i, r.scope, r.attr);
+			} catch (err) {
+				console.log(err);
+//				if (r.reject) {
+//					r.reject(err);
+//				}
+				break;
+			}
+			if (r.resolve) {
+				r.resolve();
 			}
 		}
+		this.renderStack.clear();
+		this.onasync();
 	}
 	onbeforeasync() {
 	}
@@ -261,28 +218,24 @@ console.log("!!!!!!! is not tag", $src);
 		return scope;
 	}*/
 	getScope($e) {
+this._scoping = true;
 		const $path = [];//$e instanceof HTMLElement ? [$e] : [];
-//!!!! для того что бы в скоуп не попали переменн цикла
-//		const $path = [];
 //!!_parent		for (; $e = $e.parentNode || $e._parentNode; $path.push($e));
 		for (; $e; $path.push($e), $e = $e.parentNode);
 		const scope = {};
-		for (let i = $path.length - 2; i > -1; i--) {
-			//scope = 
-			this.getScopeItem($path[i], scope);
+		for (let i = $path.length - 2; i > -1; i--) {// -2 then parent on docEl -> HTMLDocument or parent mauby DocumentFragment
+//		for (let i = $path.length - 2; i > 0; i--) {// -2 then parent on docEl -> HTMLDocument or parent mauby DocumentFragment
+			this.execScopeItem($path[i], scope);
 		}
+this._scoping = false;
 		return scope;
 	}
-	getScopeItem($e, scope) {
-//!!_partent
-//		if ($e instanceof HTMLElement) {
-			const attr = this.getAttrs($e);
-			for (const [n, v] of attr) {
-				//scope = 
-				this.execGetScope($e, n, v, scope);
+	execScopeItem($e, scope) {
+		for (const [n, v] of this.getAttrs($e)) {
+			if (!this.execGetScope($e, n, v, scope)) {
+				break;
 			}
-//		}
-		return scope;
+		}
 	}
 	execRender($src, attrName, attrValue, scope) {
 		const req = this.getReq($src, attrName, attrValue, scope);
@@ -305,7 +258,8 @@ console.log("!!!!!!! is not tag", $src);
 		if (req && req.cmd.getScope) {
 			return req.cmd.getScope.call(this, req);
 		}
-		return scope;
+//		return scope;
+		return true;
 	}
 	getReq($src, str, expr, scope) {
 		const reqCmd = this.getReqCmd(str);
@@ -359,12 +313,13 @@ console.log("!!!!!!! is not tag", $src);
 	createDocumentFragment() {
 		return document.createDocumentFragment();
 	}
+/*
 	insertBefore($parent, $e, $before) {
 		return $parent.insertBefore($e, $before);
 	}
 	appendChild($parent, $e) {
 		return $parent.appendChild($e);
-	}
+	}*/
 //!!!<--
 	setAttribute($e, name, value) {
 //todo атрибут нелльзя создать, если в нем есть некорректные символы - решение ниже слишком исбыточное, на мой взгляд
@@ -442,14 +397,17 @@ console.log("!!!!!!! is not tag", $src);
 			target: new Set()
 		};
 		this.descr.set(d.id, d);
-		let $srcSet = this.$srcById.get(d.id);
-		if (!$srcSet) {
-			this.$srcById.set(d.id, $srcSet = new Set());//for clone
+		let $srcById = this.$srcById.get(d.id);
+		if (!$srcById) {
+			this.$srcById.set(d.id, $srcById = new Set());//for clone
 		}
-		$srcSet.add($e);
+		$srcById.add($e);
 		return d;
 	}
 	createAttr($e) {
+//if (!$e.getAttribute) {
+//	console.log(11112, $e);
+//}
 		const attr = new Map();
 		const order = $e.getAttribute(orderCmdName);
 		if (order) {
@@ -459,7 +417,7 @@ console.log("!!!!!!! is not tag", $src);
 				attr.set(o[i], $e.getAttribute(o[i]));
 			}
 		}
-//		const attrsLen = $e.attributes.length;
+//todo		const attrsLen = $e.attributes.length;
 		const attrs = Array.from($e.attributes);
 		const attrsLen = attrs.length;
 		for (let i = 0; i < attrsLen; i++) {
@@ -492,106 +450,93 @@ console.log("!!!!!!! is not tag", $src);
 			}
 		}
 	}
-	show($e) {
-//		this.removeAllOnRenderStack($e);
-		this.renderStack.delete($e);
+	show($e, afterAttrName) {
 		if ($e.nodeName != "TEMPLATE") {
 			return $e;
+		}
+		if (/*this.isDebug && */$e.content.childNodes.length != 1) {
+//console.log(this.renderStack.get($e), getId($e), $e);
+			this.check(new Error(">>>Tpl show:01: Template element invalid structure on show function. <template>.childNodes.length must be only one element."), {
+				$src: $e,
+				afterAttrName
+			});
+			return;
 		}
 		const $new = $e.content.firstChild;
 		this.moveProps($e, $new);
 		$e.parentNode.replaceChild($new, $e);
-//--		this.replaceChild($new, $e);
+//		this.replaceChild($new, $e);
 		return $new;
 	}
-	hide($e) {
+	hide($e, afterAttrName) {
+//del
 		if ($e.nodeName == "TEMPLATE") {
-//			this.removeAllOnRenderStack($e);
-			this.renderStack.delete($e);
 			return $e;
 		}
-//		$goTagsDeep($e, this.removeAllOnRenderStack.bind(this));
-		$goTagsDeep($e, this.renderStack.delete.bind(this.renderStack));
-
 		const $new = document.createElement("template");
-		this.moveProps($e, $new);
+		if ($e instanceof HTMLElement) {
+			this.moveProps($e, $new);
+			for (let $i = $e.firstElementChild; $i; $i = $i.nextElementSibling) {
+				$goTagsDeep($i, this.clearTagPropsToMove.bind(this));
+			}
+		}
 		$e.parentNode.replaceChild($new, $e);
-//--		this.replaceChild($new, $e);
-		this.appendChild($new.content, $e);
-
+		$new.content.appendChild($e);
+//		this.replaceChild($new, $e);
+//--		this.appendChild($new.content, $e);
 //		$new.content._parentNode = $p;
-
+		if (this.renderStack.size) {//hide вызван не из async (просто из render, например, из загрузившейся в фоне вставки)
+			this.renderStack.set($new, {
+				isDel: true
+			});
+		}
 		return $new;
 	}
 	moveProps($from, $to) {
-		if (!($from instanceof HTMLElement && $to instanceof HTMLElement)) {
-			return;
+//--		if (!($from instanceof HTMLElement && $to instanceof HTMLElement)) {
+//			return;
+//		}
+		const r = this.renderStack.get($from);
+		if (r) {
+			r.isDel = true;
 		}
 //like as ssr and for-cmd
 //		for (const [name, value] of this.getAttrs($from)) {
 //			this.setAttribute($to, name, value);
 //		for (const attr of $from.attributes) {
+		const d = this.get$srcDescr($from);// || this.createTagDescr($e);
+//		if (!d) {
+//			return;
+//		}
+		$to[getId.propName] = d.id;
+//		$from[getId.propName] = -1;
+		const $srcById = this.$srcById.get(d.id);
+		if ($srcById) {
+			$srcById.delete($from);
+			$srcById.add($to);
+		} else {
+console.log("!!!!!!!! $srcById", d.id, $from, $to);
+		}
 //!!!!!!!!!attributes
 //try {
 		const attrs = Array.from($from.attributes);
 		for (const attr of attrs) {
+			//!!должно выполняться полсе присвоения ID, потому что в setAttribute используется getAttrs
 			this.setAttribute($to, attr.name, attr.value);
 		}
 //} catch(err) {
 //	alert(err);
 //}
-		const d = this.get$srcDescr($from);
-		if (!d) {
-			return;
-		}
-		$to[getId.propName] = d.id;
-//		$from[getId.propName] = -1;
-		const $srcSet = this.$srcById.get(d.id);
-		$srcSet.delete($from);
-		$srcSet.add($to);
-	}
-	copyDescr($from, $to) {
-		const id = $from[getId.propName];
-		if (id) {
-			$to[getId.propName] = id;
-//			if (!this.$srcById.has(id)) {
-				this.$srcById.get(id).add($to);
-//			}
-		}
-	}
-	setDescrWithVars($fromDescr, $to, $toId) {
-		$to[getId.propName] = $toId;
-		this.$srcById.get($toId).add($to);
-		const fromId = $fromDescr.id;
-		for (const t of $fromDescr.target) {
-//new!!
-			this.descr.get($toId).target.add(t);
-
-			const $srcByVar = this.$srcByVar.get(t);
-			if ($srcByVar) {
-				$srcByVar.add($toId);
-			}
-			const $srcByVarProp = this.$srcByVarProp.get(t);
-			if ($srcByVarProp) {
-				for (const $srcSet of $srcByVarProp.values()) {
-//				for (const [pName, $srcSet] of $srcByVarProp) {
-					if ($srcSet.has(fromId)) {
-//console.log(2222, $to, $toId, pName, $srcSet, $srcByVarProp);
-						$srcSet.add($toId);
-					}
-				}
-			}
-		}
 	}
 	clearTagProps($e) {
 		const d = this.get$srcDescr($e);
 		if (!d) {
 			return;
 		}
-
-//		this.removeAllOnRenderStack($e);
-		this.renderStack.delete($e);
-
+		const r = this.renderStack.get($e);
+		if (r) {
+			r.isDel = true;
+		}
 		const $srcById = this.$srcById.get(d.id);
 		if (!$srcById) {
 //todo проверить почему так
@@ -602,12 +547,26 @@ console.log("!!!!!!! is not tag", $src);
 			return;
 		}
 		this.$srcById.delete(d.id);
+		this.clearVarsByDescr(d);
+	}
+	clearTagPropsToMove($e) {
+		const d = this.get$srcDescr($e);
+		if (!d) {
+			return;
+		}
+		const r = this.renderStack.get($e);
+		if (r) {
+			r.isDel = true;
+		}
+		this.clearVarsByDescr(d);
+	}
+	clearVarsByDescr(d) {
 		for (const t of d.target) {
 			const $srcByVar = this.$srcByVar.get(t);
 			if ($srcByVar) {
 				$srcByVar.delete(d.id);
 				if (!$srcByVar.size) {
-					$srcByVar.delete(d.id);
+					this.$srcByVar.delete(t);
 				}
 			}
 			const $srcByVarProp = this.$srcByVarProp.get(t);
@@ -627,18 +586,51 @@ console.log("!!!!!!! is not tag", $src);
 		}
 	}
 
-	eval(req, isOnlyRun) {
-		const args = [];
-		for (const i in req.scope) {
-			args.push(req.scope[i]);
+	copyDescr($from, $to) {
+		const id = $from[getId.propName];
+		if (!id) {
+			return;
 		}
+		$to[getId.propName] = id;
+		const $srcById = this.$srcById.get(id);
+//		if (!this.$srcById.has(id)) {
+		if ($srcById) {
+			$srcById.add($to);
+		}
+	}
+	setDescrWithVars($fromDescr, $to, $toId) {
+		$to[getId.propName] = $toId;
+		this.$srcById.get($toId).add($to);
+		const fromId = $fromDescr.id;
+		for (const t of $fromDescr.target) {
+//new!!
+			this.descr.get($toId).target.add(t);
+
+			const $srcByVar = this.$srcByVar.get(t);
+			if ($srcByVar) {
+				$srcByVar.add($toId);
+			}
+			const $srcByVarProp = this.$srcByVarProp.get(t);
+			if ($srcByVarProp) {
+				for (const $srcSet of $srcByVarProp.values()) {
+					if ($srcSet.has(fromId)) {
+						$srcSet.add($toId);
+					}
+				}
+			}
+		}
+	}
+
+	eval(req, isOnlyRun) {
 		let argsStr = "";
+		const args = [];
 		for (const i in req.scope) {
 			if (argsStr) {
 				argsStr += "," + i;
 			} else {
 				argsStr = i;
 			}
+			args.push(req.scope[i]);
 		}
 		if (!isOnlyRun) {
 			this.curReq = req;
@@ -664,12 +656,12 @@ console.log("!!!!!!! is not tag", $src);
 		if (f) {
 			return f;
 		}
+//todo еще раз подумать о конструкциях с return
 		const funcBody = expr.trimLeft().indexOf("return") == 0 ? expr : "const " + resVarName + " = " + expr + "; return " + resVarName + ";";
-//		const funcBody = expr.indexOf("return") == -1 ? "return " + expr : expr;
 		try {
 			f = new Function(argsStr, funcBody);
 		} catch (err) {
-			throw new Error(`${err}\n\tfunction body => ${funcBody}\n	args => ${argsStr}`, req);
+			throw new Error(`${err}\n\tfunction body => ${funcBody}\n\targs => ${argsStr}`, req);
 		}
 		this._func.set(fKey, f);
 		return f;
@@ -679,7 +671,7 @@ console.log("!!!!!!! is not tag", $src);
 			return;
 		}
 		const $src = req.$srcForErr || req.$src;
-		const errMsg = ($src.getLineNo ? " in " + $src.getLineNo() : "") + "\n\t" +  req.str + " => " + req.expr + "\n\t$src => ";
+		const errMsg = ($src.getLineNo ? " in " + $src.getLineNo() : "") + (req.str ? "\n\t" + req.str + " => " + req.expr : '') + "\n\t$src => ";
 		console.error(res, "\n>>>Tpl error" + errMsg, $src, req);
 		if (fileName) {
 			res = new Error(res, fileName, lineNum, colNum);
@@ -694,6 +686,7 @@ console.log("!!!!!!! is not tag", $src);
 				console.error(">>>Tpl error in onerror handler" + errMsg, $src, "onerror=>" + onError, req, err);
 			}
 		}
+//--		this.renderStack.clear();
 		throw res;
 	}
 
@@ -711,75 +704,65 @@ console.log("!!!!!!! is not tag", $src);
 		};
 	}
 	proxyGet(t, n, r) {
-		if (n == tplProxyTargetPropName) {//"tplProxyTarget") {
+		if (n == tplProxyTargetPropName) {
 			return t;
 		}
 //		const v = Reflect.get(t, n);
 		const v = t[n];
-//		if (!this.curReq || !Reflect.has(t, n)) {// && symbol)) {
-//		if (!this.curReq) {// || !t.hasOwnProperty(n)) {
 		if (!this.curReq) {
 			return v;
 		}
-		const $src = this.curReq.$src;
-		const $srcId = $src[getId.propName];
-//console.log('get', n, t, r, $src);
-/*
-if (!this.descr.has($srcId)) {
-	console.error("err get", n, t, $src);
-	throw 2222222222222;
-}*/
-		let $srcByVarProp = this.$srcByVarProp.get(r);
-		if (!$srcByVarProp) {
-			this.$srcByVarProp.set(r, $srcByVarProp = new Map());
-		}
-		let $srcByProp = $srcByVarProp.get(n);
-		if (!$srcByProp) {
-			$srcByVarProp.set(n, $srcByProp = new Set());
-		}
-		if (!$srcByProp.has($srcId)) {
-//--old			this.clear$srcByVarProp($srcByVarProp, $src, t);
-			$srcByProp.add($srcId);
-//console.log('get1', "p." + n, t, v, $srcId, $src, tpl.$srcByVarProp.get(d) && tpl.$srcByVarProp.get(d).get("isShow"));
+		const $srcId = this.curReq.$src[getId.propName];
+//console.log('get', n, t, r, this.curReq.$src);
+		const $srcByVarProp = this.$srcByVarProp.get(r);
+		if ($srcByVarProp) {
+			const $srcByProp = $srcByVarProp.get(n);
+			if ($srcByProp) {
+				if (!$srcByProp.has($srcId)) {
+					$srcByProp.add($srcId);
+				}
+			} else {
+				$srcByVarProp.set(n, new Set([$srcId]));
+			}
+		} else {
+			this.$srcByVarProp.set(r, new Map([[n, new Set([$srcId])]]));
 		}
 
 		const varBy$src = this.descr.get($srcId).target;
 		if (!varBy$src.has(r)) {
 			varBy$src.add(r);
-//console.log('get2', "p." + n, t, $srcId, $src, tpl.$srcByVarProp.get(d) && tpl.$srcByVarProp.get(d).get("isShow"));
 		}
 
 		if (v instanceof Object) {
-//console.log(1, t, n, r);
 			if (!v[tplProxyTargetPropName]) {
 				v = wrapDeep(v, this.getProxyItem.bind(this));
 			}
 			r = v;
 			if (!varBy$src.has(r)) {
 				varBy$src.add(r);
-//console.log('get3', "p." + n, t, $src, tpl.$srcByVarProp.get(d) && tpl.$srcByVarProp.get(d).get("isShow"));
 			}
 		}
-		let $srcByVar = this.$srcByVar.get(r);
-		if (!$srcByVar) {
-			this.$srcByVar.set(r, $srcByVar = new Set());
+		const $srcByVar = this.$srcByVar.get(r);
+		if ($srcByVar) {
+			if (!$srcByVar.has($srcId)) {
+				$srcByVar.add($srcId);
+			}
+		} else {
+			this.$srcByVar.set(r, new Set([$srcId]));
 		}
-		if (!$srcByVar.has($srcId)) {
-			$srcByVar.add($srcId);
-//console.log('get4', "p." + n, t, $src, tpl.$srcByVarProp.get(d) && tpl.$srcByVarProp.get(d).get("isShow"));
-		}
-//console.log(123, this.curReq.$src, tpl.$srcByVarProp.get(d) && tpl.$srcByVarProp.get(d).get("isShow"));
 		return v;
 	}
 	proxySet(t, n, v, r) {
+if (this._scoping) {
+	return Reflect.set(t, n, v);
+}
 //		const old = Reflect.get(t, n);
 		const old = t[n];
-//console.log('set', t, n, v);//, Object.getOwnPropertyDescriptor(t, n));
+//console.log('set', t, n, v, "old=>", old);//, Object.getOwnPropertyDescriptor(t, n));
 		if (v === old && (!v || Object.getOwnPropertyDescriptor(t, n).enumerable)) {
-//console.log("1", v, n);
 			return true;
 		}
-		this.clearVars(old);
+		this.clearVarsByVar(old);
 		if (v instanceof Object && !v[tplProxyTargetPropName]) {
 			v = wrapDeep(v, this.getProxyItem.bind(this));
 		}
@@ -791,13 +774,35 @@ if (!this.descr.has($srcId)) {
 	proxyDeleteProperty(t, n, r) {
 //		const old = Reflect.get(t, n);
 		const old = t[n];
+//console.log('del', t, n, "old=>", old);
 		if (!Reflect.deleteProperty(t, n)) {
 			return false;
 		}
-		this.clearVars(old);
-//alert(2 + n);
-//console.log('del', t, n);
+		this.clearVarsByVar(old);
 		return this.set$srcByVar(t, n, undefined, r);
+	}
+	clearVarsByVar(t) {
+		if (!(t instanceof Object)) {
+			return;
+		}
+		if (t instanceof Array) {
+			const iLen = t.length;
+			for (let i = 0; i < iLen; i++) {
+				this.clearVarsByVar(t[i]);
+			}
+		} else {
+			for (const i in t) {
+				this.clearVarsByVar(t[i]);
+			}
+		}
+		if (this.$srcByVar.has(t)) {
+//console.log("$srcByVar", t);
+			this.$srcByVar.delete(t);
+		}
+		if (this.$srcByVarProp.has(t)) {
+//console.log("$srcByVarProp", t);
+			this.$srcByVarProp.delete(t);
+		}
 	}
 	set$srcByVar(t, n, v, r) {
 //console.info('0 rByProp', n, v, t, this.$srcByVar.get(r));
@@ -810,7 +815,7 @@ if (!this.descr.has($srcId)) {
 				return true;
 			}
 		}
-		const $srcIdSet = this.$srcByVar.get(r);// || this.$srcByVar.get(t);
+		const $srcIdSet = this.$srcByVar.get(r);
 		if ($srcIdSet) {
 //console.info('2 rByT', "name", n, "value", v, "target", t, "$srcIdSet", $srcIdSet);
 			this.renderBy$srcIdSet($srcIdSet);
@@ -818,97 +823,44 @@ if (!this.descr.has($srcId)) {
 		}
 		return true;
 	}
-//рендер стэк нам нужен для того что бы из рендера можно было удаляить элементы из него
-//?? можно ли использовать один стэк?
-//-- asyncBy$srcId и addToRenderStack - очень похожи ...
 	renderBy$srcIdSet($srcIdSet) {
-//console.info('ss', $srcIdSet);
-		if (this.delay >= 0) {
-			for (const id of $srcIdSet) {
-				this.asyncBy$srcId(id);
-			}
+		const sLen = this.renderStack.size;
+		this.add$srcSetToRenderStack($srcIdSet);
+		if (sLen) {
+//console.log(111, sLen, this.renderStack);
 			return;
 		}
 		for (const id of $srcIdSet) {
-			this.addToRenderStack(id);
-		}
-//console.log("stek", this.renderStack);
-//		for (const [$src, id] of this.renderStack) {
-//			if (this.has$srcId(id, $src)) {
-		for (const $src of this.renderStack.keys()) {
-//			if (this.has$srcId($src)) {
-				this.render($src);
-//				$src.render();
-//			}
-			this.renderStack.delete($src);
-		}
-//console.log("stek", this.renderStack);
-//todo think about
-		if (this.renderStack.size) {
-			this.renderStack.clear();
-		}
-	}
-	asyncBy$srcId(id) {
-		const $srcSet = this.$srcById.get(id);
-		if (!$srcSet) {
-			return;
-		}
-		if (this.descr.get(id).isAsOne) {
+			const $srcSet = this.$srcById.get(id);
+			if (!$srcSet) {
+				continue;
+			}
 			for (const $i of $srcSet) {
 				this.async($i);
-//				$i.render(this.delay);
 				return;
 			}
-		} else {
-			for (const $i of $srcSet) {
-				this.async($i);
-//				$i.render(this.delay);
-			}
 		}
 	}
-	addToRenderStack(id) {
-		const $srcSet = this.$srcById.get(id);
-		if (!$srcSet) {
-			return;
-		}
-		if (this.descr.get(id).isAsOne) {
+	add$srcSetToRenderStack($srcIdSet) {
+		for (const id of $srcIdSet) {
+			const $srcSet = this.$srcById.get(id);
+			if (!$srcSet) {
+				continue;
+			}
+			if (this.descr.get(id).isAsOne) {
+				for (const $i of $srcSet) {
+					if (!this.renderStack.has($i)) {
+						this.renderStack.set($i, {});
+					}
+					break;
+				}
+				continue;
+			}
 			for (const $i of $srcSet) {
-				this.renderStack.add($i);
-//				this.renderStack.set($i, id);
-				return;
+				if (!this.renderStack.has($i)) {
+					this.renderStack.set($i, {});
+				}
 			}
-		} else {
-			for (const $i of $srcSet) {
-				this.renderStack.add($i);
-//				this.renderStack.set($i, id);
-			}
-		}
-	}
-	has$srcId(id, $src) {
-		const $srcSet = this.$srcById.get(id);
-		return $srcSet && $srcSet.has($src);
-	}
-	clearVars(t) {
-		if (!(t instanceof Object)) {
-			return;
-		}
-		if (t instanceof Array) {
-			const iLen = t.length;
-			for (let i = 0; i < iLen; i++) {
-				this.clearVars(t[i]);
-			}
-		} else {
-			for (const i in t) {
-				this.clearVars(t[i]);
-			}
-		}
-		if (this.$srcByVar.has(t)) {
-//console.log("$srcByVar", t);
-			this.$srcByVar.delete(t);
-		}
-		if (this.$srcByVarProp.has(t)) {
-//console.log("$srcByVarProp", t);
-			this.$srcByVarProp.delete(t);
 		}
 	}
 
@@ -963,13 +915,17 @@ Tpl.addCommand(fetchCmdName, fetchCmd);
 
 Tpl.addCommand(onCmdName, onCmd);
 
-//self.Tpl = Tpl;
 export default self.tpl = new Tpl();
-self.data = self.tpl.getProxy(self.data);
-self.data.loc = self.tpl.getLoc(location.href);
+
+self.data = tpl.getProxy(self.data);
+self.data.loc = tpl.getLoc(location.href);
 self.addEventListener("hashchange", () => {
-	self.data.loc = self.tpl.getLoc(location.href);
+	self.data.loc = tpl.getLoc(location.href);
 });
+//!!for Edge
+//const url = new URL(import.meta.url);
+const $s = document.querySelector("script");
+const url = $s && new URL($s.src);
 
 function main() {
 	self.tpl.go();
@@ -988,7 +944,7 @@ function debug() {
 //!!for Edge
 //	import(url.origin + url.pathname.replace("tpl.js", "getLineNo.js")).then(m => m.default).then(main);
 	try {
-		eval('import(url.origin + url.pathname.replace("tpl.js", "getLineNo.js")).then(m => m.default).then(main);');
+		eval('import(url.origin + "/myweb/getLineNo.js").then(m => m.default).then(main);');
 	} catch (err) {
 		main();
 	}
@@ -1001,13 +957,6 @@ function onload() {
 	}
 }
 
-//!!for Edge
-//const url = new URL(import.meta.url);
-const $s = document.querySelectorAll("script")[0];
-let url;
-if ($s) {
-	url = new URL($s.src);
-}
 self.tpl.isDebug = url && url.search.indexOf("debug") != -1;
 if (url && url.search.indexOf("onload") == -1) {
 	if (!document.readyState || document.readyState == "loading") {
