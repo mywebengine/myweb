@@ -12,7 +12,10 @@ class ArrFragment {
 		this.$arr = $arr;
 	}
 	get parentNode() {
-		return this.$arr[0] ? this.$arr[0].parentNode : null;
+		if (this.$arr[0]) {
+			return this.$arr[0].parentNode;
+		}
+		return null;
 	}
 	get childNodes() {
 		return this.$arr;
@@ -21,7 +24,7 @@ class ArrFragment {
 		const $c = [];
 		const l = this.$arr.length;
 		for (let i = 0; i < l; i++) {
-			if (this.$arr[i] instanceof HTMLElement) {
+			if (this.$arr[i].nodeType === 1) {
 				$c.push(this.$arr[i]);
 			}
 		}
@@ -36,7 +39,7 @@ class ArrFragment {
 	get firstElementChild() {
 		const l = this.$arr.length;
 		for (let i = 0; i < l; i++) {
-			if (this.$arr[i] instanceof HTMLElement) {
+			if (this.$arr[i].nodeType === 1) {
 				return this.$arr[i];
 			}
 		}
@@ -44,7 +47,7 @@ class ArrFragment {
 	}
 	get lastElementChild() {
 		for (let i = this.$arr.length - 1; i > -1; i--) {
-			if (this.$arr[i] instanceof HTMLElement) {
+			if (this.$arr[i].nodeType === 1) {
 				return this.$arr[i];
 			}
 		}
@@ -52,7 +55,10 @@ class ArrFragment {
 	}
 	querySelector(q) {
 		const $res = this.querySelectorAll(q);
-		return $res ? $res[0] : null;
+		if ($res) {
+			return $res[0];
+		}
+		return null;
 	}
 	querySelectorAll(q) {
 		const $res = [];
@@ -66,7 +72,7 @@ class ArrFragment {
 		}
 		const $rLen = $r.length;
 		for (let i = 0; i < l; i++) {
-			if (this.$arr[i] instanceof HTMLElement) {
+			if (this.$arr[i].nodeType === 1) {
 				for (let j = 0; j < $rLen; j++) {
 					if (isIn($r[j], this.$arr[i])) {
 						$res.push($r[j]);
@@ -78,11 +84,11 @@ class ArrFragment {
 	}
 }
 function isIn($r, $e) {
-	if ($r == $e) {
+	if ($r === $e) {
 		return true;
 	}
-	for ($e = $e.firstElementChild; $e; $e = $e.nextElementSibling) {
-		if (isIn($r, $e)) {
+	for ($e = $e.firstChild; $e; $e = $e.nextSibling) {
+		if ($e.nodeType === 1 && isIn($r, $e)) {
 			return true;
 		}
 	}

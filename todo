@@ -1,5 +1,17 @@
-﻿1) if.a-id => aId
-2) for <!--begin:for.a--><!--end:for.a-->
-считать количество откырвающихся и закрываюзихся
-3) inc делать на динамические и статические
-4) inc_oldVal - в атрибут и со значением урла
+﻿2) _for _for
+
+3) _if _for
+		_if _for
+		_else
+
+4) ??? _fetch _for
+	_inc _for
+
+5) _if _inc
+	_inc _if ?
+
+6) eval2 ` .... return 111`
+
+7) inc default slot
+
+8) fetch watch реагирует на изменение результата, т.е если результат был undef и 

@@ -1,6 +1,0 @@
-/*!
- * myweb/arrfr.js v0.9.0
- * (c) 2019 Aleksey Zobnev
- * Released under the MIT License.
- * https://github.com/mywebengine/myweb
- */export default function createArrFragment(a){return new ArrFragment(a)}class ArrFragment{constructor(a){this.$arr=a}get parentNode(){return this.$arr[0]?this.$arr[0].parentNode:null}get childNodes(){return this.$arr}get children(){const a=[],b=this.$arr.length;for(let c=0;c<b;c++)this.$arr[c]instanceof HTMLElement&&a.push(this.$arr[c]);return a}get firstChild(){return this.$arr[0]}get lastChild(){return this.$arr[this.$arr.length-1]}get firstElementChild(){const a=this.$arr.length;for(let b=0;b<a;b++)if(this.$arr[b]instanceof HTMLElement)return this.$arr[b];return null}get lastElementChild(){for(let a=this.$arr.length-1;-1<a;a--)if(this.$arr[a]instanceof HTMLElement)return this.$arr[a];return null}querySelector(a){const b=this.querySelectorAll(a);return b?b[0]:null}querySelectorAll(a){const b=[],c=this.$arr.length;if(!c)return b;const d=this.$arr[0].parentNode.querySelectorAll(a);if(!d)return b;const e=d.length;for(let f=0;f<c;f++)if(this.$arr[f]instanceof HTMLElement)for(let a=0;a<e;a++)isIn(d[a],this.$arr[f])&&b.push(d[a]);return b}}function isIn(a,b){if(a==b)return!0;for(b=b.firstElementChild;b;b=b.nextElementSibling)if(isIn(a,b))return!0}

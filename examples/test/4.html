@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Test Tpl</title>
+		<meta charset="utf-8" />
+		<style>
+			.first:nth-of-type(1) {
+				font-weight: bold;
+			}
+		</style>
+		<!--script src="../getLineNo.js" async="async"></script-->
+		<script src="_.js" type="module"></script>
+	</head>
+	<body>
+		<!--fieldset>
+			<label>
+				<input type="checkbox"
+					:attr.checked="data.isShow"
+					onchange="data.isShow = this.checked;" /> isShow
+			</label>
+			<label>
+				<input type="checkbox"
+					:attr.checked="data.isShow2"
+					onchange="data.isShow2 = this.checked;" /> isShow2
+			</label>
+		</fieldset-->
+		<!--h1>{{data.green}} Hellow text! Are you a {{data.red}}?</h1-->
+		<fieldset>
+			<input oninput="const d = tpl.delay; tpl.delay = 0; data.arr.unshift(this.value); tpl.delay = d;" />
+		</fieldset>
+		<fieldset>
+			<input oninput="const d = tpl.delay; tpl.delay = 0; data.arr.push(this.value); tpl.delay = d;" />
+		</fieldset>
+		<!--div :if.f="data.isShow">
+			<span :attr.style="`color: ${data.red};`">SHOW (<span :text="f"></span>)</span>
+		</div>
+		<div :if.f="data.isShow2" :attr.style="`color: ${data.green};`">
+			<div>SHOW2 (<span :text="f"></span>)</div>
+		</div-->
+		<ul :1if="data.arr.length">
+			<!--li :for.val.i="data.arr" aaaa:scope="h">
+				<span :attr.data-prop-in-prop="`!`"
+					:html="`${1 * 1 + 1}) ${val.name || val} >${1 * 1 + 1}) ${val.name || val}<, ${data.green} <b>'&amp;%#/&quot;</b>`"
+					:attr.style="`color: ${data.bag.indexOf(val * 1) == -1 ? data.green : data.red};`"
+					:attr.onclick="`alert('attr!-${(val && val.name || val || '').q()}');`"></span>
+			</li-->
+			<!--li :for.val.i="data.arr" tpl11:scope="jj">
+				<span :attr.data-prop-in-prop="`!`"
+					:attr.style="`color: ${isNaN(val) ? data.green : data.red};`"
+					:attr.onclick="`alert('attr!-${(val && val.name || val || '').q()}');`">
+					{{i * 1 + 1}}) {{val.name || val}} >{{i * 1 + 1}}) {{val.name || val}}<, {{data.green}}
+				</span>
+			</li-->
+			<li :for.val.i="data.arr" :html="val.toString() + ', ' + 1 + val.valueOf()"></li>
+		</ul>
+		<?dfsdfsd ?>
+	</body>
+</html>

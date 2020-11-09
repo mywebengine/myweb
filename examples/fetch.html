@@ -1,32 +1,30 @@
 <!doctype html>
-<html data-is-rendered="false">
+<html data-debug="">
 	<head>
 		<title>myweb/tpl ex1</title>
 		<meta charset="utf-8" />
-
+		<script src="../main.js" type="module" async="async"></script>
 		<script>
 			data = {
 				red: "red"
 			};
 		</script>
-		<script src="main.js" type="module" async="async"></script>
-	
-		<meta :inc.u="./ctrl/modal.html" />
+		<link _inc.u="./ctrl/modal.html" />
 	</head>
 	<body>
 		<fieldset>
-			<input :attr.value="data.val" oninput="data.val = this.value;" />
+			<input _attr.value="data.val" oninput="data.val = this.value;" />
 		</fieldset>
-		<link :attr.data-method="data.m"
+		<link _attr.data-method="data.m"
 			_fetch.u="./fetch/ex1.json"
 			_order=":attr.data-method :fetch.u"
 			data1-type="x-form"
 			data1-body="data.form"
 			data-onok="data.val = await this.json().newVal; console.log(`fetch onload`, this);"
 			data-onerror="!Modal || new Modal().show({text: this.status}); console.error(`error`, this, err, err.status);" />
-		<ul :if="data.val">
-			<li :for.txt.i="data.val">
-                                <span :attr.style="`color: ${data.red}`">
+		<ul _if="data.val">
+			<li _for.txt.i="data.val">
+                                <span _attr.style="`color: ${data.red}`">
                                 	{{txt}}
                                 </span>
 			</li>

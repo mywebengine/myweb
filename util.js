@@ -1,339 +1,322 @@
-/*!
- * myweb/util.js v0.9.0
- * (c) 2019 Aleksey Zobnev
- * Released under the MIT License.
- * https://github.com/mywebengine/myweb
- */
-import {tplProxyTargetPropName} from "./tpl/const.js";
+﻿import {srcId, cmdPref, isAsyncTask, isAsyncAnimation, defTaskOpt} from "./config.js";
+import {eval2} from "./eval2.js";
+import {type_req} from "./req.js";
 
 export const spaceRe = /\s+/g;
-export const dRe = /\d/g;
-export const DRe = /\D/g;
-export const trimSlashRe = /(^\/|\/$)/g;
 
-export let idCurVal = 0;
-export function getId(i) {
-	return i[getId.propName] || (i[getId.propName] = (++idCurVal).toString());
-}
-getId.propName = Symbol();
-self.getId = getId;
-
-export function copy(val) {
-	if (val instanceof Array) {
-		return val.concat();
-	}
-	if (val instanceof Object) {
-		return Object.assign({}, val);
-	}
-	return val;
-}
+export const addTask = (() => {
+	if (isAsyncTask) {
+		return function(f, sync, opt) {
+			return new Promise(resolve => {
+				requestIdleCallback(() => {
+					resolve(f());
+				}, opt || defTaskOpt);
+			});
 /*
-export function cmp(a, b, func = (a, b) => a === b) {
-	if (a instanceof Object && b instanceof Object) {
-		for (const i in a) {//.getOwnPropertyNames()) {
-			if (!cmp(a[i], b[i], func)) {
-				return false;
+			if (!opt.deadline) {
+				return sync.tasks.push(requestIdleCallback(f, opt));
 			}
+			return sync.tasks.push(requestIdleCallback(() => {
+				if (Date.now() < o.deadline) {
+					f();
+				}
+			}, opt));*/
+		}
+	}
+	return function(f) {
+//		return Promise.resolve(f());
+		return f();
+	}
+})();
+export const addAnimation = (() => {
+	if (isAsyncAnimation) {
+		return function(f) {//, sync) {//, opt) {
+			return new Promise(resolve => {
+				requestAnimationFrame(() => {
+					resolve(f());
+				});
+			});
+//			if (!opt || !opt.deadline) {
+//				return sync.animations.push(requestAnimationFrame(f));
+//			}
+//			return sync.animations.push(requestAnimationFrame(() => {
+//				if (Date.now() < opt.deadline) {
+//					f();
+//				}
+//			}));
+		}
+	}
+	return function(f) {
+//		return Promise.resolve(f());
+		return f();
+	}
+})();
+export function check(res, reqOr$src, scope, fileName, lineNum, colNum) {
+	if (!(res instanceof Error)) {
+//todo
+console.warn("check", res);
+alert(222);
+		return;
+	}
+	const $src = reqOr$src.$src || reqOr$src;
+        let errMsg = ">>>Tpl error";
+        if ($src.getLineNo) {
+        	const pos = $src.getLineNo() || $src.parentNode.getLineNo();
+        	if (pos) {
+	        	errMsg += ` in ${pos}`;
+	        }
+        }
+	errMsg += `\n${res.toString()}`;
+	const params = [];
+        if (reqOr$src.str) {
+	        params.push(`\n${reqOr$src.str} =>`, reqOr$src.expr);
+	}
+	params.push(`\n$src =>`, $src, `\nsId =>`, $src[srcId]);
+	if (reqOr$src.$src) {
+		params.push("\nreq =>", reqOr$src);
+	}
+	if (scope) {
+		params.push("\nscope =>", scope);
+	}
+	console.error(errMsg, ...params);
+	if (fileName) {
+		res = new Error(res, fileName, lineNum, colNum);
+	}
+/*
+//todo error
+	if ($src.dataset) {
+		const onError = $src.dataset.onerror;
+		if (onError) {
+			try {
+				new Function("err", onError).call(reqOr$src.$src, res);
+			} catch (err) {
+				console.error(`>>>Tpl error in onerror handler: ${onError}\n$src =>`, $src);
+				return err;
+			}
+		}
+	}*/
+//alert(1);
+	return res;
+}
+
+export function oset(t, n, v) {
+	const o = t[n];
+	if (typeof o !== "object") {// || Array.isArray(t)) {
+		return Reflect.set(t, n, v);
+	}
+	if (typeof v !== "object" || v === null) {
+		const f = Reflect.set(t, n, v);
+		if (Array.isArray(o)) {
+			o.splice(0, o.length);
+			return f;
+		}
+//		if (o instanceof Set || o instanceof Map) {
+//			o.clear();
+//			return f;
+//		}
+		for (const i in o) {
+			delete o[i];
+		}
+		return f;
+	}
+//	if (typeof o !== "object" || typeof v !== "object" || v === null) {
+//		return Reflect.set(t, n, v);
+//	}
+	if (Array.isArray(o)) {
+		return _osetArray(t, n, v);
+	}
+/*
+	if (o instanceof Set) {
+		return _osetSet(t, n, v);
+	}
+	if (o instanceof Map) {
+		return _osetMap(t, n, v);
+	}*/
+	return _osetObject(t, n, v);
+}
+function _osetObject(t, n, v) {
+	const o = t[n];
+	for (const i in o) {
+		if (!(i in v)) {
+			delete o[i];
+		}
+	}
+	for (const i in v) {
+		oset(o, i, v[i]);
+/*
+		if (!oset(o, i, v[i])) {
+			console.error("oset", o, i, v[i]);
+			return false;
+		}*/
+	}
+	return true;
+}
+function _osetArray(t, n, v) {
+	const o = t[n],
+		oLen = o.length;
+	if (Array.isArray(v)) {
+		const vLen = v.length;
+		for (let i = 0; i < oLen && i < vLen; i++) {
+//			_oset(o, v, i);
+			oset(o, i, v[i]);
+/*
+			if (!oset(o, i, v[i])) {
+				console.error("oset", o, i, v[i]);
+				return false;
+			}*/
+		}
+		const l = oLen - vLen;
+		if (l > 0) {
+			o.splice(vLen, l);
+			return true;
+		}
+		for (let i = oLen; i < vLen; i++) {
+			o.push(v[i]);
 		}
 		return true;
 	}
-	return func(a, b);
-}*/
-export function wrapDeep(obj, func) {
-	for (const i in obj) {
-		if (obj[i] instanceof Object) {//typeof(obj[i]) == "object") {
-			obj[i] = wrapDeep(obj[i], func);
-		}
-	}
-	return func(obj);
+	o.splice(0, oLen);
+	return Reflect.set(t, n, v);
 }
-/*
-export function $goDeep($e, func) {
-	func($e);
-	for ($e = $e.firstChild; $e; $e = $e.nextSibling) {
-		$goDeep($e, func);
-	}
-	return $e;
-}*/
-export function $goTagsDeep($e, func) {
-	func($e);
-	if ($e.isCustomHTML) {
-		return $e;
-	}
-	for (let $i = $e.firstElementChild; $i; $i = $i.nextElementSibling) {
-		$goTagsDeep($i, func);
-	}
-	return $e;
-}
-export function $goCopy($from, $to, func) {
-	func($from, $to);
-	if ($from.isCustomHTML) {
-		return $to;
-	}
-	const len = $from.children.length;
-	for (let i = 0; i < len; i++) {
-		$goCopy($from.children[i], $to.children[i], func);
-	}
-	return $to;
-}
-export function getMustacheBlocks(text) {
-	const textLen = text.length;
-	const blocks = [];
-	for (let begin = 0, i = 0; i < textLen;) {
-		i = text.indexOf("{{", i);
-		if (i == -1) {
-			blocks.push({
-				begin,
-				end: textLen
-			});
-			break;
-		}
-		let j = text.indexOf("}}", i);
-		if (j == -1) {
-			blocks.push({
-				begin,
-				end: textLen
-			});
-			break;
-		}
-		while (text.indexOf("}}", j + 1) == j + 1) {
-			j++;
-		}
-		if (i != begin) {
-			blocks.push({
-				begin,
-				end: i
-			});
-		}
-		blocks.push({
-			begin: i + 2,
-			end: j,
-			expr: true
-		});
-		i = begin = j + 2;
-	}
-	return blocks;
-}
-self.getMustacheBlocks = getMustacheBlocks;
-/*
-export function getLocalNumber(val, fmt) {
-	if (!val || typeof(val) != "string") {
-		return val;
-	}
-	val = val.replace(/\s+/g, "");
-	if (getLocalNumber.dotSymbol == ".") {
-		val = val.replace(/,/g, "");
-	} else {
-		val = val.replace(/\./g, "");
-		val = val.replace(",", ".");
-	}
-	if (fmt && fmt.scale > 0) {
-		const dotIdx = val.indexOf(getLocalNumber.dotSymbol);
-		if (dotIdx != -1) {
-			val = val.substr(0, dotIdx + fmt.scale + 1);
-		}
-	}
-	return val * 1;
-}
-//getLocalNumber.locale = "en-Us";
-getLocalNumber.dotSymbol = (0.1).toLocaleString(getLocalNumber.locale).indexOf(".") == -1 ? "," : ".";*/
-/*
-export function formatFunc(val, fmt) {
-	if (val === "" || isNaN(val)) {
-		return "";
-	}
-//	return Number(val).toLocaleString(navigator.language, {
-	return Number(val).toLocaleString(undefined, {
-		maximumFractionDigits: fmt ? fmt.scale : 0//,
-//		useGrouping: false
-	});
-}*/
-
-const normalizeURL_reHost = /^(\w*\:*\/\/+|\/\/+).+?(\/|$)/;
-const normalizeURL_reSlash = /\/\/+/g;
-const normalizeURL_reUp = /[^\.\/]+\/+\.\.\//g;
-const normalizeURL_reThis = /\/\.\//g;
-export function normalizeURL(url) {
-	url = url.trim();
-	if (url.search(normalizeURL_reHost) == 0) {
-		return new URL(url).href;
-	}
-	if (url[0] != "/") {
-		const lastSlashIdx = location.pathname.lastIndexOf("/")
-		if (lastSlashIdx == location.pathname.length - 1) {
-			url = location.pathname + url;
-		} else if (lastSlashIdx != -1)  {
-			url = location.pathname.substr(0, lastSlashIdx + 1) + url;
-		}
-	}
-	return normalizeURL_get(url);
-}
-function normalizeURL_get(url) {
-	for (let re = [normalizeURL_reSlash, normalizeURL_reUp, normalizeURL_reThis], i = re.length - 1; i > -1; i--) {
-//--		while (url.search(re[i]) != -1) {
-			url = url.replace(re[i], "/");
-//		}
-	}
-	return url.trim();
-}
-self.normalizeURL = normalizeURL;
-
-export function getURL(url, topURL) {
-//console.log("getURL", url, topURL);
-	if (isURI(url)) {
-		if (topURL) {
-			if (isURI(topURL)) {
-				topURL = normalizeURL(topURL);
+function _osetSet(t, n, v) {
+	const o = t[n];
+	if (v instanceof Set) {
+		for (const i of o) {
+			if (!v.has(i)) {
+				o.delete(i);
 			}
-			let u = normalizeURL_get(url);
-			while (u.indexOf(".") == 0) {
-				if (u.indexOf("./") == 0) {
-					u = u.substr(2);
-				} else if (u.indexOf("../") == 0) {
-					u = u.substr(3);
+		}
+		for (const i of v) {
+//			if (!o.has(i)) {
+				o.add(i);
+//			}
+		}
+	}
+	o.clear();
+	return Reflect.set(t, n, v);
+}
+function _osetMap(t, n, v) {
+	const o = t[n];
+	if (v instanceof Map) {
+		for (const [key, i] of o) {
+			if (!v.has(key)) {
+				o.delete(key);
+			}
+		}
+		for (const [key, i] of v) {
+			const iVal = o.get(key);
+			if (iVal && typeof iVal === "object") {
+				//todo wait for Reflection can Set and Map
+				if (Array.isArray(iVal)) {
+					iVal.splice(0, iVal.length);
+				} else if (iVal instanceof Set || iVal instanceof Map) {
+					iVal.clear();
+				} else {
+					for (const j of iVal) {
+						delete iVal[j];
+					}
 				}
 			}
-//			topURL = topURL.substr(0, topURL.lastIndexOf("/"));
-//			u = u.substr(0, u.lastIndexOf("/"));
-//console.log(u, topURL);
-//			url = topURL.endsWith(u) ? topURL : normalizeURL(topURL + "/" + url);
-			url = topURL.endsWith(u) ? topURL : normalizeURL(topURL.substr(0, topURL.lastIndexOf("/") + 1) + url);
-		} else {
-			url = normalizeURL(url);
+			o.set(key, i);
 		}
 	}
-	if (url.search(normalizeURL_reHost) == -1) {
-		url = location.origin + url;
-	}
-	return normalizeURL(url);
+	o.clear();
+	return Reflect.set(t, n, v);
 }
-self.getURL = getURL;
-export function isURI(url) {
-	url = url.trimLeft();
-	return url.search(normalizeURL_reHost) == -1 && url[0] != "/";
+export function del(obj, prop) {
+	const val = obj[prop];
+	delete obj[prop];
+	return val;
 }
-
-function hideEnum(obj, pName) {
-	Object.defineProperty(obj, pName, {
-		enumerable: false
-	});
+export function ocopy(val) {
+	if (typeof val !== "object") {
+		return val;
+	}
+	const cpy = {};
+	for (const i in val) {
+		cpy[i] = val[i];
+	}
+	return cpy;
 }
-
-if (!String.prototype.q) {
-	const aRe = /`/g;
-	const qRe = /'/g;
-	const qqRe = /'/g;
-
-	String.prototype.a = function() {
-		return this.replace(aRe, '\\`');
-	}
-	String.prototype.q = function() {
-		return this.replace(qRe, "\\'");
-	}
-	String.prototype.qq = function() {
-		return this.replace(qqRe, '\\"');
-	}
-
-	const methods = ["a", "q", "qq"];
-	for (const n of methods) {
-		Number.prototype[n] = function() {
-			return this.toString().qq();
-		}
-	}
-	for (const o of [String.prototype, Number.prototype]) {
-		for (const n of methods) {
-			hideEnum(o, n);
-		}
-	}
-//} 
 /*
-	self.LocaleNumber = function(n) {
-		if (!this) {
-			return new self.LocaleNumber(n);
-		}
-		this.value = n;
+export function copy(val) {
+	if (Array.isArray(val)) {
+		return val.slice();
 	}
-	self.LocaleNumber.prototype = {
-		valueOf: function() {
-			return Number(this.value);
+	if (typeof val === "object" && val !== null) {
+//		if (val instanceof Map) {
+//			return new Map(val);
+//		}
+//		if (val instanceof Set) {
+//			return new Set(val);
+//		}
+		//return Object.assign({}, val);
+		const c = {};
+		for (const key in val) {
+			c[key] = val[key];
+		}
+		return c;
+	}
+	return val;
+}*/
+export function get$props($body, req) {
+	const cmdPrefLen = cmdPref.length,
+		t = {
+			$body
 		},
-		toString: function() {
-			return Number(this.value).toLocaleString();
-		}
-	};*/
-
-	String.localeDotSymbol = (0.1).toLocaleString().indexOf(".") == -1 ? "," : ".";
-	String.prototype.toNumber = function() {
-		const dotIdx = this.lastIndexOf(String.localeDotSymbol);
-		return Number(dotIdx == -1 ? this.replace(DRe, "") : this.substr(0, dotIdx).replace(DRe, "")  + "." + this.substr(dotIdx + 1));
-	}
-	hideEnum(String.prototype, "toNumber");
-//if (!String.prototype.json) {
-	String.prototype.json = function() {
-		try {
-			return JSON.parse(this);
-		} catch(err) {
-			console.error(err);
+		pArr = [];
+	for (const n in $body.dataset) {
+		if (n.indexOf(cmdPref) == 0) {
+			if (req) {
+				pArr.push(eval2(type_req($body, n, $body.dataset[n], req.scope, req.sync, req.inFragment), $body, true)
+					.then(val => type_get$prop(n.substr(cmdPrefLen), val)));
+				continue;
+			}
+			try {
+				pArr.push(type_get$prop(n, eval($body.dataset[n])));
+			} catch (err) {
+				throw check(err, type_req($body, n, $body.dataset[n], req.scope, req.sync, req.inFragment));
+			}
+		} else {
+			t[n] = $body.dataset[n];
 		}
 	}
-	hideEnum(String.prototype, "json");
-
-	String.prototype.copyToClipboard = function() {
-		const $f = document.createElement("input");
-		$f.type = "text";
-		$f.contentEditable = true;
-		$f.value = this;
-		$f.style.position = "absolute";
-		$f.style.left = "-1000px";
-		document.body.appendChild($f);
-		$f.select();
-/*
-		const range = document.createRange();
-		range.selectNodeContents($f);
-		const sel = self.getSelection();
-		sel.removeAllRanges();
-		sel.addRange(range);*/
-		$f.setSelectionRange(0, this.length); // A big number, to cover anything that could be inside the element.
-
-		document.execCommand("copy");
-		$f.parentNode.removeChild($f);
+	if (!pArr.length) {
+		return t;
 	}
-	hideEnum(String.prototype, "copyToClipboard");
-//}
-//if (!FormData.prototype[tplProxyTargetPropName]) {
-	FormData.prototype[tplProxyTargetPropName] = true;
-	Document.prototype[tplProxyTargetPropName] = true;
-	DocumentFragment.prototype[tplProxyTargetPropName] = true;
-	HTMLElement.prototype[tplProxyTargetPropName] = true;
-	Text.prototype[tplProxyTargetPropName] = true;
-//}
+	return Promise.all(pArr)
+		.then(vals => {
+			for (const v of vals) {
+				t[v.n] = v.val;
+			}
+			return t;
+		});
 }
-if (!FormData.prototype.toJSON) {
-	FormData.prototype.toJSON = function() {
-		const obj = {};
-		for (const [name, value] of this.entries()) {
-			obj[name] = value;
+function type_get$prop(n, val) {
+	return {
+		n,
+		val
+	};
+}
+export function kebabToCamelStyle(name) {
+	if (!name) {
+		return;
+	}
+	const ns = name.split('-'),
+		nLen = ns.length;
+	if (nLen > 1) {
+		let n = ns[0];
+		for (let i = 1; i < nLen; i++) {
+			if (ns[i]) {
+				n += ns[i][0].toUpperCase() + ns[i].substr(1);
+			}
 		}
-		return obj;
+		return n;
 	}
-//	hideEnum(FormData.prototype, "toJSON");
-}
-if (!HTMLFormElement.prototype.toJSON) {
-	HTMLFormElement.prototype.toJSON = function() {
-		const obj = {};
-		const elsLen = this.elements.length;
-		for (let i = 0; i < elsLen; i++) {
-			obj[this.elements[i].name || this.elements[i].id] = this.elements[i].value;
-		}
-		return obj;
-	}
-//	hideEnum(HTMLFormElement.prototype, "toJSON");
+	return name;
 }
 
-self.del = function(o, n) {
-	const v = o[n];
-	delete o[n];
-//	const v = Reflect.get(o, n);
-//	Reflect.deleteProperty(o, n);
-	return v;
-}
+self.oset = oset;
+self.del = del;
+self.ocopy = ocopy;
+self.get$props = get$props;

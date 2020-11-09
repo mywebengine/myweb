@@ -1,0 +1,77 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Test Tpl</title>
+		<meta charset="utf-8" />
+		<style>
+			.first:nth-of-type(1) {
+				font-weight: bold;
+			}
+		</style>
+		<!--script src="../getLineNo.js" async="async"></script-->
+		<!--script src="../Tpl.js" type="module" async="async"></script-->
+		<script src="_.js" type="module"></script>
+	</head>
+	<body>
+		<fieldset>
+			<label>
+				<input type="checkbox"
+					:attr.checked="data.isShow"
+					onchange="data.isShow = this.checked;" /> isShow
+			</label>
+			<label>
+				<input type="checkbox"
+					:attr.checked="data.isShow2"
+					onchange="data.isShow2 = this.checked;" /> isShow2
+			</label>
+		</fieldset>
+		<!--h1>{{data.green}} Hellow text! Are you a {{data.red}}?</h1-->
+		<fieldset>
+			<input oninput="data.arr.unshift(this.value);" />
+		</fieldset>
+		<fieldset>
+			<input oninput="data.arr.push(this.value);" />
+		</fieldset>
+		<div :if.f="data.isShow">
+			<span :attr.style="`color: ${data.red};`">SHOW (<span :html.text="f"></span>)</span>
+		</div>
+		<div :if.f="data.isShow2" :attr.style="`color: ${data.green};`">
+			<div>SHOW2 (<span :html.text="f"></span>)</div>
+		</div>
+		<ol :if="data.arr.length">
+			<li :for.val.i="data.arr" aaaa:scope="h">
+				<span :attr.data-prop-in-prop="`!`"
+					:html="`${1 * 1 + 1}) ${val.name || val} >${1 * 1 + 1}) ${val.name || val}<, ${data.green}`"
+					:attr.style="`color: ${isNaN(val) ? data.green : data.red};`"
+					:attr.onclick="`alert('attr!-${(val && val.name || val || '').q()}');`"></span>
+			</li>
+			<!--li :for.val.i="data.arr" tpl11:scope="jj">
+				<span :attr.data-prop-in-prop="`!`"
+					:attr.style="`color: ${isNaN(val) ? data.green : data.red};`"
+					:attr.onclick="`alert('attr!-${(val && val.name || val || '').q()}');`">
+					{{1 * 1 + 1}}) {{val.name || val}} >{{1 * 1 + 1}}) {{val.name || val}}<, {{data.green}}
+				</span>
+			</li-->
+		</ol>
+		<ul :if="data.arr2.length > 0">
+			<li :for.val.i="data.arr2">
+				<span :attr.data-prop-in-prop="`!->!`"
+					:html="`${i * 1 + 1}) ${val} >${i * 1 + 1}) ${val}<`"
+					:attr.style="`color: ${isNaN(val) ? data.green : data.red};`"
+					:attr.onclick="`alert('attr!-${(val.name || val).q()}');`"></span>
+			</li>
+		</ul>
+		<div>
+			<div class="first" :if="data.isShow">First1</div>
+			<div class="first" :if="data.isShow2">First2</div>
+			<div class="first">First3</div>
+			<div :for.val.key="data.arr2">
+				<span :html="`${key} => ${val.name}`">1</span>
+			</div>
+		</div>
+<!--
+<div :if="data.isShow" :for.val.key="data.arr2">
+проблема в том что поле срабатывания условия запускается интерпирация цикла и условия в уже нет
+-->
+	</body>
+</html>

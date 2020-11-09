@@ -38,7 +38,7 @@ class Modal {
 					if (res.ok) {
 						return res.text();
 					}
-					throw new Error(">>>Modal show by url isn't ok. Request " + props.url + " stat " + res.status);
+					throw new Error(`>>>Modal show by url isn't ok. Request ${props.url} stat ${res.status}`);
 				})
 				.then(text => this._show(props, text));
 		}
@@ -50,11 +50,8 @@ class Modal {
 		if (text) {
 			this.$cnt.innerHTML = text;
 			if (self.tpl) {
-				if (self.markLines) {
-					self.markLines.mark({
-						url: props.url,
-						html: text
-					}, {
+				if (self.getLineNo) {
+					self.getLineNo.mark(self.getLineNo.type_markCtx(props.url, text), {
 						children: this.$cnt.children
 					});
 				}
@@ -67,7 +64,9 @@ class Modal {
 //					scope[i] = this.data[i];
 //				}
 //console.log(222222, this.data);
-				return self.tpl.go(this.$body, undefined, this.data).then(() => Promise.resolve(this));
+				return self.tpl
+					.go(this.$body, undefined, this.data)
+					.then(() => this);
 			}
 		}
 		return Promise.resolve(this);
