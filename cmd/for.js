@@ -27,8 +27,8 @@ export default {
 		}
 		return $ret;
 	},
-	get$first($src, str) {//, expr, pos) {
-		return forGet$first($src, str);//, expr, pos);
+	get$first($src, str, expr, pos) {
+		return forGet$first($src, str, expr, pos);
 	},
 	async render(req) {
 //console.error("_for", req.sync.syncId, req, req.$src, req.$src[srcId]);
@@ -238,9 +238,11 @@ async function show$first(req, ctx, showFunc) {
 async function forGet(req) {
 //todo можно запускать с нулевого элемента для получения кэша
 	const val = await eval2(req, req.$src, true),
-		$first = forGet$first(req.$src, req.str);
+		pos = -1,
+		$first = forGet$first(req.$src, req.str, req.expr, pos),
+		$els = forGet$els($first, req.str, req.expr, pos);
 	if (!val) {
-		return getEmptyCtx($first, req.str);
+		return getEmptyCtx($first, $els);
 	}
 	const keys = [];
 	if (Array.isArray(val)) {
@@ -255,13 +257,13 @@ async function forGet(req) {
 		}
 	}
 	if (!keys.length) {
-		return getEmptyCtx($first, req.str);
+		return getEmptyCtx($first, $els);
 	}
 	const d = descrById.get(req.$src[descrId]);
-	return type_forCtx(val, d, getAttrAfter(d.attr, req.str), forGet$els($first, req.str), keys, getIdxName(req.str), req.reqCmd.args[0], req.reqCmd.args[1]);
+	return type_forCtx(val, d, getAttrAfter(d.attr, req.str), $els, keys, getIdxName(req.str), req.reqCmd.args[0], req.reqCmd.args[1]);
 }
-function getEmptyCtx($first, str) {
-	return type_forCtx(null, descrById.get($first[descrId]), null, forGet$els($first, str), [], "", "", "");
+function getEmptyCtx($first, $els) {
+	return type_forCtx(null, descrById.get($first[descrId]), null, $els, [], "", "", "");
 }
 function type_forCtx(value, d, attrsAfter, $els, keys, idxName, valName, keyName) {
 	return {
@@ -329,7 +331,7 @@ function applyFr(req, q_res, q_frRes, ctx) {
 		return res;
 	});
 }
-function forGet$first($e, str) {
+function forGet$first($e, str, expr, pos) {
 	if (!str) {
 //todo
 console.warn(111);
@@ -372,7 +374,7 @@ console.warn(111);
 	}
 	return $e;
 }
-function forGet$els($first, str) {
+function forGet$els($first, str, expr, pos) {
 	if (!str) {
 //todo
 console.warn(111);

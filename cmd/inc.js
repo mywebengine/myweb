@@ -38,7 +38,8 @@ export default {
 		if (!include) {
 			return type_renderRes(true);
 		}
-		const $els = incGet$els(req.$src, req.str),
+		const pos = -1,
+			$els = incGet$els(req.$src, req.str, req.expr, pos),
 			$elsLen = $els.length,
 			oldVal = getIdx(req.$src, req.str);
 		if ($elsLen > 1 && oldVal && oldVal === include.url) {//уже в доме
@@ -366,7 +367,8 @@ alert(11);
 	return $e;
 }
 function readyInc(req, include, $last) {
-	const $els = incGet$els($last, req.str),
+	const pos = -1,
+		$els = incGet$els($last, req.str, req.expr, pos),
 		$body = createArrFragment($els.slice(1, $els.length - 1));
 	dispatchEvent(incRenderEventName + include.url, req, include, $body);
 	return type_renderRes(true, null, $last);

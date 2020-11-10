@@ -75,17 +75,14 @@ export function getProxy(v) {
 	return new Proxy(v, proxyHandler);
 }
 export function getTarget(v) {
-//	return typeof v === "object" && v !== null ? (v[_target] || v) : v;
 	return typeof v === "object" && v !== null && v[_target] || v;
 }
 const proxyHandler = {
 	get(t, n) {
-//if (n == "mylocs") {
 //console.log("get", t, n, t[n], cur$src, typeof t[n] === "object");
-//}
-//		if (proxyStat === 0) {
+		if (proxyStat === 0) {
 			proxyStat = 1;
-//		}
+		}
 		if (n === _target) {
 			return t;
 		}
@@ -159,9 +156,6 @@ export function addVar(t, n, v, $src) {
 	const tId = varIdByVar.get(t),
 		sId = $src[srcId],
 		d = descrById.get($src[descrId]);
-//if (n == "logout") {
-//console.log(999, tId, t, n, v, $src);
-//}
 	if (isScalarType[typeof v]) {
 		if (Array.isArray(t) && !isNaN(n)) {
 			n = Number(n);
@@ -244,9 +238,6 @@ export function addVar(t, n, v, $src) {
 		}
 //1
 		d.varIdSet.add(vId);
-//!!2508	if (Array.isArray(v)) {
-//			setArrayState(v, v.length, vId, $src);
-//		}
 		return;
 	}
 	const newValId = getNewId();
@@ -254,9 +245,6 @@ export function addVar(t, n, v, $src) {
 	srcIdSetByVarId.set(newValId, new Set([sId]));
 //1
 	d.varIdSet.add(newValId);
-//!!2508	if (Array.isArray(v)) {
-//		setArrayState(v, v.length, newValId, $src);
-//	}
 }
 function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); - если так сделалть, то после первого - будут удалены varIdByVar.get(oldId), что приведет к тому что все пойдет по ветке !oldId - непонятно нужно ли что-то с этим делать??
 	const tId = varIdByVar.get(t);
@@ -490,7 +478,7 @@ function delVar(vId, v, t, n) {
 
 
 
-
+/*
 let _cl = false;
 function gc() {
 //	if (_cl) {
@@ -531,16 +519,16 @@ function _gc() {
 			delete varIdByVarIdByProp[vId];
 		}
 		delete isValuesOnlyArrayByVarId[vId];
-/*//иначе получается, что в ДОМ мы теряем ссылки
-		for (const d of descrById.values()) {
-//			if (d.varIdSet.has(vId)) {
-				d.varIdSet.delete(vId);
-//			}
-		}*/
+//иначе получается, что в ДОМ мы теряем ссылки
+//		for (const d of descrById.values()) {
+////			if (d.varIdSet.has(vId)) {
+//				d.varIdSet.delete(vId);
+////			}
+//		}
 console.log("del", vId, v);
 	}
 //console.log("gc");
-}
+}*/
 
 
 

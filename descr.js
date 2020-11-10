@@ -49,14 +49,16 @@ export function createDescr($e, sId) {
 	$e[isCmd] = true;
 	const get$elsByStr = type_get$elsByStr();
 	let isGet$elsByStr = false,
-		isAsOne = false;
+		isAsOne = false,
+		pos = 0;
 	cache[sId] = type_cache();
-	for (const str of attr.keys()) {
+	for (const [str, expr] of attr) {
 		const r = reqCmd[str];
 		if (r.cmd.get$els) {
-			get$elsByStr[str] = r.cmd;
+			get$elsByStr[str] = type_get$elsByStrI(r.cmd, str, expr, pos);
 			isGet$elsByStr = true;
 		}
+		pos++
 		if (r.cmd.isAsOne && !isAsOne) {
 			isAsOne = true;
 //			continue;
@@ -88,6 +90,14 @@ function type_descr(attr, isAsOne, varIdSet, srcIdSet, sId, get$elsByStr, onRend
 }
 function type_get$elsByStr() {
 	return {};
+}
+function type_get$elsByStrI(cmd, str, expr, pos) {
+	return {
+		cmd,
+		str,
+		expr,
+		pos
+	};
 }
 export function createAttr($e) {
 	const attr = new Map(),
@@ -122,6 +132,21 @@ export function getDescr($e) {
 	}
 }*/
 export function get$els($e, get$elsByStr, str) {
+	if (str) {
+		const get$e = get$elsByStr[str];
+		if (get$e) {
+			return get$e.cmd.get$els($e, str, get$e.expr, get$e.pos);
+		}
+		return [$e];
+	}
+	for (const str of descrById.get($e[descrId]).attr.keys()) {
+		const get$e = get$elsByStr[str];
+		if (get$e) {
+			return get$e.cmd.get$els($e, str, get$e.expr, get$e.pos);
+		}
+	}
+	return [$e];
+/*
 	const attrIt = descrById.get($e[descrId]).attr.entries();
 	let i = attrIt.next(),
 		pos = 0;
@@ -147,39 +172,22 @@ export function get$els($e, get$elsByStr, str) {
 		pos++;
 		i = attrIt.next();
 	} while (!i.done);
-	return [$e];
+	return [$e];*/
 }
 export function get$first($e, get$elsByStr, str) {
-	const attrIt = descrById.get($e[descrId]).attr.entries();
-	let i = attrIt.next(),
-		pos = 0;
 	if (str) {
-//todo		const get$e = get$elsByStr[str];
-//		if (get$e) {
-//			return get$e.get$first($e, str, v, pos);
-//		}
-		for (; !i.done; i = attrIt.next()) {
-			if (i.value[0] === str) {
-				break;
-			}
-			pos++;
+		const get$e = get$elsByStr[str];
+		if (get$e) {
+			return get$e.cmd.get$first($e, str, get$e.expr, get$e.pos);
 		}
-//		i = attrIt.next();
-		if (i.done) {
-			return $e;
-		}
-	} else if (i.done) {
 		return $e;
 	}
-	do {
-		const [n, v] = i.value,
-			get$e = get$elsByStr[n];
+	for (const str of descrById.get($e[descrId]).attr.keys()) {
+		const get$e = get$elsByStr[str];
 		if (get$e) {
-			return get$e.get$first($e, n, v, pos);
+			return get$e.cmd.get$first($e, str, get$e.expr, get$e.pos);
 		}
-		pos++;
-		i = attrIt.next();
-	} while (!i.done);
+	}
 	return $e;
 }
 export function getNextStr($e, str) {
@@ -244,13 +252,3 @@ export function getAttrItAfter(attrIt, name, isWithKeys) {
 	}
 	return attrIt;
 }
-/*
-export function setDescrWithVars(fromDescr, $new, $newDescr) {
-	$new[descrId] = $newDescr.id;
-//	const sId = $new[srcId];
-	$newDescr.srcIdSet.add($new[srcId]);
-//	for (const vId of fromDescr.varIdSet) {
-//--		descrIdSetByVarId[vId][$newDescrId] = true;
-//		srcIdSetByVarId[vId][sId] = true;
-//	}
-}*/

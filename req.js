@@ -25,20 +25,7 @@ export function getReqCmd(str) {
 		return reqCmd[str] = null;
 	}
 	return reqCmd[str] = type_reqCmd(cmdName, cmd, i === -1 && [] || str.substr(i + 1).split(cmdArgsDiv));
-//	return reqCmd[str] = type_reqCmd(cmdName, cmd, i === -1 ? [] : str.substr(i + 1).split(cmdArgsDiv));
-//	const [cmdName, args] = getCmdArgs(str);
 }
-/*
-function getCmdArgs(str) {
-	const i = str.indexOf(cmdArgsBegin);
-//	return i === -1 ? [str] : [str.substr(0, i), str.substr(i + 1).split(cmdArgsDiv)];
-	if (i === -1) {
-//		return [str, []];
-		return type_reqCmd(cmdName, str, []);
-	}
-//	return [str.substr(0, i), str.substr(i + 1).split(cmdArgsDiv)];
-	return type_reqCmd(cmdName, str.substr(0, i), str.substr(i + 1).split(cmdArgsDiv));
-}*/
 function type_reqCmd(cmdName, cmd, args) {
 	return {
 		cmdName,

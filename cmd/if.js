@@ -203,6 +203,7 @@ function ifGet$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos
 		}
 		let f = true,
 			l = 0;
+//todo сделать контроль по позиции
 		const beforeIdx = {},
 			isBeforeAttr = {};
 		for (const n of descrById.get($i[descrId]).attr.keys()) {
@@ -363,10 +364,10 @@ function isSingle($src, str) {//проверка на то что этот иф 
 			return f && -1 || beforeAttrCount;
 		}
 		beforeAttrCount++;
-		const cName = reqCmd[n].cmdName;
-		if (cName === ifCmdName || cName === elseifCmdName || cName === elseCmdName || cName === forCmdName) {
+		const cmdName = reqCmd[n].cmdName;
+		if (cmdName === ifCmdName || cmdName === elseifCmdName || cmdName === elseCmdName || cmdName === forCmdName) {
 			f = true;
-		} else if (cName === incCmdName) {
+		} else if (cmdName === incCmdName) {
 //todo осмыслить про это
 			const $els = get$els($src, descrById.get($src[descrId]).get$elsByStr, n);
 			let $i = $els[$els.length - 2];
