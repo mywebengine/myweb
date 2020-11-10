@@ -111,18 +111,17 @@ async function _render(syncId) {
 			for (const sId of p.srcIdSet) {
 				arr[i++] = type_q_arr($srcById[sId], null);//renderParam.get(sId).scope
 			}
-			pArr.push(await addTask(() => q_renderTag(arr, r.attr, sync, type_isLast(), false), sync));
 //			pArr.push(q_renderTag(arr, r.attr, sync, type_isLast(), false), sync);
+			pArr.push(addTask(() => q_renderTag(arr, r.attr, sync, type_isLast(), false), sync));
 			continue;
 		}
 		const $i = $srcById[sId];
 		if (r.scope) {
-			pArr.push(await addTask(() => renderTag($i, r.scope, r.attr, sync), sync));
 //			pArr.push(renderTag($i, r.scope, r.attr, sync), sync);
+			pArr.push(addTask(() => renderTag($i, r.scope, r.attr, sync), sync));
 			continue;
 		}
 //		pArr.push(getScope($i)
-//			.then(scope => renderTag($i, scope, r.attr, sync), sync));
 		pArr.push(addTask(() => getScope($i)
 			.then(scope => renderTag($i, scope, r.attr, sync), sync)));
 	}
