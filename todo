@@ -15,3 +15,5 @@
 7) inc default slot
 
 8) fetch watch реагирует на изменение результата, т.е если результат был undef и 
+
+9) linkers

@@ -20,7 +20,7 @@ export function preRender($e) {// = Tpl_$src) {
 						if (reqCmd[str].cmd.isAsOne) {
 							if (getIdx($i, str) > 0) {
 								f = false;
-								_preRender($i, $iD);
+								_preRender($i, $iD);//тут нужно переделать
 							}
 							break;
 						}
@@ -58,24 +58,6 @@ function _preRender($e, $d) {
 		if ($e.nodeType === 1) {
 			_preRender($e, $d);
 		}
-/*
-		switch ($e.nodeType) {
-			case 1:
-				_preRender($e, $d);
-			break;
-			case 3:
-				let $j = $i.previousSibling;
-				$i = replaceTextBlocks($i);
-				if (!$j) {
-					$j = $i.parentNode.firstChild;
-				}
-				while ($j !== $i && ($j = $j.nextSibling)) {
-					if ($j.nodeType === 1) {
-						createSrc($j);
-					}
-				}
-			break;
-		}*/
 	}
 }
 export function replaceTextBlocks($src) {//, scope) {//когда рендерится - то он делает это в фрагменте и родители выше фрагмента не доступны
@@ -359,7 +341,7 @@ export function hide(req, $e) {
 //	}
 	const $parent = $e.parentNode;
 	let $i = $e,
-		$p;
+		$p = [];
 	do {
 		if ($i[isCmd]) {
 			const iId = $i[srcId];
@@ -373,7 +355,7 @@ export function hide(req, $e) {
 			continue;
 		}
 		if ($i.content && $i[isCmd] && $i.content.firstChild.firstChild) {
-			$p = $i;
+			$p.push($i);
 			$i = $i.content.firstChild.firstChild;
 			continue;
 		}
@@ -386,7 +368,7 @@ export function hide(req, $e) {
 		}
 		while ($i = $i.parentNode) {
 			if ($i.nodeType === 11) {
-				$i = $p;
+				$i = $p.pop();
 			}
 			if ($i.parentNode === $parent) {
 				$i = null;
