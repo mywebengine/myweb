@@ -1,8 +1,0 @@
-﻿<input :attr.value="this.dataset.value" />
-<script>
-self.addEventListener(inc_mount_on_this_file, function(evt) {
-	console.info("MOUNT EDIT", evt.detail.$body);
-	const inp = evt.detail.$body.firstElementChild;
-	inp.style.color = inp.value > 10 ? data.red : "blue";
-});
-</script>

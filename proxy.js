@@ -7,19 +7,82 @@ import {reqCmd} from "./req.js";
 import {oset} from "./util.js";
 
 export const varIdByVar = new Map();
+export const varById = {};
 export const varIdByVarIdByProp = {};
 export const srcIdSetByVarId = new Map();
 //!!!!!!!!!!!!
 self.varIdByVar = varIdByVar;
+self.varById = varById;
 self.varIdByVarIdByProp = varIdByVarIdByProp;
 self.srcIdSetByVarId = srcIdSetByVarId;
 
-const _isUnshift = Symbol();
-/*
-const isValuesOnlyArrayByVarId = {};
-const oldArray = {};
-const oldStateByVarIdByProp = {};*/
 
+
+self.aa = function() {
+	const v = new Set(Array.from(varIdByVar.values()));
+	for (const [vId, srcIdSet] of srcIdSetByVarId) {
+		let fv;
+		if (!v.has(vId)) {
+			let f;
+			for (const vvId of v) {
+				if (!varIdByVarIdByProp[vvId]) {
+					continue;
+				}
+				for (const pId of varIdByVarIdByProp[vvId].values()) {
+					if (pId === vId) {
+						for (const sId of srcIdSet) {
+							if (!$srcById[sId]) {
+								console.log(111222, vId, sId);
+							}
+						}
+						f = true;
+						break;
+					}
+				}
+				if (f) {
+					break;
+				}
+			}
+			if (!f) {
+				console.log(0, vId, srcIdSet);
+			}
+		} else {
+			for (const sId of srcIdSet) {
+				if (!$srcById[sId]) {
+					console.log(11111, vId, sId);
+				}
+			}
+		}
+	}
+	for (const vId of varIdByVar.keys()) {
+		const s = srcIdSetByVarId.get(vId);
+		if (!s) {// || !s.has(sId)) {
+			continue;
+		}
+		for (const sId of s) {
+			if (!$srcById[sId]) {
+				console.log(1, sId);
+			}
+		}
+		const vIdByProp = varIdByVarIdByProp[vId];
+		if (vIdByProp) {
+			for (const pId of vIdByProp.values()) {
+				const propS = srcIdSetByVarId.get(pId);
+				if (propS) {// && propS.has(sId)) {
+//					_del(pId, propS, sId);//, d, dId);
+					for (const sId of propS) {
+						if (!$srcById[sId]) {
+							console.log(2, sId);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+
+const _isUnshift = Symbol();
 const isSkipNameType = {
 	"undefined": true,
 	"symbol": true
@@ -79,7 +142,9 @@ export function getTarget(v) {
 }
 const proxyHandler = {
 	get(t, n) {
-//console.log("get", t, n, t[n], cur$src, typeof t[n] === "object");
+//if (n == "then") {
+//console.error("get", t, n, t[n], cur$src, typeof t[n] === "object");
+//}
 		if (proxyStat === 0) {
 			proxyStat = 1;
 		}
@@ -166,6 +231,7 @@ export function addVar(t, n, v, $src) {
 				s.add(sId);
 			} else {
 				srcIdSetByVarId.set(tId, new Set([sId]));
+//console.log(1, tId);
 			}
 //1
 			d.varIdSet.add(tId);
@@ -183,11 +249,13 @@ export function addVar(t, n, v, $src) {
 						return;
 					}
 					srcIdSetByVarId.set(propId, new Set([sId]));
+//console.log(2, propId);
 					return;
 				}
 				const newPropId = getNewId();
 				vIdByProp.set(n, newPropId);
 				srcIdSetByVarId.set(newPropId, new Set([sId]));
+//console.log(3, newPropId);
 //1
 				d.varIdSet.add(newPropId);
 				return;
@@ -195,19 +263,23 @@ export function addVar(t, n, v, $src) {
 			const newPropId = getNewId();
 			varIdByVarIdByProp[tId] = new Map([[n, newPropId]]);
 			srcIdSetByVarId.set(newPropId, new Set([sId]));
+//console.log(4, newPropId);
 //1
 			d.varIdSet.add(newPropId);
 			return;
 		}
 		const nId = getNewId();
 		varIdByVar.set(t, nId);
+		varById[nId] = t;
 		srcIdSetByVarId.set(nId, new Set([sId]));
+//console.log(5, nId);
 //1
 		d.varIdSet.add(nId);
 
 		const newPropId = getNewId();
 		varIdByVarIdByProp[nId] = new Map([[n, newPropId]]);
 		srcIdSetByVarId.set(newPropId, new Set([sId]));
+//console.log(6, newPropId, t, n, v, $src);
 //1
 		d.varIdSet.add(newPropId);
 		return;
@@ -218,13 +290,16 @@ export function addVar(t, n, v, $src) {
 			s.add(sId);
 		} else {
 			srcIdSetByVarId.set(tId, new Set([sId]));
+//console.log(7, tId);
 		}
 //1
 		d.varIdSet.add(tId);
 	} else {
 		const nId = getNewId();
 		varIdByVar.set(t, nId);
+		varById[nId] = t;
 		srcIdSetByVarId.set(nId, new Set([sId]));
+//console.log(8, sId);
 //1
 		d.varIdSet.add(nId);
 	}
@@ -235,6 +310,7 @@ export function addVar(t, n, v, $src) {
 			s.add(sId);
 		} else {
 			srcIdSetByVarId.set(vId, new Set([sId]));
+//console.log(9, sId);
 		}
 //1
 		d.varIdSet.add(vId);
@@ -242,7 +318,9 @@ export function addVar(t, n, v, $src) {
 	}
 	const newValId = getNewId();
 	varIdByVar.set(v, newValId);
+	varById[newValId] = v;
 	srcIdSetByVarId.set(newValId, new Set([sId]));
+//console.log(10, sId);
 //1
 	d.varIdSet.add(newValId);
 }
@@ -258,6 +336,7 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 	const vIdByProp = varIdByVarIdByProp[tId],
 		oldScalarId = vIdByProp && vIdByProp.get(n) || 0,
 		oId = oldScalarId || varIdByVar.get(oldV) || 0;
+//console.error('setVar', tId, oId, oldScalarId);
 	if (t[_isUnshift]) {
 		if (n === "length") {
 			_setVal(t, n, oldV, srcIdSetByVarId.get(tId), oId);
@@ -343,9 +422,11 @@ console.error("!S!", t, n, oldV, s, oId, oldScalarId);
 			if (c) {
 //console.log(sId, c, n, $srcById[sId]);
 				c.value = type_cacheValue();
+/*todo
 				if (!t[_isUnshift]) {
 					c.current = type_cacheCurrent();
-				}
+console.log(11111111, sId);
+				}*/
 				decVar(t, n, oldV, sId, oId);
 			}
 		}
@@ -355,14 +436,10 @@ console.error("!S!", t, n, oldV, s, oId, oldScalarId);
 			if (c) {
 				c.value = type_cacheValue();
 				c.current = type_cacheCurrent();
+//--				decVar(t, n, oldV, sId, oId);
 			}
 		}
 	}
-/*
-//todo GC
-////	if (!s.size) {
-		delVar(oId, oldV, t, n);
-////	}*/
 	renderBySrcIdSet(toRender);
 }
 function setInnerSrcIdSetBy$src(vSet, $e) {
@@ -405,7 +482,7 @@ function setInnerSrcIdSetBy$src(vSet, $e) {
 		}
 	}*/
 }
-function decVar(t, n, v, sId/*, deletedVarIdSetBySrcId*/, vId) {
+function decVar(t, n, v, sId, vId) {
 	if (!vId) {
 		if (isScalarType[typeof v]) {
 			const vIdByProp = varIdByVarIdByProp[varIdByVar.get(t)];
@@ -416,33 +493,25 @@ function decVar(t, n, v, sId/*, deletedVarIdSetBySrcId*/, vId) {
 			vId = varIdByVar.get(v);
 		}
 	}
-//console.log(222222, vId);//, t, n, v, sId);
 	if (vId) {
 		const s = srcIdSetByVarId.get(vId);
-//!! !s
 		if (!s || !s.has(sId)) {
+			delVar(vId, v, t, n);
 			return;
 		}
 		s.delete(sId);
-//todo GC
+//if (sId == 26) {
+//console.log(222222, vId, t, n, v, sId);
+//}
 		if (!s.size) {
 			delVar(vId, v, t, n);
 		}
-/*
-		const del = deletedVarIdSetBySrcId[sId];
-		if (del) {
-//			if (!del.has(vId)) {
-				del.add(vId);
-//			}
-		} else {
-			deletedVarIdSetBySrcId[sId] = new Set([vId]);
-		}*/
 	}
 	if (Array.isArray(v)) {
 		const len = v.length;
 		for (let i = 0; i < len; i++) {
-			decVar(v, i, getTarget(v[i]), sId/*, deletedVarIdSetBySrcId*/, 0);
-		 }
+			decVar(v, i, getTarget(v[i]), sId, 0);
+		}
 		return;
 	}
 //todo Set and Map
@@ -450,88 +519,36 @@ function decVar(t, n, v, sId/*, deletedVarIdSetBySrcId*/, vId) {
 		return;
 	}
 	for (const i in v) {
-		decVar(v, i, getTarget(v[i]), sId/*, deletedVarIdSetBySrcId*/, 0);
+		decVar(v, i, getTarget(v[i]), sId, 0);
 	}
 }
 function delVar(vId, v, t, n) {
 //console.log("DEL", vId);
 	srcIdSetByVarId.delete(vId);
 	if (isScalarType[typeof v]) {
-		const vIdByProp = varIdByVarIdByProp[varIdByVar.get(t)];
+		const vIdByProp = varIdByVarIdByProp[vId = varIdByVar.get(t)];
 		if (vIdByProp) {
 			vIdByProp.delete(n);
+			if (!vIdByProp.size) {
+				delete varIdByVarIdByProp[vId];
+			}
 		}
 		return;
 	}
 	//пробегать по свойствам объекта и удалять их - не нужно, так как свойства могут быть (объекты и скаляры) использоваться гденибудь
 	varIdByVar.delete(v);
+	delete varById[vId];
+//!!	delete varIdByVarIdByProp[vId];
 	const vIdByProp = varIdByVarIdByProp[vId];
+//!! не надо - там должно быть песто, но если нет - то можно будет заметить
+//!! сейчас там то что не используется, - по какойто причине в get прокси запрашивается "then" - хотя в шаблоне нет такого запроса
 	if (vIdByProp) {
+		delete varIdByVarIdByProp[vId];
 		for (const propId of vIdByProp.values()) {
 			srcIdSetByVarId.delete(propId);
 		}
-		delete varIdByVarIdByProp[vId];
 	}
-//	delete isValuesOnlyArrayByVarId[vId];
 }
-
-
-
-
-/*
-let _cl = false;
-function gc() {
-//	if (_cl) {
-	if (1) {
-		return;
-	}
-	_cl = true;
-	setTimeout(() => {
-		requestIdleCallback(() => {
-			_gc();
-			_cl = false;
-		});
-	}, 1000);
-}
-function _gc() {
-	for (const [v, vId] of varIdByVar) {
-		const s = srcIdSetByVarId.get(vId);
-		if (s && s.size) {
-			if (varIdByVarIdByProp[vId]) {
-				for (const [k, i] of varIdByVarIdByProp[vId]) {
-					const ss = srcIdSetByVarId.get(i);
-//if (k === 'rateDurationLeft') {
-//	console.log(vId, i, ss);
-//}
-					if (ss && !ss.size) {
-						srcIdSetByVarId.delete(i);
-					}
-				}
-			}
-			continue;
-		}
-		varIdByVar.delete(v);
-		srcIdSetByVarId.delete(vId);
-		if (varIdByVarIdByProp[vId]) {
-			for (const i of varIdByVarIdByProp[vId].values()) {
-				srcIdSetByVarId.delete(i);
-			}
-			delete varIdByVarIdByProp[vId];
-		}
-		delete isValuesOnlyArrayByVarId[vId];
-//иначе получается, что в ДОМ мы теряем ссылки
-//		for (const d of descrById.values()) {
-////			if (d.varIdSet.has(vId)) {
-//				d.varIdSet.delete(vId);
-////			}
-//		}
-console.log("del", vId, v);
-	}
-//console.log("gc");
-}*/
-
-
-
 
 export function getLocalScopeProxyHandler($e, str, propName) {
 	return {

@@ -113,7 +113,7 @@ function type_include(readyState, url) {
 	return {
 		readyState,
 		url,
-		descrByDescrId: {},
+//		descrByDescrId: {},
 		$fr: null,
 		$tags: null
 	};
@@ -396,12 +396,13 @@ alert(1);
 		$last = $new.lastChild,
 		$bodyElsLen = $new.childNodes.length - 1,
 		$bodyEls = new Array($bodyElsLen);
-//const r = Math.random();
-	for (let i = 0; i < $elsLen; i++) {
-		removeChild($els[i], !!oldVal);
-	}
 	for (let i = 0; i < $bodyElsLen; i++) {
 		$bodyEls[i] = $new.childNodes[i + 1];
+	}
+//const r = Math.random();
+	for (let i = 0; i < $elsLen; i++) {
+//console.log($els[i]);
+		removeChild($els[i], !!oldVal);
 	}
 //console.log("rem2", r, req);
 	$parent.insertBefore($new, $lastNext);
@@ -424,7 +425,7 @@ function cloneIncFragment(req, include, lId, oldVal) {
 	const $fr = include.$fr.cloneNode(true),
 		dId = req.$src[descrId],
 		d = descrById.get(dId),
-		incD = include.descrByDescrId[dId] || (include.descrByDescrId[dId] = []),
+//		incD = include.descrByDescrId[dId] || (include.descrByDescrId[dId] = []),
 		attrs = req.$src.attributes,
 		attrsLen = attrs.length,
 		isRendered = isRenderdInc(req.$src, req.str),
@@ -562,12 +563,12 @@ function cloneIncFragment(req, include, lId, oldVal) {
 		$i.setAttribute(iName, include.url);
 		$i.setAttribute(lName, lId);
 
-		if (incD[i]) {
-			createSrc($i, incD[i]);
-		} else {
+//		if (incD[i]) {
+//			createSrc($i, incD[i]);
+//		} else {
 			createSrc($i);
-			incD[i] = $i[descrId];
-		}
+//			incD[i] = $i[descrId];
+//		}
 //todo !!for - так ли делать или иначе, нужно подумать
 //		descrById.get(incD[i]).curByStr = d.curByStr;
 		for (let $j = $i.firstChild; $j; $j = $j.nextSibling) {

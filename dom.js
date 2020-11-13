@@ -1,7 +1,7 @@
 import {cache, type_cacheValue, type_cacheCurrent} from "./cache.js";
 import {Tpl_doc, Tpl_$src, srcId, descrId, isCmd, incCmdName, textCmdName, idxName, localIdName} from "./config.js";
 import {$srcById, descrById, createSrc, getAttrItAfter} from "./descr.js";
-import {srcIdSetByVarId, varIdByVarIdByProp} from "./proxy.js";
+import {varIdByVar, varById, srcIdSetByVarId, varIdByVarIdByProp} from "./proxy.js";
 import {reqCmd} from "./req.js";
 import {addAnimation, check} from "./util.js";
 
@@ -136,35 +136,26 @@ function type_mustacheBlock(begin, end, expr) {
 		expr
 	};
 }
-/*
-export function __copyDescr($from, $to) {
-//console.log($from, $to);
-	const sId = getNewId();
-	$srcById[$to[srcId] = sId] = $to;
-	descrById.get($to[descrId] = $from[descrId]).srcIdSet.add(sId);
-}
-export function __cloneNode($e) {
-	return __$goCopy($e, $e.cloneNode(true), __copyDescr);
-}*/
-/*
-export function replaceChild($new, $old) {
-	return $goTagsDeep($old.parentNode.replaceChild($new, $old), clearTag);
-}*/
 export function removeChild($e, isClearLocalScope) {
 //console.error($e[srcId], $e);
 	$e.parentNode.removeChild($e);
-	const rems = [];
-	let $i = $e;
+	const rem = new Map();
+	let $i = $e,
+		$p = [];
 	do {
-		const sId = $i[srcId];
-		if (sId) {
-			const r = clearTag($i, sId, isClearLocalScope);
-			if (r) {
-				rems.push(r);
-			}
+		const iId = $i[srcId];
+//console.log(iId, $i);
+//alert(1);
+		if (iId) {
+			clearTag($i, iId, isClearLocalScope, rem);
 		}
 		if ($i.firstChild) {
 			$i = $i.firstChild;
+			continue;
+		}
+		if ($i.content && $i[isCmd] && $i.content && $i.content.firstChild.firstChild) {
+			$p.push($i);
+			$i = $i.content.firstChild.firstChild;
 			continue;
 		}
 		if (!$i.parentNode) {
@@ -175,6 +166,9 @@ export function removeChild($e, isClearLocalScope) {
 			continue;
 		}
 		while ($i = $i.parentNode) {
+			if ($i.nodeType === 11) {
+				$i = $p.pop();
+			}
 			if (!$i.parentNode) {
 				$i = null;
 				break;
@@ -185,107 +179,110 @@ export function removeChild($e, isClearLocalScope) {
 			}
 		}
 	} while ($i);
-	if (rems.length) {
+	if (rem.size) {
 		requestIdleCallback(() => {
-			for (const r of rems) {
-				_clearTag(...r);
-			}
+//console.time("rem");
+			_clearTag(rem);
+//console.timeEnd("rem");
 		});
 	}
-//	$goTagsDeep($e.parentNode.removeChild($e), isClearLocalScope && clearTagWithLocalScope || clearTag);
 }
-//function clearTagWithLocalScope($e) {
-//	clearTag($e, true);
-//}
-//function clearTag($e, isClearLocalScope) {
-//	const sId = $e[srcId];
-//	if (!sId) {
-//		return;
-//	}
-function clearTag($e, sId, isClearLocalScope) {
-//console.error("DEL", sId, $e);
+function clearTag($e, sId, isClearLocalScope, rem) {
 	delete $srcById[sId];
+	if (!$e[isCmd]) {
+		descrById.delete($e[descrId]);
+		return;
+	}
+//console.error("DEL", sId, $e, $e[isCmd]);
 	delete cache[sId];
 	const dId = $e[descrId],
 		d = descrById.get(dId);
-	if (!$e[isCmd]) {
-		return;
-	}
 	d.srcIdSet.delete(sId);
-//!!1-20200826>
 	if (d.sId === sId) {
 		d.sId = d.srcIdSet.values().next().value;
 	}
-//!!1-20200826<
 	if (isClearLocalScope) {
 		clearScope($e);
 	}
-	return [sId, dId, d];
-//	_clearTag(d);
+	const r = rem.get(dId);
+	if (r) {
+		r.add(sId);
+		return;
+	}
+	rem.set(dId, new Set([sId]));
 }
-function _clearTag(sId, dId, d) {
-//	requestIdleCallback(() => {
-//todo!!!
+function _clearTag(rem) {
+	for (const [dId, sIdSet] of rem) {
+		const d = descrById.get(dId);
 		for (const vId of d.varIdSet) {
 			const s = srcIdSetByVarId.get(vId);
-			if (!s || !s.has(sId)) {
+			if (!s) {
 				continue;
 			}
 			const vIdByProp = varIdByVarIdByProp[vId];
-			if (vIdByProp) {
-				for (const pId of vIdByProp.values()) {
+			for (const sId of sIdSet) {
+//будет повторяться много vId раз
+				d.srcIdSet.delete(sId);
+
+				if (s.has(sId)) {
+					s.delete(sId);
+					d.varIdSet
+				}
+				if (!vIdByProp) {
+					continue;
+				}
+				for (const [pName, pId] of vIdByProp) {
 					const propS = srcIdSetByVarId.get(pId);
 					if (propS && propS.has(sId)) {
-						_del(pId, propS, sId, d);
+						s.delete(pId);
+						propS.delete(pId);
+						if (!propS.size) {
+							srcIdSetByVarId.delete(pId);
+							vIdByProp.delete(pName);
+						}
 					}
 				}
 			}
-			_del(vId, s, sId, d, dId);
+			if (!s.size) {
+				srcIdSetByVarId.delete(vId);
+				const v = varById[vId];
+				delete varById[vId];
+				varIdByVar.delete(v);
+				delete varIdByVarIdByProp[vId];
+//!!				if (vIdByProp && vIdByProp.size) {
+//					console.warn("долэно быть пусто", vId, vIdByProp, dId);
+//				}
+			} else if (vIdByProp && !vIdByProp.size) {
+				delete varIdByVarIdByProp[vId];
+			}
 		}
-/*
-		for (const [vId, s] of srcIdSetByVarId) {
-			if (!s.has(sId)) {
-				continue;
-			}
-			s.delete(sId);
-			if (s.size) {
-				continue;
-			}
-			if (dSId && $srcById[dSId]) {
-				s.add(dSId);
-				continue;
-			}
-			srcIdSetByVarId.delete(vId);
-		}*/
-//	});
+		if (!d.srcIdSet.size) {
+			descrById.delete(dId);
+		}
+	}
 }
+/*--
 function _del(vId, s, sId, d, dId) {
-//if (vId === varIdByVar.get(loc.hash[_target])) {
-//console.error(vId, s, sId, d, dId);
-//alert("!!" + sId);
-//}
 	s.delete(sId);
 	if (s.size) {// || sId === d.sId) {
 		return;
 	}
-//!!1-20200826>
-/*
-	const dSId = d.srcIdSet.values().next().value;
-	if (dSId) {
-//!!!!!!todo
-		if (dSId !== d.sId) {
-			s.add(d.sId = dSId);
-			return;
-		}
-//		return;
-	}*/
-//!!1-20200826<
-//console.log("dom del", dId, vId, d);
-//alert(1);
-//	descrById.delete(dId);
+	descrById.delete(dId);
 	srcIdSetByVarId.delete(vId);
-	delete varIdByVarIdByProp[vId];
-}
+
+	if (varById[vId]) {
+		const vIdByProp = varIdByVarIdByProp[vId];
+		if (vIdByProp) {
+			for (const pId of vIdByProp.values()) {
+				delete varIdByVarIdByProp[vId];
+			}
+			delete varIdByVarIdByProp[vId];
+		}
+	} else {
+		delete varIdByVarIdByProp[vId];
+	}
+//	varIdByVar.delete(v);
+}*/
 //use in attr
 export function setAttribute($e, name, value) {
 //todo атрибут нелльзя создать, если в нем есть некорректные символы - решение ниже слишком исбыточное, на мой взгляд
@@ -360,8 +357,9 @@ export function hide(req, $e) {
 //	if ($e.nodeType === 8) {
 //		return $e;
 //	}
-	const $p = $e.parentNode;
-	let $i = $e;
+	const $parent = $e.parentNode;
+	let $i = $e,
+		$p;
 	do {
 		if ($i[isCmd]) {
 			const iId = $i[srcId];
@@ -374,7 +372,12 @@ export function hide(req, $e) {
 			$i = $i.firstChild;
 			continue;
 		}
-		if ($i.parentNode === $p) {
+		if ($i.content && $i[isCmd] && $i.content.firstChild.firstChild) {
+			$p = $i;
+			$i = $i.content.firstChild.firstChild;
+			continue;
+		}
+		if ($i.parentNode === $parent) {
 			break;
 		}
 		if ($i.nextSibling) {
@@ -382,7 +385,10 @@ export function hide(req, $e) {
 			continue;
 		}
 		while ($i = $i.parentNode) {
-			if ($i.parentNode === $p) {
+			if ($i.nodeType === 11) {
+				$i = $p;
+			}
+			if ($i.parentNode === $parent) {
 				$i = null;
 				break;
 			}
@@ -408,6 +414,8 @@ function clearScope($e, str) {
 //		const n = i.value;
 //		if (reqCmd[n].cmdName === incCmdName) {//!!maybe todo пока работает только для inc
 			const lId = getLocalId($e, i.value);
+//console.log(lId);
+//alert(1)
 			if (lId) {
 				delete self.localScope[lId];
 //console.warn("remove data", lId, $e);

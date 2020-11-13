@@ -31,7 +31,7 @@ export function createSrc($e, dId/*, tpl_url*/) {//вызов этой функ�
 		const d = descrById.get(dId);
 		if (d.attr) {//.isCmd && d.attr.size) {
 			$e[isCmd] = true;
-			d.srcIdSet.add(id);
+			d.srcIdSet.add(id);//пока используется тоько для почения .sId при удалении
 			cache[id] = type_cache();
 		}
 		return d;

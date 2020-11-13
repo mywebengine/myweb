@@ -25,8 +25,9 @@ export function getCacheValue(req, $e) {
 //if (!cache[getSrcId(req, $e)]) {
 //	console.log(22, $e, getSrcId(req, $e));
 //}
-	const sId = getSrcId(req, $e),
-		c = cache[sId].value;
+//	const sId = getSrcId(req, $e),//такого не будет!
+//		c = sId && cache[sId].value;
+	const c = cache[getSrcId(req, $e)].value;
 	if (c && req.str in c) {
 		return c[req.str];
 	}
@@ -37,19 +38,23 @@ export function setCacheValue(req, $e, v) {
 //console.log("save", sId, $e, req.str, v);
 }
 function getSrcId(req, $e) {
+	const sId = $e[srcId];
+	if (!$srcById[sId]) {//если уже удалили
+		return;
+	}
 	const r = reqCmd[req.str];
 	if (!r || !r.cmd.isAsOne) {
-		return $e[srcId];
+		return sId;
 	}
 	const nStr = getNextStr($e, req.str);
 	if (!nStr) {
-		return $e[srcId];
+		return sId;
 	}
 	const d = descrById.get($e[descrId]);
 	$e = get$first($e, d.get$elsByStr, nStr);
 	while (!$e[isCmd]) {
 		$e = $e.nextSibling;
 	}
-//console.warn(11112, req, sId, d.sId, req.str, $e);
+//console.warn(11112, req, sId, req.str, $e);
 	return $e[srcId];
 }

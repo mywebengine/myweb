@@ -10,15 +10,13 @@ const _func = self.Tpl_func || {};
 //self._func = _func;
 
 export function eval2(req, ctx, isReactive, isScoping) {
+
+
 const r = Math.random();
-if (req.expr === "const f = !data.chat || skey !== cmd.chatSkey; alert(f); return f") {
-console.error(r, req.expr, req.$src, req.scope);
-}
+//console.error(r, req.expr, req.$src, req.scope);
 	const v = getCacheValue(req, req.$src);
 	if (v) {
-if (req.expr === "const f = !data.chat || skey !== cmd.chatSkey; alert(f); return f") {
-console.log(7777, r, req.str, req.expr, req.$src, v);
-}
+//console.log(7777, r, req.str, req.expr, req.$src, v);
 		return v;
 	}
 	const func = getEval2Func(req, req.expr);

@@ -75,6 +75,7 @@ async function getURL(req) {
 	}
 	const sId = req.$src[srcId],
 		cur = cache[sId].current[req.str] || (cache[sId].current[req.str] = type_fetchCur());
+//console.log(sId, cur, watch === cur.watch);
 	if (cache[sId].isInit[req.str]) {
 		if (watch === cur.watch) {
 //console.log(222, watch, cur[0], cur[1], req);

@@ -1,1 +1,0 @@
-﻿console.info("Inc JS is loaded 2");

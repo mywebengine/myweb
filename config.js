@@ -30,6 +30,7 @@ export function setDelay(t, cb) {
 
 self.srcId = srcId;
 self.descrId = descrId;
+self.isCmd = isCmd;
 self._target = _target;
 self.setDelay = setDelay;
 
