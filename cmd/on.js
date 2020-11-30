@@ -1,5 +1,5 @@
-﻿import {cache, type_cacheValue} from "../cache.js";
-import {srcId, preventDefaultModName} from "../config.js";
+﻿import {getCacheBySrcId} from "../cache.js";
+import {p_srcId, preventDefaultModName} from "../config.js";
 import {eval2} from "../eval2.js";
 import {type_req} from "../req.js";
 import {getScope} from "../scope.js";
@@ -22,8 +22,7 @@ function render(req, $src = req.$src) {
 	if (!n) {
 		throw check(new Error(">>>Tpl on:render:01: Need set action name"), req);
 	}
-	const sId = $src[srcId],
-		c = cache[sId];
+	const c = getCacheBySrcId($src[p_srcId]);
 	if (c.isInit[req.str]) {
 		return null;
 	}
@@ -32,7 +31,6 @@ function render(req, $src = req.$src) {
 		if (req.reqCmd.args[1] === preventDefaultModName) {
 			evt.preventDefault();
 		}
-		cache[sId].value = type_cacheValue();
 		eval2(type_req($src, req.str, req.expr, await getScope($src, req.str), null, false), $src, false);
 	});
 }

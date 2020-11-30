@@ -1,16 +1,22 @@
 import {type_renderRes} from "./algo.js";
-import {srcId, descrId, isCmd, dataVarName, cmdVarName} from "../config.js";
+import {p_srcId, p_descrId, p_isCmd, dataVarName, cmdVarName, isAsyncAnimationName} from "../config.js";
 import {descrById} from "../descr.js";
 import {getLocalId} from "../dom.js";
+import {getVal} from "../eval2.js";
 import {type_req} from "../req.js";
 import {getScope, setLocalScope} from "../scope.js";
 import {/*addTask, */ocopy} from "../util.js";
 
 export async function renderTag($src, scope, attr, sync) {
-//console.log("render", sync.syncId, $src, $src[srcId], $src[descrId], scope, attr);
-	sync.srcIdSet.add($src[srcId]);
+//console.log("render", sync.syncId, $src, $src[p_srcId], $src[p_descrId], scope, attr);
 	//todo ? ocopy
 	scope = ocopy(scope);
+	sync.renderScopeBySrcId.set($src[p_srcId], scope);
+	const curIsA = sync.isAsyncAnimation,
+		isA = await getVal($src, scope, isAsyncAnimationName, false);
+	if (isA !== undefined) {
+		sync.isAsyncAnimation = isA;
+	}
 	if (attr && attr.size) {
 		const res = await attrRender($src, scope, attr, sync);
 		if (!res.isLast) {
@@ -23,6 +29,7 @@ export async function renderTag($src, scope, attr, sync) {
 	await renderChildren($src, scope, sync);
 //console.log(55, $src);
 //alert(1);
+	sync.isAsyncAnimation = curIsA;
 	return $src;
 }
 async function attrRender($src, scope, attr, sync) {
@@ -70,20 +77,20 @@ function execRender($src, str, expr, scope, sync) {
 async function renderChildren($src, scope, sync) {
 //	return addTask(async () => {
 		let $i = $src.firstChild;
-		if (!$i || descrById.get($src[descrId]).isCustomHTML) {
+		if (!$i || descrById.get($src[p_descrId]).isCustomHTML) {
 			return;
 		}
-		while (!$i[descrId]) {
+		while (!$i[p_descrId]) {
 			$i = $i.nextSibling;
 			if (!$i) {
 				return;
 			}
 		}
-		$i = await renderTag($i, scope, descrById.get($i[descrId]).attr, sync);
+		$i = await renderTag($i, scope, descrById.get($i[p_descrId]).attr, sync);
 		while ($i = $i.nextSibling) {
 //			if ($i.nodeType === 1 && 
-			if ($i[descrId]) {
-				$i = await renderTag($i, scope, descrById.get($i[descrId]).attr, sync);
+			if ($i[p_descrId]) {
+				$i = await renderTag($i, scope, descrById.get($i[p_descrId]).attr, sync);
 			}
 		}
 //	}, sync);
@@ -94,7 +101,12 @@ export async function q_renderTag(arr, attr, sync, isLast, inFragment) {
 		await q_setScope(arr);
 	}
 	for (let i = arr.length - 1; i > -1; i--) {
-		sync.srcIdSet.add(arr[i].$src[srcId]);
+		sync.renderScopeBySrcId.set(arr[i].$src[p_srcId], arr.scope);
+	}
+	const curIsA = sync.isAsyncAnimation,
+		isA = await getVal(arr[0].$src, arr[0].scope, isAsyncAnimationName, false);
+	if (isA !== undefined) {
+		sync.isAsyncAnimation = isA;
 	}
 	if (attr && attr.size) {
 		const lastCount = await q_attrRender(arr, attr, sync, isLast, inFragment, type_q_renderCtx());
@@ -181,7 +193,7 @@ async function q_attrRender(arr, attr, sync, isLast, inFragment, ctx) {
 //function q_addAfterAttr($src, scope, attr, idx, ctx) {
 function q_addAfterAttr($src, scope, attr, ctx) {
 	const attrKey = getAttrKey(attr),
-		dId = $src[descrId],
+		dId = $src[p_descrId],
 		byD = ctx.afterByDescrByAttr.get(dId),
 		arrI = type_q_arr($src, scope);
 	if (!ctx.afterAttrKey[attrKey]) {
@@ -231,9 +243,10 @@ function q_renderFlow(arr, sync, isFirst, inFragment) {
 	if (byDescr.size) {
 	        const pArr = [];
 		for (const dArr of byDescr.values()) {
-//			if (dArr[0].$src.nodeType === 1) {
+			const $i = dArr[0].$src;
+//			if ($i.nodeType === 1) {
 //!!!как бы так сделать, что бы не идти дальше если рендер говорит что не нужно
-				pArr.push(q_renderTag(dArr, descrById.get(dArr[0].$src[descrId]).attr, sync, type_isLast(), inFragment)
+				pArr.push(q_renderTag(dArr, $i[p_isCmd] && descrById.get($i[p_descrId]).attr || null, sync, type_isLast(), inFragment)
 					.then(() => q_renderFlow(dArr, sync, false, inFragment)));
 //			}
 		}
@@ -249,7 +262,7 @@ function q_nextGroupByDescr(arr, isFirst) {
 		}
 		let $src = isFirst && arr[i].$src.firstChild || arr[i].$src.nextSibling;
 		while ($src) {
-			const dId = $src[descrId];
+			const dId = $src[p_descrId];
 			if (dId) {
 				arr[i].$src = $src;
 				const byD = byDescr.get(dId);
@@ -267,19 +280,35 @@ function q_nextGroupByDescr(arr, isFirst) {
 }
 function q_execRender(arr, str, expr, sync, isLast, inFragment) {
 	const req = type_req(arr[0].$src, str, expr, null, sync, inFragment);
+	if (req.$src[p_isCmd]) {
+		const lId = getLocalId(req.$src, str);
+		if (lId) {
+			for (let i = arr.length - 1; i > -1; i--) {
+				setLocalScope(lId, arr[i].scope, arr[i].$src, str);
+			}
+		}
+	} else {
 //todo как бы это норм, но что-то мне не нравится
-	let $l = req.$src;
-	while (!$l[isCmd]) {
-		$l = $l.previousSibling;
-	}
-	const lId = getLocalId($l, str);
-	if (lId) {
-//		const s = {};
-//		setLocalScope(lId, s, $src, str);
-		for (let i = arr.length - 1; i > -1; i--) {
-//			arr[i].scope[dataVarName] = s[dataVarName];
-//			arr[i].scope[cmdVarName] = s[cmdVarName];
-			setLocalScope(lId, arr[i].scope, arr[i].$src, str);
+		let $l = req.$src,
+			lCount = 0;
+		do {
+			$l = $l.previousSibling;
+			lCount++;
+		} while (!$l[p_isCmd]);
+		if (!$l) {
+//todo
+console.warn("ret");
+alert(111);
+		}
+		const lId = getLocalId($l, str);
+		if (lId) {
+			for (let i = arr.length - 1; i > -1; i--) {
+				$l = arr[i].$src;
+				for (let j = 0; j < lCount; j++) {
+					$l = $l.previousSibling;
+				}
+				setLocalScope(lId, arr[i].scope, $l, str);
+			}
 		}
 	}
 	if (req.reqCmd.cmd.q_render) {

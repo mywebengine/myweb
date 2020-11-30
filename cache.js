@@ -1,4 +1,4 @@
-﻿import {srcId, descrId, isCmd} from "./config.js";
+import {p_srcId, p_descrId, p_isCmd} from "./config.js";
 import {$srcById, descrById, get$first, getNextStr} from "./descr.js";
 import {reqCmd} from "./req.js";
 
@@ -21,40 +21,48 @@ export function type_cacheValue() {
 export function type_cacheCurrent() {
 	return {};
 }
-export function getCacheValue(req, $e) {
-//if (!cache[getSrcId(req, $e)]) {
-//	console.log(22, $e, getSrcId(req, $e));
-//}
-//	const sId = getSrcId(req, $e),//такого не будет!
-//		c = sId && cache[sId].value;
-	const c = cache[getSrcId(req, $e)].value;
-	if (c && req.str in c) {
-		return c[req.str];
+export function getCacheBySrcId(sId) {
+	const c = cache[sId];
+	return c || (cache[sId] = type_cache());
+}
+export function getCacheValue($e, str) {
+	const c = cache[getSrcId($e, str)];
+	if (c && str in c.value) {
+		return type_val(c.value[str]);
 	}
 }
-export function setCacheValue(req, $e, v) {
-	cache[getSrcId(req, $e)].value[req.str] = v;
-//const sId = getSrcId(req, $e);
-//console.log("save", sId, $e, req.str, v);
+function type_val(value) {
+	return {
+		value
+	};
 }
-function getSrcId(req, $e) {
-	const sId = $e[srcId];
+export function setCacheValue($e, str, v) {
+	const sId = getSrcId($e, str),
+		c = cache[sId] || (cache[sId] = type_cache());
+	c.value[str] = v;
+}
+export function getSrcId($e, str) {
+	const sId = $e[p_srcId];
+//todo--
 	if (!$srcById[sId]) {//если уже удалили
+console.warn("2323");
+alert(111);
 		return;
 	}
-	const r = reqCmd[req.str];
+	const r = reqCmd[str];
 	if (!r || !r.cmd.isAsOne) {
 		return sId;
 	}
-	const nStr = getNextStr($e, req.str);
+//todo сделать с гетКэш с d.sId
+	const nStr = getNextStr($e, str);
 	if (!nStr) {
 		return sId;
 	}
-	const d = descrById.get($e[descrId]);
+	const d = descrById.get($e[p_descrId]);
 	$e = get$first($e, d.get$elsByStr, nStr);
-	while (!$e[isCmd]) {
+	while (!$e[p_isCmd]) {
 		$e = $e.nextSibling;
 	}
-//console.warn(11112, req, sId, req.str, $e);
-	return $e[srcId];
+//console.warn(11112, sId, str, $e);
+	return $e[p_srcId];
 }

@@ -1,7 +1,7 @@
 ﻿import {cache, type_cacheValue, type_cacheCurrent} from "./cache.js";
-import {srcId, descrId, isCmd, _target, dataVarName, cmdVarName} from "./config.js";
+import {Tpl_$src, p_srcId, p_descrId, p_isCmd, p_target, dataVarName, cmdVarName} from "./config.js";
 import {$srcById, descrById, getNewId} from "./descr.js";
-import {getIdx, getTopLocalId} from "./dom.js";
+import {getIdx, getTopLocal} from "./dom.js";
 import {renderBySrcIdSet} from "./render/algo.js";
 import {reqCmd} from "./req.js";
 import {oset} from "./util.js";
@@ -17,7 +17,7 @@ self.varIdByVarIdByProp = varIdByVarIdByProp;
 self.srcIdSetByVarId = srcIdSetByVarId;
 
 
-
+//todo--
 self.aa = function() {
 	const v = new Set(Array.from(varIdByVar.values()));
 	for (const [vId, srcIdSet] of srcIdSetByVarId) {
@@ -116,7 +116,7 @@ export function setProxySetInSet(v) {
 
 export function getProxy(v) {
 	if (typeof v === "object" && v !== null) {
-		const t = v[_target];
+		const t = v[p_target];
 		if (t || t === null) {
 			return v;
 		}
@@ -138,7 +138,7 @@ export function getProxy(v) {
 	return new Proxy(v, proxyHandler);
 }
 export function getTarget(v) {
-	return typeof v === "object" && v !== null && v[_target] || v;
+	return typeof v === "object" && v !== null && v[p_target] || v;
 }
 const proxyHandler = {
 	get(t, n) {
@@ -148,7 +148,7 @@ const proxyHandler = {
 		if (proxyStat === 0) {
 			proxyStat = 1;
 		}
-		if (n === _target) {
+		if (n === p_target) {
 			return t;
 		}
 		const v = t[n];
@@ -197,16 +197,17 @@ const proxyHandler = {
 	deleteProperty(t, n) {
 		const oldV = getTarget(t[n]);
 //console.log('del', t, n, "old=>", oldV);
-		if (n in t) {
+//		if (n in t) {
 			if (Reflect.deleteProperty(t, n)) {
+//console.log(1, t, n);
 				setVal(t, n, undefined, oldV);
 				return true;
 			}
 			return false;
 //			delete t[n];
 //			setVal(t, n, undefined, getTarget(t[n]));
-		}
-		return true;
+//		}
+//		return true;
 	}
 };
 const unshiftHandler = {
@@ -217,11 +218,12 @@ const unshiftHandler = {
 	}
 };
 export function addVar(t, n, v, $src) {
+//console.log("addVar", n, v, t, $src, $src[p_srcId]);
 //	gc();
 	const tId = varIdByVar.get(t),
-		sId = $src[srcId],
-		d = descrById.get($src[descrId]);
-	if (isScalarType[typeof v]) {
+		sId = $src[p_srcId],
+		d = descrById.get($src[p_descrId]);
+	if (isScalarType[typeof v] || v === null) {
 		if (Array.isArray(t) && !isNaN(n)) {
 			n = Number(n);
 		}
@@ -336,7 +338,7 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 	const vIdByProp = varIdByVarIdByProp[tId],
 		oldScalarId = vIdByProp && vIdByProp.get(n) || 0,
 		oId = oldScalarId || varIdByVar.get(oldV) || 0;
-//console.error('setVar', tId, oId, oldScalarId);
+//console.error('setVar', tId, oId, oldScalarId, n, t);
 	if (t[_isUnshift]) {
 		if (n === "length") {
 			_setVal(t, n, oldV, srcIdSetByVarId.get(tId), oId);
@@ -361,7 +363,7 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 		}
 		return;
 	}
-	if (oldScalarId && !isScalarType[typeof v]) {//это нужно для того: Изначально data.filter в proxy.get (при рендере) установится как скаляр (=undef), - если новое значение объект, то нужно удалить ид из свойств
+	if (oldScalarId && !isScalarType[typeof v] || v === null) {//это нужно для того: Изначально data.filter в proxy.get (при рендере) установится как скаляр (=undef), - если новое значение объект, то нужно удалить ид из свойств
 		vIdByProp.delete(n);
 //!!todo GC
 		if (!vIdByProp.size) {
@@ -369,14 +371,6 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 		}
 	}
 	_setVal(t, n, oldV, srcIdSetByVarId.get(oId), oId, oldScalarId);
-}
-function type_proxySetInSet(t, n, v, $src) {
-	return {
-		t,
-		n,
-		v,
-		$src
-	};
 }
 function _setVal(t, n, oldV, s, oId, oldScalarId) {
 	if (!s) {
@@ -394,22 +388,24 @@ console.error("!S!", t, n, oldV, s, oId, oldScalarId);
 			continue;
 		}
 		setInnerSrcIdSetBy$src(vSet, $i);
-		const d = descrById.get($i[descrId]);
-		if (d.isAsOne) {
-			for (const str of d.attr.keys()) {
-				if (reqCmd[str].cmd.isAsOne) {
-					const idx = getIdx($i, str);
-					for (let $j = $i.nextSibling; $j; $j = $j.nextSibling) {
-						if ($j.nodeType === 1) {
-							if (getIdx($j, str) !== idx) {
-								break;
-							}
-							vSet.add($j[srcId]);
-							setInnerSrcIdSetBy$src(vSet, $j);
+		const d = descrById.get($i[p_descrId]);
+		if (!d.isAsOne) {
+			continue;
+		}
+		for (const str of d.attr.keys()) {
+			if (reqCmd[str].cmd.isAsOne) {
+				const idx = getIdx($i, str);
+				for (let $j = $i.nextSibling; $j; $j = $j.nextSibling) {
+//					if ($j.nodeType === 1) {
+					if ($j[p_isCmd]) {
+						if (getIdx($j, str) !== idx) {
+							break;
 						}
+						vSet.add($j[p_srcId]);
+						setInnerSrcIdSetBy$src(vSet, $j);
 					}
-					break;
 				}
+				break;
 			}
 		}
 	}
@@ -417,18 +413,30 @@ console.error("!S!", t, n, oldV, s, oId, oldScalarId);
 		return;
 	}
 	if (oId) {
+		const deletedVarId = new Set();
 		for (const sId of vSet) {
 			const c = cache[sId];
 			if (c) {
-//console.log(sId, c, n, $srcById[sId]);
 				c.value = type_cacheValue();
+//console.log(sId, n, oId, cache[sId].value);
 /*todo
 				if (!t[_isUnshift]) {
 					c.current = type_cacheCurrent();
 console.log(11111111, sId);
 				}*/
-				decVar(t, n, oldV, sId, oId);
+				decVar(t, n, oldV, sId, oId, deletedVarId);
 			}
+		}
+		if (deletedVarId.size) {
+			requestIdleCallback(() => {
+				for (const vId of deletedVarId) {
+					for (const d of descrById.values()) {
+						if (d.varIdSet && d.varIdSet.has(vId)) {
+							d.varIdSet.delete(vId);
+						}
+					}
+				}
+			});
 		}
 	} else {
 		for (const sId of vSet) {
@@ -442,18 +450,17 @@ console.log(11111111, sId);
 	}
 	renderBySrcIdSet(toRender);
 }
-function setInnerSrcIdSetBy$src(vSet, $e) {
-	const $p = $e.parentNode;
-	let $i = $e;
+function setInnerSrcIdSetBy$src(vSet, $i) {
+	const $parent = $i.parentNode;
 	do {
-		if ($i[isCmd]) {
-			vSet.add($i[srcId]);
+		if ($i[p_isCmd]) {
+			vSet.add($i[p_srcId]);
 		}
 		if ($i.firstChild) {
 			$i = $i.firstChild;
 			continue;
 		}
-		if ($i.parentNode === $p) {
+		if ($i.parentNode === $parent) {
 			break;
 		}
 		if ($i.nextSibling) {
@@ -461,7 +468,7 @@ function setInnerSrcIdSetBy$src(vSet, $e) {
 			continue;
 		}
 		while ($i = $i.parentNode) {
-			if ($i.parentNode === $p) {
+			if ($i.parentNode === $parent) {
 				$i = null;
 				break;
 			}
@@ -471,20 +478,10 @@ function setInnerSrcIdSetBy$src(vSet, $e) {
 			}
 		}
 	} while ($i);
-/*
-	for ($i = $i.firstChild; $i; $i = $i.nextSibling) {
-		if ($i.nodeType === 1) {
-			const sId = $i[srcId];
-			if (sId) {
-				vSet.add(sId);
-				setInnerSrcIdSetBy$src(vSet, $i);
-			}
-		}
-	}*/
 }
-function decVar(t, n, v, sId, vId) {
+function decVar(t, n, v, sId, vId, deletedVarId) {
 	if (!vId) {
-		if (isScalarType[typeof v]) {
+		if (isScalarType[typeof v] || v === null) {
 			const vIdByProp = varIdByVarIdByProp[varIdByVar.get(t)];
 			if (vIdByProp) {
 				vId = vIdByProp.get(n);
@@ -496,7 +493,7 @@ function decVar(t, n, v, sId, vId) {
 	if (vId) {
 		const s = srcIdSetByVarId.get(vId);
 		if (!s || !s.has(sId)) {
-			delVar(vId, v, t, n);
+			delVar(vId, v, t, n, deletedVarId);
 			return;
 		}
 		s.delete(sId);
@@ -504,13 +501,13 @@ function decVar(t, n, v, sId, vId) {
 //console.log(222222, vId, t, n, v, sId);
 //}
 		if (!s.size) {
-			delVar(vId, v, t, n);
+			delVar(vId, v, t, n, deletedVarId);
 		}
 	}
 	if (Array.isArray(v)) {
 		const len = v.length;
 		for (let i = 0; i < len; i++) {
-			decVar(v, i, getTarget(v[i]), sId, 0);
+			decVar(v, i, getTarget(v[i]), sId, 0, deletedVarId);
 		}
 		return;
 	}
@@ -519,13 +516,14 @@ function decVar(t, n, v, sId, vId) {
 		return;
 	}
 	for (const i in v) {
-		decVar(v, i, getTarget(v[i]), sId, 0);
+		decVar(v, i, getTarget(v[i]), sId, 0, deletedVarId);
 	}
 }
-function delVar(vId, v, t, n) {
+function delVar(vId, v, t, n, deletedVarId) {
 //console.log("DEL", vId);
+	deletedVarId.add(vId);
 	srcIdSetByVarId.delete(vId);
-	if (isScalarType[typeof v]) {
+	if (isScalarType[typeof v] || v === null) {
 		const vIdByProp = varIdByVarIdByProp[vId = varIdByVar.get(t)];
 		if (vIdByProp) {
 			vIdByProp.delete(n);
@@ -544,46 +542,74 @@ function delVar(vId, v, t, n) {
 //!! сейчас там то что не используется, - по какойто причине в get прокси запрашивается "then" - хотя в шаблоне нет такого запроса
 	if (vIdByProp) {
 		delete varIdByVarIdByProp[vId];
-		for (const propId of vIdByProp.values()) {
-			srcIdSetByVarId.delete(propId);
+		for (const pId of vIdByProp.values()) {
+			srcIdSetByVarId.delete(pId);
 		}
 	}
+}
+function type_proxySetInSet(t, n, v, $src) {
+	return {
+		t,
+		n,
+		v,
+		$src
+	};
 }
 
 export function getLocalScopeProxyHandler($e, str, propName) {
 	return {
 		get(t, n) {
 			const v = t[n];
-//console.error("inc get", t, n, t[n], !!(v || n in t[_target]), $e, str);
+//console.error("inc get", t, n, t[n], !!(v || n in t[p_target]), $e, str);
 			if (v || n in t) {
 				return v;
 			}
-			const lData = self.localScope[getTopLocalId($e, str)];
-//console.log("scope.js", n, getTopLocalId($e, str), str, $e);
-			if (lData) {
-				const lD = lData[propName],
-					lV = lD[n];
-				if (lV || n in lD) {
+//console.log("scope.js", n, str, $e);
+			do {
+				const l = getTopLocal($e, str);
+				if (!l) {
+					break;
+				}
+				const lD = self.localScope[l.id][propName];//,
+//					lV = lD[n];
+//				if (lV) {
+//					return lV; 
+//				}
+				if (n in lD) {
 					return lD[n];
 				}
-			}
+				$e = l.$src.parentNode;
+				if (!$e || $e.nodeType === 11) {
+					$e = $srcById[descrById.get(l.$src[p_descrId]).sId].parentNode;
+				}
+			} while ($e !== Tpl_$src);
 //console.log(777, t, n, $e, str, propName);
 			if (self[propName]) {
 				return self[propName][n];
 			}
 		},
 		set(t, n, v) {
+//console.log(1, n, t);
 			if (n in t) {
+//console.log(2, n, t, t[n]);
 				return Reflect.set(t, n, v);
 			}
-			const lData = self.localScope[getTopLocalId($e, str)];
-			if (lData) {
-				const lD = lData[propName];
+			do {
+				const l = getTopLocal($e, str);
+				if (!l) {
+					break;
+				}
+				const lD = self.localScope[l.id][propName];
 				if (n in lD) {
 					return Reflect.set(lD, n, v);
 				}
-			}
+				$e = l.$src.parentNode;
+				if (!$e || $e.nodeType === 11) {
+					$e = $srcById[descrById.get(l.$src[p_descrId]).sId].parentNode;
+				}
+			} while ($e !== Tpl_$src);
 			if (self[propName] && n in self[propName]) {
+//console.log(4, n, t);
 				return Reflect.set(self[propName], n, v);
 			}
 			return Reflect.set(t, n, v);
@@ -592,17 +618,25 @@ export function getLocalScopeProxyHandler($e, str, propName) {
 			if (n in t) {
 				return Reflect.deleteProperty(t, n);
 			}
-			const lData = self.localScope[getTopLocalId($e, str)];
-			if (lData) {
-				const lD = lData[propName];
+			do {
+				const l = getTopLocal($e, str);
+				if (!l) {
+					break;
+				}
+				const lD = self.localScope[l.id][propName];
 				if (n in lD) {
 					return Reflect.deleteProperty(lD, n);
 				}
-			}
+				$e = l.$src.parentNode;
+				if (!$e || $e.nodeType === 11) {
+					$e = $srcById[descrById.get(l.$src[p_descrId]).sId].parentNode;
+				}
+			} while ($e !== Tpl_$src);
 			if (self[propName] && n in self[propName]) {
 				return Reflect.deleteProperty(self[propName], n);
 			}
-			return true;
+//console.log(11, t, n);
+			return Reflect.deleteProperty(t, n);
 		}
 	};
 }

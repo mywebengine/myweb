@@ -1,8 +1,9 @@
 import {linkerTag} from "./linker.js";
 import {renderTag, q_renderTag, type_isLast, type_q_arr} from "./render.js";
-import {Tpl_$src, srcId, descrId, Tpl_delay, startEventName, renderEventName} from "../config.js";
+import {Tpl_$src, p_srcId, p_descrId, Tpl_delay, startEventName, renderEventName, onRenderName, isAsyncAnimation, isAsyncAnimationName} from "../config.js";
 import {$srcById, descrById, createAttr, get$els} from "../descr.js";
 import {preRender, getIdx, is$hide} from "../dom.js";
+import {getVal, _getVal} from "../eval2.js";
 import {cur$src} from "../proxy.js";
 import {reqCmd} from "../req.js";
 import {getScope} from "../scope.js";
@@ -21,7 +22,7 @@ self.curRender = curRender;
 
 export function render($src = Tpl_$src, delay = Tpl_delay, scope, attr) {
 	self.dispatchEvent(new CustomEvent(startEventName));
-	if (!$src[descrId]) {
+	if (!$src[p_descrId]) {
 		preRender($src);
 	}
 	if (getRenderedState($src)) {
@@ -37,12 +38,12 @@ export function renderBy$src($src = Tpl_$src, delay, scope, attr) {
 	if (cur$src) {
 		return;
 	}
-	const sId = $src[srcId];
+	const sId = $src[p_srcId];
 	if (!sId || !$srcById[sId]) {
 //		if (sId) {//!! это тогда, когда мы удалили элемент, но еще не успели очистить его ссылки
 //			console.error("!$srcById[sId]", sId, $src);
 //		} else {
-//			console.error("!$src[srcId]", $src);
+//			console.error("!$src[p_srcId]", $src);
 //		}
 		return;
 	}
@@ -89,8 +90,9 @@ async function _render(syncId) {
 	}
 //console.time("prepareRenderParam");
 	const byD = prepareRenderParam(),
-		sync = syncById[syncId] = type_sync(syncId),
-		inRender = new Set(),
+//		sync = syncById[syncId] = type_sync(syncId),
+		renderScopeBySrcId = new Map(),
+		promisesInRender = new Set(),
 		pArr = [];
 //console.timeEnd("prepareRenderParam");
 	if (self.isDebug) {
@@ -98,12 +100,23 @@ async function _render(syncId) {
 	}
 	for (const [dId, p] of byD) {
 		const sId = p.sId,
-			r = renderParam.get(sId);
+			r = renderParam.get(sId),
+                	sync = type_sync(syncId, renderScopeBySrcId);
 		if (r.resolve) {
-			inRender.add(r);
+			promisesInRender.add(r);
 		}
 		if (!r.attr) {
 			r.attr = descrById.get(dId).attr;
+		}
+		const $i = $srcById[sId];
+		if ($i !== Tpl_$src) {
+			for (let $j = $i.parentNode; $j !== Tpl_$src; $j = $j.parentNode) {
+				const isA = await getVal($j, r.scope, isAsyncAnimationName, false);
+				if (isA !== undefined) {
+					sync.isAsyncAnimation = isA;
+					break;
+				}
+			}
 		}
 		if (p.srcIdSet.size > 1) {
 			const arr = new Array(p.srcIdSet.size);
@@ -115,9 +128,8 @@ async function _render(syncId) {
 			pArr.push(addTask(() => q_renderTag(arr, r.attr, sync, type_isLast(), false), sync));
 			continue;
 		}
-		const $i = $srcById[sId];
 		if (r.scope) {
-//			pArr.push(renderTag($i, r.scope, r.attr, sync), sync);
+//			pArr.push(renderTag($srcById[sId], r.scope, r.attr, sync), sync);
 			pArr.push(addTask(() => renderTag($i, r.scope, r.attr, sync), sync));
 			continue;
 		}
@@ -128,13 +140,13 @@ async function _render(syncId) {
 	renderParam.clear();
 	return Promise.all(pArr)
 		.then(() => {
-			ready(inRender, sync);
+			ready(promisesInRender, renderScopeBySrcId);
 		})
 		.catch(err => {
-			filish(inRender, err);
+			filish(err, promisesInRender);
 		});
 }
-function ready(inRender, sync) {
+function ready(promisesInRender, renderScopeBySrcId) {
 	if (afterRender.size) {
 		const a = new Set(afterRender),
 			pArr = [];
@@ -143,57 +155,46 @@ function ready(inRender, sync) {
 			pArr.push(i());
 		}
 		return Promise.all(pArr)
-			.then(() => ready(inRender, sync));
+			.then(() => ready(promisesInRender, renderScopeBySrcId));
 	}
-	filish(inRender, null);
-	const isR = {};
-	for (const sId of sync.srcIdSet) {
+	filish(null, promisesInRender);
+	for (const [sId, scope] of renderScopeBySrcId) {
 		const $i = $srcById[sId];
 		if ($i) {
 			$i.dispatchEvent(new CustomEvent(renderEventName));
-			const dId = $i[descrId],
-				d = descrById.get(dId);
-			if (d.onRender) {
-				if (d.isAsOne) {
-					if (isR[dId]) {
-						continue;
-					}
-					isR[dId] = true;
-				}
-				new Function(d.onRender).apply($i);
-			}
-//		} else {
-//			console.warn(sId);
-//			alert(2);
+			_getVal($i, scope, onRenderName, false);
+		} else {
+//todo подумать об этом
+			renderScopeBySrcId.delete(sId);
 		}
 	}
 	self.dispatchEvent(new CustomEvent(renderEventName, {
 		detail: {
-			srcIdSet: sync.srcIdSet
+			renderScopeBySrcId
 		}
 	}));
 	if (renderParam.size) {
 		tryRender();
 	}
 }
-function filish(inRender, err) {
+function filish(err, promisesInRender) {
 	afterRender.clear();
 	delete syncById[curSyncId];
 	curSyncId = 0;
-	if (!inRender.size) {
+	if (!promisesInRender.size) {
 		if (err) {
 			throw err;
 		}
 		return;
 	}
 	if (!err) {
-		for (const r of inRender) {
-			r.resolve();
+		for (const p of promisesInRender) {
+			p.resolve();
 		}
 		return;
 	}
-	for (const r of inRender) {
-		r.reject(err);
+	for (const p of promisesInRender) {
+		p.reject(err);
 	}
 }
 function prepareRenderParam() {
@@ -206,7 +207,7 @@ function prepareRenderParam() {
 		if (!$i) {//удалённые элементы, ссылки на переменные еще могут остаться так как они удаляются в фоне
 			continue;
 		}
-		const dId = $i[descrId],
+		const dId = $i[p_descrId],
 			d = descrById.get(dId),
 			p = byD.get(dId);
 		if (p) {
@@ -247,7 +248,7 @@ function prepareRenderParam() {
 		if ($els && $els.length > 1) {
 //console.log(111, $els);
 			for (let i = $els.length - 1; i > -1; i--) {
-				const iDId = $els[i][descrId];
+				const iDId = $els[i][p_descrId];
 //todo
 //if (jId === dId) {
 //	console.warn("iId === dId", iDId, dId);
@@ -273,7 +274,7 @@ function prepareRenderParam() {
 				renderParamByDescrId.set(dId, p);
 				break;
 			}
-			const iDId = $i[descrId];
+			const iDId = $i[p_descrId];
 			if (iDId) {//защита от документФрагмента
 				const iD = descrById.get(iDId);
 				if (iD.get$elsByStr) {
@@ -281,8 +282,8 @@ function prepareRenderParam() {
 //console.log(6222, dId, iD.get$elsByStr, $els);
 //					if ($els) {
 						for (let j = $els.length - 1; j > -1; j--) {
-							mI.srcId[$els[j][descrId]] = true;
-//!!							const jDId = $j[descrId];
+							mI.srcId[$els[j][p_descrId]] = true;
+//!!							const jDId = $j[p_descrId];
 //							if (jDId) {
 //								mI.srcId[jDId] = true;
 //							}
@@ -333,10 +334,11 @@ function type_prepareByD(sId, srcIdSet) {
 		srcIdSet
 	};
 }
-function type_sync(syncId) {
+function type_sync(syncId, renderScopeBySrcId) {
 	return {
 		syncId,
-		srcIdSet: new Set()
+		renderScopeBySrcId,
+		isAsyncAnimation
 	};
 }
 export function type_renderRes(isLast, $src = null, $last = null, $attr = null, attr = null) {

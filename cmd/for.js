@@ -1,5 +1,5 @@
-import {cache} from "../cache.js";
-import {Tpl_doc, srcId, descrId, isCmd, forCmdName/*, incCmdName, elseCmdName, defaultCmdName*/} from "../config.js";
+import {getCacheBySrcId, getSrcId} from "../cache.js";
+import {Tpl_doc, p_srcId, p_descrId, p_isCmd, forCmdName/*, incCmdName, elseCmdName, defaultCmdName*/} from "../config.js";
 import {descrById, createSrc, getAttrAfter, get$els, get$first, getNextStr} from "../descr.js";
 import {show, hide, removeChild, getIdx, getIdxName/*,$goTagsDeep, __$goCopy*/} from "../dom.js";
 import {linkerTag} from "../render/linker.js";
@@ -31,20 +31,24 @@ export default {
 		return forGet$first($src, str, expr, pos);
 	},
 	async render(req) {
-//console.error("_for", req.sync.syncId, req, req.$src, req.$src[srcId]);
+//console.error("_for", req.sync.syncId, req, req.$src, req.$src[p_srcId]);
 		const ctx = await forGet(req),
-			c = getCache(req);
+			c = getCacheBySrcId(getSrcId(req.$src, req.str));
 		if (ctx.keysLen === 0) {
 			await show$first(req, ctx, hide);
 			c.current[req.str] = null;
 			return addAnimation(() => {
-				for (let i = ctx.$elsLen - 1, j; i > 0; i--) {
+				for (let i = ctx.$elsLen - 1, j; i > -1; i--) {
 					for (j = ctx.$els[i].length - 1; j > -1; j--) {
-						removeChild(ctx.$els[i][j]);
+						const $j = ctx.$els[i][j];
+//todo сделать что бы можно было удалить любой тег
+						if (ctx.d.sId !== $j[p_srcId]) {
+							removeChild($j);
+						}
 					}
 				}
 				return type_renderRes(true, null, ctx.$els[0][ctx.$els[0].length - 1]);
-			});//, req.sync);
+			}, req.sync);
 		}
 		if (ctx.$elsLen === 1 && ctx.$els[0][0].content) {
 			await show$first(req, ctx, show);
@@ -92,7 +96,7 @@ export default {
 					for (const $i of toRem) {
 						removeChild($i);
 					}
-				}));//, req.sync);
+				}, req.sync));
 			}
 		} else if (ctx.$elsLen < ctx.keysLen) {
 			ctx.$fr = Tpl_doc.createDocumentFragment();
@@ -116,7 +120,7 @@ export default {
 				for (const $i of toRem) {
 					removeChild($i);
 				}
-			}));//, req.sync);
+			}, req.sync));
 		}
 //console.log(111, ctx.begin, ctx.$els, ctx.keys.slice(ctx.begin, ctx.end), req, ctx);
 		pArr.push(q_forRender(req, ctx.begin, ctx.$els, ctx.keys.slice(ctx.begin, ctx.end), false, ctx));
@@ -125,11 +129,15 @@ export default {
 //alert(2);
 			pArr.push(q_forRender(req, ctx.newBegin, ctx.$new, ctx.newKeys, true, ctx));
 			const arr = await Promise.all(pArr);
+//const r = applyFr(req, ...arr.slice(arr.length - 2), ctx);
+//console.log(222, req.str, r);
+//return r;
 			return applyFr(req, ...arr.slice(arr.length - 2), ctx);//-2 - это результаты двух рендеров
 		}
 //alert(2);
 		const arr = await Promise.all(pArr),
 			q_arr = arr[arr.length - 1];
+//console.log(req.str, q_arr[q_arr.length - 1].$src);
 		return type_renderRes(true, null, q_arr[q_arr.length - 1].$src);
 	},
 	linker(req) {
@@ -144,7 +152,8 @@ export default {
 				}
 			}
 		}
-		cache[req.$src[srcId]].current[req.str] = ctx.value[ctx.keys[0]];
+//!! мы не делали препаре
+		getCacheBySrcId(getSrcId(req.$src, req.str)).current[req.str] = ctx.value[ctx.keys[0]];
 //		ctx.d.for_oldFirstVal[req.str] = ctx.value[ctx.keys[0]];
 		return type_renderRes(true, null, ctx.$els[l][ctx.$els[l].length - 1]);
 /*
@@ -161,7 +170,7 @@ export default {
 				isLast: true
 			};
 		}
-		const d = descrById.get(req.$src[descrId]);
+		const d = descrById.get(req.$src[p_descrId]);
 //		if ($elsLen > 1) {// && !getDescr($els[step])) {
 			const $f = $els[0][0],
 				$fromEls = !$f.content || getIdx($f, $req.str) !== null ? $els[0] : $f.content.childNodes;
@@ -236,8 +245,7 @@ async function show$first(req, ctx, showFunc) {
 	}
 }
 async function forGet(req) {
-//todo можно запускать с нулевого элемента для получения кэша
-	const val = await eval2(req, req.$src, true),
+	const val = await eval2(req, req.$src, true),//нужно было бы запускать с нулевого элемента для получения кэша - эта задача режается в функции получения кэша
 		pos = -1,
 		$first = forGet$first(req.$src, req.str, req.expr, pos),
 		$els = forGet$els($first, req.str, req.expr, pos);
@@ -259,11 +267,11 @@ async function forGet(req) {
 	if (!keys.length) {
 		return getEmptyCtx($first, $els);
 	}
-	const d = descrById.get(req.$src[descrId]);
+	const d = descrById.get(req.$src[p_descrId]);
 	return type_forCtx(val, d, getAttrAfter(d.attr, req.str), $els, keys, getIdxName(req.str), req.reqCmd.args[0], req.reqCmd.args[1]);
 }
 function getEmptyCtx($first, $els) {
-	return type_forCtx(null, descrById.get($first[descrId]), null, $els, [], "", "", "");
+	return type_forCtx(null, descrById.get($first[p_descrId]), null, $els, [], "", "", "");
 }
 function type_forCtx(value, d, attrsAfter, $els, keys, idxName, valName, keyName) {
 	return {
@@ -293,17 +301,6 @@ function type_forCtx(value, d, attrsAfter, $els, keys, idxName, valName, keyName
 		$frParent: null
 	};
 }
-function getCache(req) {
-	const sId = req.$src[srcId],
-		fId = descrById.get(req.$src[descrId]).sId;
-	if (sId === fId) {
-		return cache[fId];
-	}
-	const c = cache[fId];
-	c.value[req.str] = cache[sId].value[req.str];
-	delete cache[sId].value[req.str];
-	return c;
-}
 function applyFr(req, q_res, q_frRes, ctx) {
 	const res = type_renderRes(true, null, ctx.isUpDown && q_frRes[q_frRes.length - 1].$src || q_res[q_res.length - 1].$src);
 	if (ctx.isUpDown) {
@@ -314,13 +311,13 @@ function applyFr(req, q_res, q_frRes, ctx) {
 		return addAnimation(() => {
 			ctx.$frParent.insertBefore(ctx.$fr, q_res[q_res.length - 1].$src.nextSibling);
 			return res;
-		});
+		}, req.sync);
 	}
 	let $i = q_res[0].$src;
-	while (!$i[isCmd]) {
+	while (!$i[p_isCmd]) {
 		$i = $i.previousSibling;
 	}
-	const d = descrById.get($i[descrId]),
+	const d = descrById.get($i[p_descrId]),
 		nStr = getNextStr($i, req.str);
 	if (ctx.$frParent.nodeType === 11) {
 		ctx.$frParent.insertBefore(ctx.$fr, get$first($i, d.get$elsByStr, nStr));
@@ -329,7 +326,7 @@ function applyFr(req, q_res, q_frRes, ctx) {
 	return addAnimation(() => {
 		ctx.$frParent.insertBefore(ctx.$fr, get$first($i, d.get$elsByStr, nStr));
 		return res;
-	});
+	}, req.sync);
 }
 function forGet$first($e, str, expr, pos) {
 	if (!str) {
@@ -340,7 +337,7 @@ console.warn(111);
 	const forStrs = getForStrs($e, str),
 		forStrsLen = forStrs.length;
 	for (let $i = $e; $i; $i = $i.previousSibling) {
-		if (!$i[isCmd]) {
+		if (!$i[p_isCmd]) {
 			continue;
 		}
 		const idx = getIdx($i, str);
@@ -352,7 +349,7 @@ console.warn(111);
 			continue;
 		}
 		while ($i = $i.previousSibling) {
-			if (!$i[isCmd]) {
+			if (!$i[p_isCmd]) {
 				continue;
 			}
 			const prevIdx = getIdx($i, str);
@@ -386,12 +383,12 @@ console.warn(111);
 	let $i = $first;
 	do {
 		if (nStr) {
-			const d = descrById.get($i[descrId]);
+			const d = descrById.get($i[p_descrId]);
 			$els.push(d.get$elsByStr && get$els($i, d.get$elsByStr, nStr));
 		} else {
 			$els.push([$i]);
 		}
-//		const d = descrById.get($i[descrId]),
+//		const d = descrById.get($i[p_descrId]),
 //			$e = d.get$elsByStr && get$els($i, d.get$elsByStr, nStr) || [$i],
 //			idx = getIdx($i, str);
 //		$els.push($e);
@@ -403,7 +400,7 @@ console.warn(111);
 //console.log(222, str, idx, $e[$e.length - 1], $e[$e.length - 1].nextSibling);
 //alert(1);
 		for ($i = $e[$e.length - 1].nextSibling; $i; $i = $i.nextSibling) {
-			if (!$i[isCmd]) {
+			if (!$i[p_isCmd]) {
 				continue;
 			}
 			const jdx = getIdx($i, str);
@@ -431,7 +428,7 @@ console.warn(111);
 }
 function getForStrs($e, str) {
 	const forStrs = [];
-	for (const n of descrById.get($e[descrId]).attr.keys()) {
+	for (const n of descrById.get($e[p_descrId]).attr.keys()) {
 		if (n === str) {
 			break;
 		}
@@ -469,7 +466,7 @@ function copyDescr(req, $from, $els, ctx) {
 	for (let j = 0; j < $fromLen; j++) {
 		if ($from[j].nodeType === 1) {
 //			$goTagsDeep($from[j], $j => {
-//				if (!$j[srcId]) {
+//				if (!$j[p_srcId]) {
 //console.log(1000, $j);
 //					createSrc($j);
 //				}
@@ -490,7 +487,7 @@ console.log(222, $from[j], $els[i][j]);
 		$to = new Array($fromLen);
 
 	for (let j = 0; j < $fromLen; j++) {
-		const dId = $from[j][descrId],
+		const dId = $from[j][p_descrId],
 			d = descrById.get(dId);
 		for (const str of d.attr.keys()) {
 			const r = reqCmd[str];
@@ -498,9 +495,9 @@ console.log(333, $from[j], str, getIdx($from[j], str));
 			if (r.cmd.isAsOne && $from[j + 1] && getIdx($from[j + 1], str) == 1) {
 				for (j++; j < $fromLen; j++) {
 //!!
-					descrById.delete($from[j][descrId]);
-					$from[j][descrId] = dId;
-					d.srcIdSet.add($from[j][srcId]);
+					descrById.delete($from[j][p_descrId]);
+					$from[j][p_descrId] = dId;
+					d.srcIdSet.add($from[j][p_srcId]);
 					if (!$from[j + 1] || getIdx($from[j + 1], str) > 0) {
 						break;
 					}
@@ -525,8 +522,8 @@ alert(2);
 }*/
 /*
 function _q_copy($from, $to) {
-	createSrc($to, $from[descrId]);
-//	const dId = $from[descrId];
+	createSrc($to, $from[p_descrId]);
+//	const dId = $from[p_descrId];
 //	for (const $i of $to) {
 //		if ($i.nodeType === 1) {
 //			createSrc($i, dId);
@@ -558,14 +555,15 @@ function _q_copy($from, $to) {
 }*/
 /*
 function _copyDescr($fromJ, $to) {
-	createSrc($to, $fromJ[descrId]);
+	createSrc($to, $fromJ[p_descrId]);
 }*/
 function q_add(req, $from, begin, end, ctx) {
 //console.time("c");
 	const $first = $from[0];
-	if ($first[descrId]) {//если 0-ой не [descrId] - то это может быть только <!--inc_begin
+/*--
+	if ($first[p_descrId]) {//если 0-ой не [p_descrId] - то это может быть только <!--inc_begin
 		$from = (!$first.content || getIdx($first, req.str) !== null) && [$first] || Array.from($first.content.childNodes);
-	}
+	}*/
 	const $fromLen = $from.length,
 		$newLen = end - begin,
 		$new = new Array($newLen),
@@ -605,7 +603,7 @@ function q_add(req, $from, begin, end, ctx) {
 		if ($f.nodeType !== 1) {
 			continue;
 		}
-		for (const [n, v] of descrById.get($f[descrId]).attr) {
+		for (const [n, v] of descrById.get($f[p_descrId]).attr) {
 			if (n === req.str) {
 				break;
 			}
@@ -624,7 +622,7 @@ function q_add(req, $from, begin, end, ctx) {
 		}
 	}*/
 //console.timeEnd("c");
-//console.log("$new", $new);
+//console.log($new, $from, begin, end, ctx);
 //alert(4);
 	return $new;
 }
@@ -664,7 +662,7 @@ function _f($e, s, path = []) {
 		return;
 	}
 	s.add({
-		dId: $e[descrId],
+		dId: $e[p_descrId],
 		path
 	});
 	for (let i = 0, $i = $e.firstChild; $i; i++, $i = $i.nextSibling) {
@@ -676,7 +674,7 @@ function _f($e, s, path = []) {
 	}
 }*/
 function _q_cloneCopy($fromJ, $to) {//, len) {
-	const dId = $fromJ[descrId];
+	const dId = $fromJ[p_descrId];
 	if (!dId) {
 		return;
 	}
@@ -694,7 +692,7 @@ function _q_cloneCopy($fromJ, $to) {//, len) {
 	const arr = new Array($toLen);
 	if ($fromJ.content) {
 		for (let j = 0, $i = $fromJ.content.firstChild; $i; j++, $i = $i.nextSibling) {
-			if ($i[descrId]) {
+			if ($i[p_descrId]) {
 				for (let i = 0; i < $toLen; i++) {
 					arr[i] = $to[i].content.childNodes[j];
 				}
@@ -704,7 +702,7 @@ function _q_cloneCopy($fromJ, $to) {//, len) {
 		return;
 	}
 	for (let j = 0, $i = $fromJ.firstChild; $i; j++, $i = $i.nextSibling) {
-		if ($i[descrId]) {
+		if ($i[p_descrId]) {
 			for (let i = 0; i < $toLen; i++) {
 				arr[i] = $to[i].childNodes[j];
 			}
@@ -722,7 +720,7 @@ function q_forRender(req, begin, $els, keys, inFragment, ctx) {
 			j = 0,
 			iLen = $els[i].length;
 //		while ($i.nodeType !== 1) {
-		while (!$i[descrId]) {
+		while (!$i[p_descrId]) {
 			$i = $els[i][++j];
 			if (j === iLen) {
 				break;
@@ -737,9 +735,13 @@ function q_forRender(req, begin, $els, keys, inFragment, ctx) {
 			aI.scope[ctx.keyName] = keys[i];
 		}
 		for (j = iLen - 1; j > -1; j--) {
-//			if ($els[i][j].nodeType === 1) {
-			if ($els[i][j][isCmd]) {
-				$els[i][j].setAttribute(ctx.idxName, begin + i);
+			const $i = $els[i][j];
+//			if ($i.nodeType === 1) {
+			if ($i[p_isCmd]) {
+				$i.setAttribute(ctx.idxName, begin + i);
+				if ($i.content) {
+					$i.content.firstChild.setAttribute(ctx.idxName, begin + i);
+				}
 			}
 		}
 	}

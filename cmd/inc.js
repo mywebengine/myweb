@@ -2,15 +2,15 @@ import {afterRender, type_renderRes} from "../render/algo.js";
 //import pimport from "../_pimport.js";
 import createArrFragment from "../arrfr.js";
 import {cache} from "../cache.js";
-import {Tpl_doc, Tpl_$src, srcId, descrId, isCmd, _target, cmdPref, cmdArgsBegin, cmdArgsDiv, incCmdName, fetchCmdName, elseCmdName, defaultCmdName, scopeCmdName, orderName, idxName, saveName, localIdName, defFetchReq} from "../config.js";
-import {getNewId, $srcById, descrById, createSrc, getAttrAfter, getAttrItAfter, get$els} from "../descr.js";
+import {Tpl_doc, Tpl_$src, p_srcId, p_descrId, p_isCmd, cmdPref, cmdArgsBegin, cmdArgsDiv, incCmdName, fetchCmdName, elseCmdName, defaultCmdName, scopeCmdName, orderName, idxName, saveName, localIdName, defFetchReq} from "../config.js";
+import {$srcById, descrById, createSrc, getAttrAfter, getAttrItAfter, get$els} from "../descr.js";
 import {preRender, replaceTextBlocks, removeChild, getIdxName, getIdx, getTopURL, getLocalIdName, getLocalId} from "../dom.js";
 import {eval2} from "../eval2.js";
 import {normalizeURL, getURL, isURI} from "../loc.js";
 import {linkerTag} from "../render/linker.js";
 import {renderTag} from "../render/render.js";
 import {reqCmd, type_req, getReqCmd} from "../req.js";
-import {setLocalScope} from "../scope.js";
+import {getNewLocalId, setLocalScope} from "../scope.js";
 import {addAnimation, check, spaceRe} from "../util.js";
 
 export const incCache = {};
@@ -83,8 +83,8 @@ export default {
 		for (let i = 0; i < $elsLen; i++) {
 			const $i = $els[i];
 //			if (i.nodeType === 1 && 
-			if ($i[descrId]) {
-				linkerTag($i, req.scope, getAttrAfter(descrById.get($i[descrId]).attr, req.str));
+			if ($i[p_descrId]) {
+				linkerTag($i, req.scope, getAttrAfter(descrById.get($i[p_descrId]).attr, req.str));
 			}
 		}
 //todo может быть нужно запускать событие поле того как всё что рендерится будет готово?
@@ -199,7 +199,7 @@ alert(1);
 				Tpl_doc.head.appendChild($i);
 			}
 		}
-	});//, req.sync);
+	}, req.sync);
 	return $fr;
 }
 function incReplaceTextBlocks($i) {
@@ -304,13 +304,13 @@ function getLoadedInc(req, include, $fr) {
 }
 //new
 async function getNewInc(req, include, oldVal, $els, $elsLen) {
-	const r = await addAnimation(() => createInc(req, include, oldVal, $els, $elsLen));//, req.sync);
-	setLocalScope(r.lId, req.scope, r.$src, req.str);
-	return readyInc(req, include, await renderI(req, r.$src, r.$last, renderNewInc));//!! НЕ r - наверное, кто-то скрыл или удалил
+	const r = await addAnimation(() => createInc(req, include, oldVal, $els, $elsLen), req.sync);
+	return readyInc(req, include, await renderI(req, r.$src, r.$last, (req, $e) => renderNewInc(req, $e, r.lId)));
 }
-async function renderNewInc(req, $e) {
+async function renderNewInc(req, $e, lId) {
+	setLocalScope(lId, req.scope, $e, req.str);
 	const afterAttr = new Map(),
-		attrIt = descrById.get($e[descrId]).attr.entries();
+		attrIt = descrById.get($e[p_descrId]).attr.entries();
 	for (let i = attrIt.next(); !i.done; i = attrIt.next()) {
 		const [n, v] = i.value,
 			cn = reqCmd[n].cmdName;
@@ -331,21 +331,21 @@ async function getInc(req, include, $els, $elsLen) {
 	return readyInc(req, include, await renderI(req, $els[0], $els[$elsLen - 1], renderInc));
 }
 function renderInc(req, $e) {
-	return renderTag($e, req.scope, getAttrAfter(descrById.get($e[descrId]).attr, req.str), req.sync);
+	return renderTag($e, req.scope, getAttrAfter(descrById.get($e[p_descrId]).attr, req.str), req.sync);
 }
 async function renderI(req, $e, $last, h) {
-//console.log(1, req, $e, $last, h);
 //const r = Math.random();
+//console.log(1, r, req, $e, $last, h);
 	do {
 //		if ($e.nodeType === 1 && 
-		if ($e[isCmd]) {//это когда template и в нем скрыта тектовая нода
-//console.log(112, r, $e[srcId], $e, $e.parentNode, h, req, req.$src[srcId]);
+		if ($e[p_isCmd]) {//это когда template и в нем скрыта тектовая нода
+//console.log(112, r, $e[p_srcId], $e, $e.parentNode, h, req, req.$src[p_srcId]);
 			$e = await h(req, $e);
-//console.log(113, r, $e[srcId], $e, $e.parentNode);
+//console.log(113, r, $e[p_srcId], $e, $e.parentNode);
 //alert(1);
 //todo
 			if ($e.parentNode !== $last.parentNode) {
-				console.error(555555555, $e[srcId], $e, $last, req);
+				console.error(555555555, $e[p_srcId], $e, $last, req);
 alert(11);
 				return $e;
 			}
@@ -362,7 +362,7 @@ alert(11);
 			break;
 		}
 	} while ($e = $e.nextSibling);
-//console.error("rem1", req, $e, $last);
+//console.error(3, r, req, $e, $last);
 //alert(1);
 	return $e;
 }
@@ -381,7 +381,7 @@ function createInc(req, include, oldVal, $els, $elsLen) {
 alert(1);
 //		return null;//!!!!!! todo - наверное, кто-то скрыл или удалил
 	}
-	const attrIt = getAttrItAfter(descrById.get(req.$src[descrId]).attr.keys(), req.str);
+	const attrIt = getAttrItAfter(descrById.get(req.$src[p_descrId]).attr.keys(), req.str);
 	for (let i = attrIt.next(); !i.done; i = attrIt.next()) {
 		const n = i.value;
 		if (reqCmd[n].cmdName === incCmdName) {
@@ -390,7 +390,7 @@ alert(1);
 	}
 	const $parent = $els[0].parentNode,
 		$lastNext = $els[$elsLen - 1].nextSibling,
-		lId = getNewId(),
+		lId = getNewLocalId(),
 		$new = cloneIncFragment(req, include, lId, oldVal),
 		$src = $new.firstChild,
 		$last = $new.lastChild,
@@ -399,19 +399,12 @@ alert(1);
 	for (let i = 0; i < $bodyElsLen; i++) {
 		$bodyEls[i] = $new.childNodes[i + 1];
 	}
-//const r = Math.random();
 	for (let i = 0; i < $elsLen; i++) {
-//console.log($els[i]);
 		removeChild($els[i], !!oldVal);
 	}
-//console.log("rem2", r, req);
+//	req.$src = $i;
 	$parent.insertBefore($new, $lastNext);
-
-//!!<!--in_begin
-//	req.$src = $new.firstChild;
-
 	dispatchMountEvent(req, include, createArrFragment($bodyEls));
-//console.log(6666666, r, $src, $last, $bodyEls, $bodyEls[0], $bodyEls[0][srcId]);
 	return type_includeRes($src, $last, lId);
 }
 function type_includeRes($src, $last, lId) {
@@ -423,7 +416,7 @@ function type_includeRes($src, $last, lId) {
 }
 function cloneIncFragment(req, include, lId, oldVal) {
 	const $fr = include.$fr.cloneNode(true),
-		dId = req.$src[descrId],
+		dId = req.$src[p_descrId],
 		d = descrById.get(dId),
 //		incD = include.descrByDescrId[dId] || (include.descrByDescrId[dId] = []),
 		attrs = req.$src.attributes,
@@ -567,7 +560,7 @@ function cloneIncFragment(req, include, lId, oldVal) {
 //			createSrc($i, incD[i]);
 //		} else {
 			createSrc($i);
-//			incD[i] = $i[descrId];
+//			incD[i] = $i[p_descrId];
 //		}
 //todo !!for - так ли делать или иначе, нужно подумать
 //		descrById.get(incD[i]).curByStr = d.curByStr;
@@ -599,8 +592,8 @@ function makeSlots(req, $fr) {
 		const $v = req.$src.querySelectorAll(`[slot="${$s.name}"]`),
 			$vLen = $v.length;
 		for (let j = 0; j < $vLen; j++) {
-			if ($v[j][descrId]) {
-				const get$elsByStr = descrById.get($v[j][descrId]).get$elsByStr;
+			if ($v[j][p_descrId]) {
+				const get$elsByStr = descrById.get($v[j][p_descrId]).get$elsByStr;
 				if (get$elsByStr) {
 					const $els = get$els($v[j], get$elsByStr),
 						$elsLen = $els.length;
@@ -645,7 +638,7 @@ function incGet$els($src, str, expr, pos) {
 	const $els = [$i];
 	while ($i = $i.nextSibling) {
 		$els.push($i);
-		if ($i[isCmd]) {
+		if ($i[p_isCmd]) {
 			count = getIncCount($i, str);
 			continue;
 		}
@@ -658,7 +651,7 @@ function incGet$els($src, str, expr, pos) {
 	throw check(new Error(">>>Tpl inc:incGet$els:02 Not found <!--inc_end-->"), $src);
 }
 function incGet$first($src, str, expr, pos) {
-	if ($src[isCmd] && !isRenderdInc($src, str)) {
+	if ($src[p_isCmd] && !isRenderdInc($src, str)) {
 //console.log(11, $src, str, pos);
 		return $src;
 	}
@@ -666,7 +659,7 @@ function incGet$first($src, str, expr, pos) {
 		count = 1;
 	do {
 //console.log(2, $i, str, pos, count);
-		if ($i[isCmd]) {
+		if ($i[p_isCmd]) {
 			count = getIncCount($i, str, expr, pos);
 //console.log(21, $i, str, pos, count);
 			continue;
@@ -684,7 +677,7 @@ function incGet$first($src, str, expr, pos) {
 function getIncCount($i, str, expr, pos) {
 //todo , expr, pos
 	let count = 1;
-	const attrIt = getAttrItAfter(descrById.get($i[descrId]).attr.keys(), str);
+	const attrIt = getAttrItAfter(descrById.get($i[p_descrId]).attr.keys(), str);
 	for (let i = attrIt.next(); !i.done; i = attrIt.next()) {
 		if (reqCmd[i.value].cmdName === incCmdName) {
 			if (!isRenderdInc($i, i.value)) {
@@ -699,14 +692,14 @@ function isRenderdInc($i, str) {
 	const f = $i.nodeType === 8 && $i.textContent === "inc_end" && "previousSibling" || "nextSibling";
 	do {
 //		if ($i.nodeType === 1 &&
-		if ($i[descrId]) {
+		if ($i[p_descrId]) {
 			break;
 		}
 	} while ($i = $i[f]);
 	if (str) {
 		return !!getIdx($i, str);
 	}
-	for (const n of descrById.get($i[descrId]).attr.keys()) {
+	for (const n of descrById.get($i[p_descrId]).attr.keys()) {
 		if (reqCmd[n].cmdName === incCmdName) {
 			return !!getIdx($i, n);
 		}

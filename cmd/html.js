@@ -1,5 +1,5 @@
-﻿import {cache} from "../cache.js";
-import {srcId, descrId/*, textCmdName*/} from "../config.js";
+﻿import {getCacheBySrcId} from "../cache.js";
+import {p_srcId, p_descrId/*, textCmdName*/} from "../config.js";
 import {descrById} from "../descr.js";
 import {eval2, q_eval2} from "../eval2.js";
 import {addAnimation} from "../util.js";
@@ -7,7 +7,7 @@ import {addAnimation} from "../util.js";
 export default {
 	async render(req) {
 		const f = setValue(req, req.$src, await eval2(req, req.$src, true));
-		return f && addAnimation(f) || null;//, req.sync);
+		return f && addAnimation(f, req.sync) || null;
 	},
 	async q_render(req, arr, isLast) {
 		const val = await q_eval2(req, arr, isLast),
@@ -30,23 +30,23 @@ export default {
 				for (const f of fSet) {
 					f();
 				}
-			});//, req.sync);
+			}, req.sync);
 		}
 		return null;
 	},
 	linker(req) {
 /*
-		descrById.get(req.$src[descrId]).isCustomHTML = true;
-		const cur = getCurentValue(req, req.$src[srcId]);
+		descrById.get(req.$src[p_descrId]).isCustomHTML = true;
+		const cur = getCurentValue(req, req.$src[p_srcId]);
 		cur[0] = eval2(req, req.$src, true);
 		return null;*/
 	}
 };
 function setValue(req, $src, val) {
-	descrById.get($src[descrId]).isCustomHTML = true;
-	const c = cache[$src[srcId]],
+	descrById.get($src[p_descrId]).isCustomHTML = true;
+	const c = getCacheBySrcId($src[p_srcId]),
 		cur = c.current[req.str];
-//console.error("html", $src[srcId], $src, val, cur, val === cur);
+//console.error("html", $src[p_srcId], $src, val, cur, val === cur);
 	if (val === cur) {
 		return null;
 	}

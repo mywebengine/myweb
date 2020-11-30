@@ -1,5 +1,4 @@
-import {cache, type_cache} from "./cache.js";
-import {srcId, descrId, isCmd, orderName, onRenderName} from "./config.js";
+import {p_srcId, p_descrId, p_isCmd, p_topURL, orderName} from "./config.js";
 //import {preRender} from "./dom.js";
 import {reqCmd, getReqCmd, type_req} from "./req.js";
 import {spaceRe} from "./util.js";
@@ -15,43 +14,41 @@ export function getNewId() {
 self.$srcById = $srcById;
 self.descrById = descrById;
 
-export function createSrc($e, dId/*, tpl_url*/) {//вызов этой функции должен быть неприменнол на есть документ слева направо, если это фрагмент, то нужно обработать края
+export function createSrc($e, dId/*, topURL*/) {//вызов этой функции должен быть неприменнол на есть документ слева направо, если это фрагмент, то нужно обработать края
 //!!!!
-//if ($e[srcId]) {
+//if ($e[p_srcId]) {
 //	console.error($e);
 //	alert(111);
 //}
-	const id = $e[srcId] = getNewId();
+	const id = $e[p_srcId] = getNewId();
 	$srcById[id] = $e;
-//	if (tpl_url) {
-//		$i.tpl_url = tpl_url;
+//	if (topURL) {
+//		$i[p_topURL] = topURL;
 //	}
 	if (dId) {
-		$e[descrId] = dId;
+		$e[p_descrId] = dId;
 		const d = descrById.get(dId);
-		if (d.attr) {//.isCmd && d.attr.size) {
-			$e[isCmd] = true;
+		if (d.attr) {//.p_isCmd && d.attr.size) {
+			$e[p_isCmd] = true;
 			d.srcIdSet.add(id);//пока используется тоько для почения .sId при удалении
-			cache[id] = type_cache();
 		}
 		return d;
 	}
 	return createDescr($e, id);
 }
 export function createDescr($e, sId) {
-	const id = $e[descrId] = getNewId(),
+	const id = $e[p_descrId] = getNewId(),
 		attr = createAttr($e);
 	if (!attr.size) {
-		const d = type_descr(null, false, null, null, sId, null, $e.getAttribute(onRenderName));
+		const d = type_descr(null, false, null, null, sId, null);
 		descrById.set(id, d);
 		return d;
 	}
-	$e[isCmd] = true;
+	$e[p_isCmd] = true;
 	const get$elsByStr = type_get$elsByStr();
 	let isGet$elsByStr = false,
 		isAsOne = false,
 		pos = 0;
-	cache[sId] = type_cache();
 	for (const [str, expr] of attr) {
 		const r = reqCmd[str];
 		if (r.cmd.get$els) {
@@ -69,11 +66,11 @@ export function createDescr($e, sId) {
 //		}
 //!!		break;
 	}
-	const d = type_descr(attr, isAsOne, new Set(), new Set([sId]), sId, isGet$elsByStr && get$elsByStr || null, $e.getAttribute(onRenderName));
+	const d = type_descr(attr, isAsOne, new Set(), new Set([sId]), sId, isGet$elsByStr && get$elsByStr || null);
 	descrById.set(id, d);
 	return d;
 }
-function type_descr(attr, isAsOne, varIdSet, srcIdSet, sId, get$elsByStr, onRender) {
+function type_descr(attr, isAsOne, varIdSet, srcIdSet, sId, get$elsByStr) {
 	return {
 //		id,
 		attr,
@@ -84,8 +81,7 @@ function type_descr(attr, isAsOne, varIdSet, srcIdSet, sId, get$elsByStr, onRend
 		sId,
 //--		curByStr: {},
 		isCustomHTML: false,
-		get$elsByStr,
-		onRender
+		get$elsByStr
 	};
 }
 function type_get$elsByStr() {
@@ -126,53 +122,30 @@ export function createAttr($e) {
 }
 /*--
 export function getDescr($e) {
-	const dId = $e[descrId];
+	const dId = $e[p_descrId];
 	if (dId) {
 		return descrById.get(dId);
 	}
 }*/
 export function get$els($e, get$elsByStr, str) {
-	if (str) {
-		const get$e = get$elsByStr[str];
-		if (get$e) {
-			return get$e.cmd.get$els($e, str, get$e.expr, get$e.pos);
-		}
-		return [$e];
-	}
-	for (const str of descrById.get($e[descrId]).attr.keys()) {
-		const get$e = get$elsByStr[str];
-		if (get$e) {
-			return get$e.cmd.get$els($e, str, get$e.expr, get$e.pos);
-		}
-	}
-	return [$e];
-/*
-	const attrIt = descrById.get($e[descrId]).attr.entries();
-	let i = attrIt.next(),
-		pos = 0;
+	const attrIt = descrById.get($e[p_descrId]).attr.keys();
+	let i = attrIt.next();
 	if (str) {
 		for (; !i.done; i = attrIt.next()) {
-			if (i.value[0] === str) {
+			if (i.value === str) {
 				break;
 			}
-			pos++;
 		}
-		if (i.done) {
-			return [$e];
-		}
-	} else if (i.done) {
-		return [$e];
 	}
-	do {
-		const [n, v] = i.value,
+	while (!i.done) {
+		const n = i.value,
 			get$e = get$elsByStr[n];
 		if (get$e) {
-			return get$e.get$els($e, n, v, pos);
+			return get$e.cmd.get$els($e, n, get$e.expr, get$e.pos);
 		}
-		pos++;
 		i = attrIt.next();
-	} while (!i.done);
-	return [$e];*/
+	}
+	return [$e];
 }
 export function get$first($e, get$elsByStr, str) {
 	if (str) {
@@ -182,7 +155,7 @@ export function get$first($e, get$elsByStr, str) {
 		}
 		return $e;
 	}
-	for (const str of descrById.get($e[descrId]).attr.keys()) {
+	for (const str of descrById.get($e[p_descrId]).attr.keys()) {
 		const get$e = get$elsByStr[str];
 		if (get$e) {
 			return get$e.cmd.get$first($e, str, get$e.expr, get$e.pos);
@@ -191,7 +164,7 @@ export function get$first($e, get$elsByStr, str) {
 	return $e;
 }
 export function getNextStr($e, str) {
-	const attrIt = descrById.get($e[descrId]).attr.keys();
+	const attrIt = descrById.get($e[p_descrId]).attr.keys();
 	for (let i = attrIt.next(); !i.done; i = attrIt.next()) {
 		if (i.value === str) {
 			i = attrIt.next();
@@ -206,8 +179,8 @@ export function getNextStr($e, str) {
 //!!не используется - удалить
 /*
 export function getAttr($e) {
-	return descrById.get($e[descrId]).attr;
-//	const dId = $e[descrId];
+	return descrById.get($e[p_descrId]).attr;
+//	const dId = $e[p_descrId];
 //	if (dId) {
 //		return descrById.get(dId).attr;
 //	}

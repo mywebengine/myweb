@@ -1,4 +1,4 @@
-import {descrId, isCmd, ifCmdName, elseifCmdName, elseCmdName, switchCmdName, caseCmdName, defaultCmdName, forCmdName, incCmdName} from "../config.js";
+import {p_descrId, p_isCmd, ifCmdName, elseifCmdName, elseCmdName, switchCmdName, caseCmdName, defaultCmdName, forCmdName, incCmdName} from "../config.js";
 import {show, hide, getIdx} from "../dom.js";
 import {descrById, getAttrAfter, get$els, get$first, getNextStr} from "../descr.js";
 import {eval2, q_eval2} from "../eval2.js";
@@ -16,11 +16,12 @@ export const ifCmd = {
 	async render(req) {
 //console.log("if", req);
 		make$first(req, ifCmdName, elseifCmdName, elseCmdName);
+//console.log("ifres", req.str, req.$src);
 		return ifGet(req, await eval2(req, req.$src, true), ifCmdName, elseifCmdName, elseCmdName);
-//		const val = await eval2(req, req.$src, true), r = await ifGet(req, val, ifCmdName, elseifCmdName, elseCmdName);
+//const val = await eval2(req, req.$src, true), r = await ifGet(req, val, ifCmdName, elseifCmdName, elseCmdName);
 //console.log("ifres", val, r, req);
 //alert(1);
-//		return r;
+//return r;
 	},
 	async q_render(req, arr, isLast) {
 		let i = 0;
@@ -76,7 +77,7 @@ async function setScope(req) {
 	return !!val;
 }
 //1) прдполагается что если первый скрыт то и все такие же скрыты - и наоборот
-//2) !!: !$i[descrId] - это коммент, текст или когда template  и в нем скрыта тектовая нода
+//2) !!: !$i[p_descrId] - это коммент, текст или когда template  и в нем скрыта тектовая нода
 //3) в этом алгоритме нет проверки на эдентичность условий (предполлагается, что если они есть, то дожны быть правильными - так как такого рода ошибка может быть в серверном рендеренге - и это точно ошибка)
 async function ifGet(req, val, ifCmdName, elseifCmdName, elseCmdName, testFunc = f => f, str) {
 	const isTrue = testFunc(val);
@@ -87,7 +88,7 @@ async function ifGet(req, val, ifCmdName, elseifCmdName, elseCmdName, testFunc =
 		}
 	}
 	let [$last, $attr] = await makeShow(req, req.$src, req.str, isTrue),
-		attr = isTrue && getAttrAfter(descrById.get($attr[descrId]).attr, req.str) || null;
+		attr = isTrue && getAttrAfter(descrById.get($attr[p_descrId]).attr, req.str) || null;
 	const beforeAttrCount = isSingle($attr, req.str);
 	if (beforeAttrCount === -1) {
 		return type_renderRes(!isTrue, $attr, $last);
@@ -95,15 +96,15 @@ async function ifGet(req, val, ifCmdName, elseifCmdName, elseCmdName, testFunc =
 	for (let $i = $last.nextSibling; $i; $i = $i.nextSibling) {
 //console.log(0, req.str, $i);
 //		if ($i.nodeType !== 1) {
-		if (!$i[descrId]) {//это коммент, текст или когда template и в нем скрыта тектовая нода
+		if (!$i[p_descrId]) {//это коммент, текст или когда template и в нем скрыта тектовая нода
 			continue;
 		}
-		if (!$i[isCmd]) {
+		if (!$i[p_isCmd]) {
 			break;
 		}
 		let f = true,
 			pos = 0;
-		for (const [n, v] of descrById.get($i[descrId]).attr) {
+		for (const [n, v] of descrById.get($i[p_descrId]).attr) {
 			if (pos++ < beforeAttrCount) {
 				continue;
 			}
@@ -129,12 +130,12 @@ async function ifGet(req, val, ifCmdName, elseifCmdName, elseCmdName, testFunc =
 			if (rc.cmdName === elseCmdName) {
 				if ($i.content) {
 					[$last, $attr] = await makeShow(req, $i, n, true);
-					attr = getAttrAfter(descrById.get($attr[descrId]).attr, n);
+					attr = getAttrAfter(descrById.get($attr[p_descrId]).attr, n);
 					$i = $last;
 					break;
 				}
 				$last = $attr = $i;//вот тут не очень оптимально с $attr - в следующем рендере его придётся возвращать вверх
-				attr = getAttrAfter(descrById.get($attr[descrId]).attr, n);
+				attr = getAttrAfter(descrById.get($attr[p_descrId]).attr, n);
 //console.log(2, $last);
 				break;
 			}
@@ -147,8 +148,8 @@ async function ifGet(req, val, ifCmdName, elseifCmdName, elseCmdName, testFunc =
 					req.scope[varName] = val;
 				}
 				[$last, $attr] = await makeShow(reqI, $i, n, true);
-				attr = getAttrAfter(descrById.get($attr[descrId]).attr, reqI.str);
-//console.log(3, req.str, n, v, val, $i, $attr, attr, $last, descrById.get($i[descrId]).attr);
+				attr = getAttrAfter(descrById.get($attr[p_descrId]).attr, reqI.str);
+//console.log(3, req.str, n, v, val, $i, $attr, attr, $last, descrById.get($i[p_descrId]).attr);
 				$i = $last;
 				val = true;
 				break;
@@ -170,7 +171,7 @@ async function ifGet(req, val, ifCmdName, elseifCmdName, elseCmdName, testFunc =
 }
 function make$first(req, ifCmdName, elseifCmdName, elseCmdName) {
 	let pos = 0;
-	for (const n of descrById.get(req.$src[descrId]).attr.keys()) {
+	for (const n of descrById.get(req.$src[p_descrId]).attr.keys()) {
 		if (n === req.str) {
 			break;
 		}
@@ -178,43 +179,42 @@ function make$first(req, ifCmdName, elseifCmdName, elseCmdName) {
 	}
 	const $first = ifGet$first(ifCmdName, elseifCmdName, elseCmdName, req.$src, req.str, req.expr, pos);
 	if (reqCmd[req.str].cmdName === ifCmdName) {
-		return $first;
+		req.$src = $first;
+//		$first;
+		return;
 	}
-	for (const [n, v] of descrById.get($first[descrId]).attr) {
+	for (const [n, v] of descrById.get($first[p_descrId]).attr) {
 		const rc = reqCmd[n];
 		if (rc.cmdName === ifCmdName) {
 			req.reqCmd = rc;
 			req.str = n;
 			req.expr = v;
 			req.$src = $first;
-			return $first;
+			$first;
+			return;
 		}
 	}
 }
 function ifGet$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos, firstStr) {
 	const isStrIf = str && reqCmd[str].cmdName === ifCmdName;
+//	let $i = $src
+//	while (!$i[p_isCmd]) {
+//		$i = $i.nextSibling;
+//	}
 	for (let $i = $src; $i; $i = $i.previousSibling) {
 //		if ($i.nodeType !== 1) {
-		if (!$i[descrId]) {//это коммент, текст или когда template и в нем скрыта тектовая нода
+		if (!$i[p_descrId]) {//это коммент, текст или когда template и в нем скрыта тектовая нода
 			continue;
 		}
-		if (!$i[isCmd]) {
+		if (!$i[p_isCmd]) {
 			break;
 		}
 		let f = true,
 			l = 0;
-//todo сделать контроль по позиции
-		const beforeIdx = {},
-			isBeforeAttr = {};
-		for (const n of descrById.get($i[descrId]).attr.keys()) {
-			const idx = getIdx($i, n);
-			if (idx) {
-				beforeIdx[n] = idx;
-			} else {
-				isBeforeAttr[n] = true;
-			}
+		for (const n of descrById.get($i[p_descrId]).attr.keys()) {
 			const rc = reqCmd[n];
 			if (rc.cmdName === incCmdName) {
+				l = 0;
 				continue;
 			}
 			l++;
@@ -234,46 +234,59 @@ function ifGet$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos
 			if (firstStr) {
 				firstStr.str = n;
 			}
-			let $first = $i;
-			while ($i = $i.previousSibling) {
-//				if ($i.nodeType !== 1) {
-				if (!$i[descrId]) {
+			let incCount = 0,
+				forStr = "";
+			const attrIt = descrById.get($i[p_descrId]).attr.keys();
+			for (let i = attrIt.next(); !i.done; i = attrIt.next()) {
+				if (i.value !== str) {
 					continue;
 				}
-				if (!$i[isCmd]) {
-					return $first;
-				}
-				let ff = true,
-					jPos = 0;
-				for (const [n2, v2] of descrById.get($i[descrId]).attr) {
-					if (n === n2) {
-						if (pos !== jPos++ || expr !== v2) {
-							return $first;
+				for (i = attrIt.next(); !i.done; i = attrIt.next()) {
+					const n = i.value,
+						rc = reqCmd[n];
+					if (forStr === "" && rc.cmdName === incCmdName) {
+						if (getIdx($i, n) !== null) {
+							incCount++;
 						}
-//todo нужно гарантировать порядок и значение
-						$first = $i;
-						ff = false;
-//console.log(999, str, $i, n, n2, pos, jPos);
-						break;
-					}
-					jPos++;
-					if (beforeIdx[n2]) {// !== undefined
-						if (beforeIdx[n2] !== getIdx($i, n2)) {
-//console.log(4, str, $first);
-							return $first;
+					} else if (incCount === 0 && forStr === "" && rc.cmdName === forCmdName) {
+						if (getIdx($i, n) !== null) {
+							forStr = n;
 						}
-					} else if (!isBeforeAttr[n2]) {
-//console.error(5, str, $first);
-						return $first;
 					}
 				}
-				if (ff) {
-//console.log(6, str, $first);
-					return $first;
-				}
+				break;
 			}
-//console.log(7, str, $first);
-			return $first;
+			if (incCount) {
+				while ($i = $i.previousSibling) {
+					if ($i.nodeType === 8 && $i.textContent === "inc_begin") {
+						if (--incCount) {
+							continue;
+						}
+						while ($i = $i.nextSibling) {
+							if ($i[p_isCmd]) {
+								return $i;
+							}
+						}
+					}
+				}
+				throw check(new Error(">>>Tpl if:make$first:02 Invalid structure: inc_begin not found"), $src);
+			}
+			if (forStr) {
+				while ($j = $j.previousSibling) {
+					if (!$j[p_isCmd]) {
+						continue;
+					}
+					const i = getIdx($j, forStr);
+					if (!i) {
+						return $i;
+					}
+					if (i === "0") {
+						$i = $j;
+					}
+				}
+				return $i;
+			}
+			return $i;
 		}
 		if (f) {
 			break;
@@ -286,7 +299,7 @@ function ifGet$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos) 
 	let $i = ifGet$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos, firstStr),
 		$maybe = [];
 	do {//так как функция для общего интерфейса, то в неё может придти коммент со вставки
-		if ($i[isCmd]) {
+		if ($i[p_isCmd]) {
 			break;
 		}
 	} while ($i = $i.nextSibling);
@@ -294,7 +307,7 @@ function ifGet$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos) 
 //		!!такого не должно быть
 //	}
 	const nStr = getNextStr($i, firstStr.str),
-		$els = nStr && get$els($i, descrById.get($i[descrId]).get$elsByStr, nStr) || [$i],
+		$els = nStr && get$els($i, descrById.get($i[p_descrId]).get$elsByStr, nStr) || [$i],
 		beforeAttrCount = isSingle($i, firstStr.str);
 	if (beforeAttrCount === -1) {
 		return $els;
@@ -304,16 +317,16 @@ function ifGet$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos) 
 	}
 	for ($i = $i.nextSibling; $i; $i = $i.nextSibling) {
 //		if ($i.nodeType !== 1) {
-		if (!$i[descrId]) {//это коммент, текст или когда template и в нем скрыта тектовая нода
+		if (!$i[p_descrId]) {//это коммент, текст или когда template и в нем скрыта тектовая нода
 			$maybe.push($i);
 			continue;
 		}
-		if (!$i[isCmd]) {
+		if (!$i[p_isCmd]) {
 			return $els;
 		}
 		let f = true,
 			pos = 0;
-		for (const n of descrById.get($i[descrId]).attr.keys()) {
+		for (const n of descrById.get($i[p_descrId]).attr.keys()) {
 			if (pos++ < beforeAttrCount) {
 				continue;
 			}
@@ -327,7 +340,7 @@ function ifGet$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos) 
 			//!!*3
 			f = false;
 			const nStr = getNextStr($i, n),
-				$iEls = nStr && get$els($i, descrById.get($i[descrId]).get$elsByStr, nStr) || [$i];
+				$iEls = nStr && get$els($i, descrById.get($i[p_descrId]).get$elsByStr, nStr) || [$i];
 			if ($iEls.length === 1) {
 				if ($maybe.length) {
 					$els.push(...$maybe);
@@ -339,7 +352,7 @@ function ifGet$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos) 
 //todo тут вроде всё работает - проверить доказательство
 			$i = $iEls[0].previousSibling;
 			$maybe = [];
-			while (!$i[descrId]) {
+			while (!$i[p_descrId]) {
 				$maybe.push($i);
 				$i = $i.previousSibling;
 			}
@@ -359,7 +372,7 @@ function ifGet$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos) 
 function isSingle($src, str) {//проверка на то что этот иф входит в конструккцию типа: <div _elseif="*" _if="эотот иф"
 	let beforeAttrCount = 0,
 		f = false;
-	for (const n of descrById.get($src[descrId]).attr.keys()) {
+	for (const n of descrById.get($src[p_descrId]).attr.keys()) {
 		if (n === str) {
 			return f && -1 || beforeAttrCount;
 		}
@@ -369,23 +382,24 @@ function isSingle($src, str) {//проверка на то что этот иф 
 			f = true;
 		} else if (cmdName === incCmdName) {
 //todo осмыслить про это
-			const $els = get$els($src, descrById.get($src[descrId]).get$elsByStr, n);
+			const $els = get$els($src, descrById.get($src[p_descrId]).get$elsByStr, n);
 			let $i = $els[$els.length - 2];
-			while (!$i[isCmd]) {
+			while (!$i[p_isCmd]) {
 				$i = $i.previousSibling;
 			}
-			f = descrById.get($i[descrId]).attr.has(str) || false;
+			f = descrById.get($i[p_descrId]).attr.has(str) || false;
 		}
 	}
 	return f && -1 || beforeAttrCount;
 }
 async function makeShow(req, $i, str, isShow) {
 	const nStr = getNextStr($i, str),
-		$els = nStr && get$els($i, descrById.get($i[descrId]).get$elsByStr, nStr) || [$i],
+		$els = nStr && get$els($i, descrById.get($i[p_descrId]).get$elsByStr, nStr) || [$i],
 		$elsLen = $els.length;
+//console.log("makeShow", nStr, $els, req.str);
 	if (isShow ? !$i.content : $i.content) {
 		for (let i = 0; i < $elsLen; i++) {
-			if ($els[i][descrId]) {
+			if ($els[i][p_descrId]) {
 				return type_makeShow($els, i, $elsLen - 1);
 			}
 		}
@@ -396,7 +410,7 @@ async function makeShow(req, $i, str, isShow) {
 		if ($els[i].nodeType === 8) {
 			continue;
 		}
-		if (firstTagIdx === -1 && $els[i][descrId]) {
+		if (firstTagIdx === -1 && $els[i][p_descrId]) {
 			firstTagIdx = i;
 		}
 		$els[i] = showFunc(req, $els[i]);
@@ -413,7 +427,7 @@ function type_makeShow($els, firstTagIdx, lastIdx) {
 async function switchGet(req) {
 	make$first(req, switchCmdName, caseCmdName, defaultCmdName);
 	let f = true;
-	for (const [n, v] of descrById.get(req.$src[descrId]).attr) {
+	for (const [n, v] of descrById.get(req.$src[p_descrId]).attr) {
 		if (f) {
 			if (n === req.str) {
 				f = false;

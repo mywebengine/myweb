@@ -11,10 +11,12 @@ import scopeCmd from "./cmd/scope.js";
 export const Tpl_doc = document;
 export const Tpl_$src = Tpl_doc.documentElement;
 
-export const srcId = Symbol();
-export const descrId = Symbol();
-export const isCmd = Symbol();
-export const _target = Symbol();
+export const p_srcId = Symbol();
+export const p_descrId = Symbol();
+export const p_isCmd = Symbol();
+export const p_target = Symbol();
+export const p_localId = Symbol();
+export const p_topURL = Symbol();
 
 export let Tpl_delay = 0;
 export function setDelay(t, cb) {
@@ -28,15 +30,17 @@ export function setDelay(t, cb) {
 	Tpl_delay = old;
 }
 
-self.srcId = srcId;
-self.descrId = descrId;
-self.isCmd = isCmd;
-self._target = _target;
+self.p_srcId = p_srcId;
+self.p_descrId = p_descrId;
+self.p_isCmd = p_isCmd;
+self.p_target = p_target;
+self.p_localId = p_localId;
+self.p_topURL = p_topURL;
 self.setDelay = setDelay;
 
 //to perfomance tests
 export const isAsyncTask = true;
-export const isAsyncAnimation = !true;//isAsyncTask;
+export const isAsyncAnimation = false;
 export const defTaskOpt = {
 	timeout: 10
 };
@@ -55,6 +59,7 @@ export const localIdName = cmdPref + "lid";
 export const startEventName = "start";
 export const renderEventName = "render";
 export const onRenderName = "on" + renderEventName;
+export const isAsyncAnimationName = "asyncanimation";
 
 export const attrCmdName = cmdPref + "attr";
 	export const pushModName = "push";
@@ -73,6 +78,11 @@ export const fetchCmdName = cmdPref + "fetch";
 	export const ifWatchName = "ifwatch";
 	export const paramName = "param";
 	export const ifParamName = "ifparam";
+	export const resultName = "res";
+	export const errorName = "err";
+	export const onLoadName = "onload";
+	export const onOkName = "onok";
+	export const onErrorName = "onerror";
 
 export const htmlCmdName = cmdPref + "html";
 	export const textCmdName = htmlCmdName + cmdArgsBegin + "t";
@@ -114,11 +124,11 @@ addCommand(onCmdName, onCmd);
 addCommand(scopeCmdName, scopeCmd);
 addCommand(execCmdName, execCmd);
 
-//if (!FormData.prototype[_target]) {
-	FormData.prototype[_target] = null;
-	Document.prototype[_target] = null;
-	DocumentFragment.prototype[_target] = null;
-	HTMLElement.prototype[_target] = null;
-	Text.prototype[_target] = null;
-	Promise.prototype[_target] = null;
+//if (!FormData.prototype[p_target]) {
+	FormData.prototype[p_target] = null;
+	Document.prototype[p_target] = null;
+	DocumentFragment.prototype[p_target] = null;
+	HTMLElement.prototype[p_target] = null;
+	Text.prototype[p_target] = null;
+	Promise.prototype[p_target] = null;
 //}

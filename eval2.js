@@ -1,7 +1,8 @@
-import {cache, getCacheValue, setCacheValue} from "./cache.js";
-import {srcId, descrId, cmdPref} from "./config.js";
+import {getCacheValue, setCacheValue} from "./cache.js";
+import {p_srcId, cmdPref} from "./config.js";
 import {setCur$src, setIsScoping, proxyStat, setProxyStat, proxySetInSet, setProxySetInSet, addVar} from "./proxy.js";
 import {type_req} from "./req.js";
+import {getScope} from "./scope.js";
 import {check} from "./util.js";
 
 const func = Object.getPrototypeOf(async function(){}).constructor;
@@ -10,21 +11,20 @@ const _func = self.Tpl_func || {};
 //self._func = _func;
 
 export function eval2(req, ctx, isReactive, isScoping) {
-
-
-const r = Math.random();
-//console.error(r, req.expr, req.$src, req.scope);
-	const v = getCacheValue(req, req.$src);
-	if (v) {
-//console.log(7777, r, req.str, req.expr, req.$src, v);
-		return v;
+	const cVal = getCacheValue(req.$src, req.str);
+//const r = Math.random();
+	if (cVal) {
+//console.log(7777, r, req.str, req.expr, req.$src, cVal.value);
+		return cVal.value;
+//	} else {
+//console.error(6666, r, req.expr, req.$src, req.scope, cVal.value);
 	}
 	const func = getEval2Func(req, req.expr);
 	setProxyStat(0);
 	setIsScoping(isScoping);
 	if (isReactive) {
 		setCur$src(req.$src);
-		const val = callFunc(func, ctx, req, req.scope, req.$src)
+		const val = callFunc(req, func, ctx, req.scope, true)
 			.catch(err => {
 				throw check(err, req);
 			});
@@ -32,7 +32,7 @@ const r = Math.random();
 		setIsScoping();
 		return val;
 	}
-	const val = callFunc(func, ctx, req, req.scope, req.$src)
+	const val = callFunc(req, func, ctx, req.scope, false)
 		.catch(err => {
 			throw check(err, req);
 		});
@@ -45,13 +45,13 @@ export const q_eval2 = function(req, arr, isLast) {//, isReactive = true) {
 		func = getEval2Func(req, req.expr);
 //console.log("q", req.str, req.expr, arr);
 	for (let i = 0; i < len; i++) {
-//console.log(arr[i].$src, arr[i].$src[srcId], cache[arr[i].$src[srcId]], req, arr);
+//console.log(arr[i].$src, arr[i].$src[p_srcId], cache[arr[i].$src[p_srcId]], req, arr);
 		if (isLast[i]) {
 			continue;
 		}
 /*
 		const $i = arr[i].$src,
-			sId = $i[srcId],
+			sId = $i[p_srcId],
 			c = cache[sId].value;
 		if (req.str in c) {
 //console.log("cac", sId);
@@ -59,14 +59,14 @@ export const q_eval2 = function(req, arr, isLast) {//, isReactive = true) {
 			continue;
 		}*/
 		const $i = arr[i].$src,
-			v = getCacheValue(req, $i);
-		if (v) {
-			res[i] = v;
+			cVal = getCacheValue($i, req.str);
+		if (cVal) {
+			res[i] = cVal.value;
 			continue;
 		}
 		setCur$src($i);
 		setProxyStat(0);
-		res[i] = callFunc(func, $i, req, arr[i].scope, $i)
+		res[i] = callFunc(req, func, $i, arr[i].scope, true)
 			.catch(err => {
 				throw check(err, req, arr[i].scope);
 			});
@@ -75,27 +75,59 @@ export const q_eval2 = function(req, arr, isLast) {//, isReactive = true) {
 //!!	setProxyStat(0);//!!кажеться, что не обязательно
 	return Promise.all(res);
 }
+const _e = ["if", "for", "while", "switch" , "do", "with", "var", "let", "const"];
 export function getEval2Func(req, expr) {
-	const f = _func[expr];
-	if (f) {
-		return f;
+	const _f = _func[expr];
+	if (_f) {
+		return _f;
 	}
-	if (expr = getExpr(expr)) {
-		const fBody = "with (tpl_scope) {" + expr + "}";
-//console.log(fBody);
-		try {
-			return _func[expr] = new func("req", "tpl_scope", fBody);
-		} catch (err) {
-			throw check(err, req);
+	expr = expr.trim();
+	if (expr === "") {
+		return _func[expr] = new func();
+	}
+	let f = true;
+
+
+//todo нужно обарботать ситуацию "... `... return false;`;"
+	if (/(^|;|\s)return(\s|;|$)/.test(expr)) {
+//	if (expr.startsWith("return")) {
+//	if (expr.substr(0, 6) === "return") {
+		f = false;
+	} else {
+		for (let i = _e.length - 1; i > -1; i--) {
+			if (expr.indexOf(_e[i]) !== 0) {
+				continue;
+			}
+//			switch (expr.substr(_e[i].length, 1)) {
+			switch (expr[_e[i].length]) {
+				case " ":
+				case "(":
+				case "\n":
+				case "\t":
+				case "\r":
+					f = false;
+				break;
+			}
+			break;
 		}
 	}
-	return _func[expr] = new func();
+
+
+	if (f) {
+		expr = "const _tpl_res = " + expr + "; return _tpl_res;";
+	}
+	const fBody = "with (tpl_scope) {" + expr + "}";
+//console.log(fBody);
+	try {
+		return _func[expr] = new func("tpl_scope", fBody);
+	} catch (err) {
+		throw check(err, req);
+	}
 }
-function callFunc(func, ctx, req, scope, $src) {
-	const val = func.apply(ctx, [req, scope]);
+function callFunc(req, func, $src, scope, isReactive) {
+	const val = func.apply($src, [scope]);
 	if (proxyStat === 0) {
 //!!		setProxyStat(0);//!!кажеться, что не обязательно
-//нету гетов		setCacheValue(req, $src, val);
 		return val;
 	}
 	const l = proxySetInSet.length;
@@ -103,54 +135,38 @@ function callFunc(func, ctx, req, scope, $src) {
 		for (let i = 0; i < l; i++) {
 			const p = proxySetInSet[i];
 			addVar(p.t, p.n, p.v, p.$src);
-//console.log("proxySetInSet", p.t, p.n, p.v, p.$src);
+//console.log("proxySetInSet", p.t, p.n, p.v, p.$src, p.$src[p_srcId]);
 		}
 		setProxySetInSet([]);
 //!!		setProxyStat(0);//!!кажеться, что не обязательно
 	}
-	setCacheValue(req, $src, val);
-	return val;
-}
-const _e = ["if", "for", "while", "switch" , "do", "with", "var", "let", "const"];
-function getExpr(expr) {
-	expr = expr.trim();
-	if (expr === "") {
-		return;
-	}
-//todo нужно обарботать ситуацию "... `... return false;`;"
-	if (/(^|;|\s)return(\s|;|$)/.test(expr)) {
-//	if (expr.startsWith("return")) {
-//	if (expr.substr(0, 6) === "return") {
-		return expr;
-	}
-	for (let i = _e.length - 1; i > -1; i--) {
-		if (!expr.startsWith(_e[i])) {
-			continue;
-		}
-//		switch (expr.substr(_e[i].length, 1)) {
-		switch (expr[_e[i].length]) {
-			case " ":
-			case "(":
-			case "\n":
-			case "\t":
-			case "\r":
-				return expr;
-		}
-		break;
-	}
-	return "const _tpl_res = " + expr + "; return _tpl_res;";
-}
-export function getVal(req, name, ctx, isReactive) {
-	const val = req.$src.dataset[name];
-	if (val === undefined) {
-		return _getVal(req, name, ctx, isReactive);
+	if (isReactive) {
+		setCacheValue($src, req.str, val);
 	}
 	return val;
 }
-export function _getVal(req, name, ctx, isReactive) {
+export async function getVal($src, scope, name, isReactive) {
+	const val = $src.dataset[name];
+	if (val !== undefined) {
+		return val;
+	}
+//inline	return _getVal($src, scope, name, isReactive);
 	const str = cmdPref + name,
-		expr = req.$src.dataset[str];
+		expr = $src.dataset[str];
 	if (expr) {
-		return eval2(type_req(req.$src, str, expr, req.scope, req.sync, req.inFragment), ctx, isReactive);
+		if (!scope) {
+			scope = await getScope($src);
+		}
+		return eval2(type_req($src, str, expr, scope), $src, isReactive);
+	}
+}
+export async function _getVal($src, scope, name, isReactive) {
+	const str = cmdPref + name,
+		expr = $src.dataset[str];
+	if (expr) {
+		if (!scope) {
+			scope = await getScope($src);
+		}
+		return eval2(type_req($src, str, expr, scope), $src, isReactive);
 	}
 }

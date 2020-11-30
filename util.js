@@ -1,4 +1,4 @@
-﻿import {srcId, cmdPref, isAsyncTask, isAsyncAnimation, defTaskOpt} from "./config.js";
+﻿import {p_srcId, cmdPref, isAsyncTask, isAsyncAnimation, defTaskOpt} from "./config.js";
 import {eval2} from "./eval2.js";
 import {type_req} from "./req.js";
 
@@ -28,6 +28,17 @@ export const addTask = (() => {
 		return f();
 	}
 })();
+export function addAnimation(f, sync) {
+	if (sync.isAsyncAnimation) {
+		return new Promise(resolve => {
+			requestAnimationFrame(() => {
+				resolve(f());
+			});
+		});
+	}
+	return f();
+}
+/*
 export const addAnimation = (() => {
 	if (isAsyncAnimation) {
 		return function(f) {//, sync) {//, opt) {
@@ -50,7 +61,7 @@ export const addAnimation = (() => {
 //		return Promise.resolve(f());
 		return f();
 	}
-})();
+})();*/
 export function check(res, reqOr$src, scope, fileName, lineNum, colNum) {
 	if (!(res instanceof Error)) {
 //todo
@@ -71,7 +82,7 @@ alert(222);
         if (reqOr$src.str) {
 	        params.push(`\n${reqOr$src.str} =>`, reqOr$src.expr);
 	}
-	params.push(`\n$src =>`, $src, `\nsId =>`, $src[srcId]);
+	params.push(`\n$src =>`, $src, `\nsId =>`, $src[p_srcId]);
 	if (reqOr$src.$src) {
 		params.push("\nreq =>", reqOr$src);
 	}

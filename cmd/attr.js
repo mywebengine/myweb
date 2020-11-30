@@ -1,5 +1,5 @@
-import {cache} from "../cache.js";
-import {srcId, pushModName, replaceModName} from "../config.js";
+import {getCacheBySrcId} from "../cache.js";
+import {p_srcId, pushModName, replaceModName} from "../config.js";
 import {setAttribute, removeAttribute} from "../dom.js";
 import {eval2, q_eval2, getVal} from "../eval2.js";
 import {setLoc} from "../loc.js";
@@ -15,7 +15,7 @@ import {addAnimation, check} from "../util.js";
 export default {
 	async render(req) {
 		const f = setValue(req, req.$src, getName(req), await eval2(req, req.$src, true));
-		return f && addAnimation(f) || null;//, req.sync);
+		return f && addAnimation(f, req.sync) || null;
 	},
 	async q_render(req, arr, isLast) {
 		const val = await q_eval2(req, arr, isLast),
@@ -39,7 +39,7 @@ export default {
 				for (const f of fSet) {
 					f();
 				}
-			});//, req.sync);
+			}, req.sync);
 		}
 		return null;
 	},
@@ -47,7 +47,7 @@ export default {
 /*
 		const n = getName(req),
 			v = eval2(req, req.$src, true),
-			cur = getCurentValue(req, req.$src[srcId]);
+			cur = getCurentValue(req, req.$src[p_srcId]);
 		cur[0] = v;
 		setClick(req, req.$src, n, cur);
 		return null;*/
@@ -61,12 +61,12 @@ function getName(req) {
 	throw check(new Error(">>>Tpl attr:render:01: Need set attribute name"), req);
 }
 function setValue(req, $src, n, v) {
-	const sId = $src[srcId],
-		toggleVal = req.reqCmd.args[1],
+	const toggleVal = req.reqCmd.args[1],
 		curVal = $src.getAttribute(n),
-		isInit = cache[sId].isInit[req.str];
+		c = getCacheBySrcId($src[p_srcId]),
+		isInit = c.isInit[req.str];
 	if (!isInit) {
-		cache[sId].isInit[req.str] = true;
+		c.isInit[req.str] = true;
 		setClick(req, $src, n);
 	}
 	if (toggleVal && toggleVal !== pushModName && toggleVal !== replaceModName) {
@@ -90,10 +90,10 @@ function setValue(req, $src, n, v) {
 	if (v === true) {
 		v = n;
 	}
-	if (isInit && cache[sId].current[req.str] === v) {
+	if (isInit && c.current[req.str] === v) {
 		return null;
 	}
-	cache[sId].current[req.str] = v;
+	c.current[req.str] = v;
 	if (v || v === "") {
 //		if ((n !== "class" && n !== "style") || req.inFragment) {
 		if (req.inFragment) {
@@ -133,8 +133,7 @@ function setClick(req, $src, n) {
 		}
 //todo isCtrl, mouse2, touch
 		evt.preventDefault();
-		const rreq = type_req($src, req.str, req.expr, await getScope($src, req.str), null, false);
-		switch (await getVal(rreq, pushModName, $src, true) && pushModName || await getVal(rreq, replaceModName, $src, true) && replaceModName || req.reqCmd.args[1]) {
+		switch (await getVal($src, await getScope($src, req.str), pushModName, false) && pushModName || await getVal($src, await getScope($src, req.str), replaceModName, false) && replaceModName || req.reqCmd.args[1]) {
 			case pushModName:
 				history.pushState(undefined, undefined, $src.href);
 			break;

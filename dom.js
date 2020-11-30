@@ -1,5 +1,5 @@
 import {cache, type_cacheValue, type_cacheCurrent} from "./cache.js";
-import {Tpl_doc, Tpl_$src, srcId, descrId, isCmd, incCmdName, textCmdName, idxName, localIdName} from "./config.js";
+import {Tpl_doc, Tpl_$src, p_srcId, p_descrId, p_localId, p_topURL, p_isCmd, incCmdName, textCmdName, idxName, localIdName} from "./config.js";
 import {$srcById, descrById, createSrc, getAttrItAfter} from "./descr.js";
 import {varIdByVar, varById, srcIdSetByVarId, varIdByVarIdByProp} from "./proxy.js";
 import {reqCmd} from "./req.js";
@@ -50,7 +50,7 @@ export function preRender($e) {// = Tpl_$src) {
 	return d;
 }
 function _preRender($e, $d) {
-	createSrc($e, $d[descrId]);
+	createSrc($e, $d[p_descrId]);
 	if ($e.nodeName === "TEMPLATE") {
 		return;
 	}
@@ -119,13 +119,13 @@ function type_mustacheBlock(begin, end, expr) {
 	};
 }
 export function removeChild($e, isClearLocalScope) {
-//console.error($e[srcId], $e);
+//console.error("remC", $e[p_srcId], $e);
 	$e.parentNode.removeChild($e);
 	const rem = new Map();
 	let $i = $e,
 		$p = [];
 	do {
-		const iId = $i[srcId];
+		const iId = $i[p_srcId];
 //console.log(iId, $i);
 //alert(1);
 		if (iId) {
@@ -135,7 +135,7 @@ export function removeChild($e, isClearLocalScope) {
 			$i = $i.firstChild;
 			continue;
 		}
-		if ($i.content && $i[isCmd] && $i.content && $i.content.firstChild.firstChild) {
+		if ($i.content && $i[p_isCmd] && $i.content && $i.content.firstChild.firstChild) {
 			$p.push($i);
 			$i = $i.content.firstChild.firstChild;
 			continue;
@@ -171,13 +171,13 @@ export function removeChild($e, isClearLocalScope) {
 }
 function clearTag($e, sId, isClearLocalScope, rem) {
 	delete $srcById[sId];
-	if (!$e[isCmd]) {
-		descrById.delete($e[descrId]);
+	if (!$e[p_isCmd]) {
+		descrById.delete($e[p_descrId]);
 		return;
 	}
-//console.error("DEL", sId, $e, $e[isCmd]);
+//console.error("DEL", sId, $e, $e[p_isCmd]);
 	delete cache[sId];
-	const dId = $e[descrId],
+	const dId = $e[p_descrId],
 		d = descrById.get(dId);
 	d.srcIdSet.delete(sId);
 	if (d.sId === sId) {
@@ -194,48 +194,93 @@ function clearTag($e, sId, isClearLocalScope, rem) {
 	rem.set(dId, new Set([sId]));
 }
 function _clearTag(rem) {
-	for (const [dId, sIdSet] of rem) {
+	const vIdSet = new Set(),
+		sIdSet = new Set(),
+		deletedVarId = new Set();//,
+//		skipDelBySrcId = {};
+	for (const [dId, s] of rem) {
 		const d = descrById.get(dId);
 		for (const vId of d.varIdSet) {
-			const s = srcIdSetByVarId.get(vId);
-			if (!s) {
+			vIdSet.add(vId);
+		}
+		for (const sId of s) {
+			sIdSet.add(sId);
+//			if (d.isAsOne && sId != d.sId) {
+//todo
+//console.error(123);
+//alert(123);
+//				skipDelBySrcId[sId] = true;
+//			}
+		}
+	}
+	for (const vId of vIdSet) {
+		const s = srcIdSetByVarId.get(vId);
+		if (!s) {
+			continue;
+		}
+		const vIdByProp = varIdByVarIdByProp[vId];
+//		let f = false;
+		for (const sId of sIdSet) {
+//			if (skipDelBySrcId[sId]) {
+//				f = true;
+//			}
+			if (s.has(sId)) {
+//console.log(1, vId, sId, s.has(sId), s);
+//alert(1);
+				s.delete(sId);
+			}
+			if (!vIdByProp) {
 				continue;
 			}
-			const vIdByProp = varIdByVarIdByProp[vId];
-			for (const sId of sIdSet) {
-//будет повторяться много vId раз
-				d.srcIdSet.delete(sId);
-
-				if (s.has(sId)) {
+			for (const [pName, pId] of vIdByProp) {
+				const propS = srcIdSetByVarId.get(pId);
+				if (propS && propS.has(sId)) {
+//console.log(vIdByProp, sId, pId);
 					s.delete(sId);
-					d.varIdSet
-				}
-				if (!vIdByProp) {
-					continue;
-				}
-				for (const [pName, pId] of vIdByProp) {
-					const propS = srcIdSetByVarId.get(pId);
-					if (propS && propS.has(sId)) {
-						s.delete(pId);
-						propS.delete(pId);
-						if (!propS.size) {
-							srcIdSetByVarId.delete(pId);
-							vIdByProp.delete(pName);
-						}
+					propS.delete(sId);
+					if (!propS.size) {
+						deletedVarId.add(pId);
+						srcIdSetByVarId.delete(pId);
+						vIdByProp.delete(pName);
 					}
 				}
 			}
-			if (!s.size) {
-				srcIdSetByVarId.delete(vId);
-				const v = varById[vId];
-				delete varById[vId];
-				varIdByVar.delete(v);
+		}
+//		if (f) {
+//			continue;
+//		}
+//console.log(2, vId, s);
+		if (!s.size) {
+			deletedVarId.add(vId);
+			srcIdSetByVarId.delete(vId);
+			const v = varById[vId];
+			delete varById[vId];
+			varIdByVar.delete(v);
+			if (vIdByProp) {
 				delete varIdByVarIdByProp[vId];
-//!!				if (vIdByProp && vIdByProp.size) {
-//					console.warn("долэно быть пусто", vId, vIdByProp, dId);
+//todo
+				if (vIdByProp.size) {
+					console.warn("должно быть пусто", vId, vIdByProp);
+				}
+//--				for (const pId of vIdByProp.values()) {
+//					srcIdSetByVarId.delete(pId);
 //				}
-			} else if (vIdByProp && !vIdByProp.size) {
-				delete varIdByVarIdByProp[vId];
+			}
+		} else if (vIdByProp && !vIdByProp.size) {
+//console.warn(11111, vId, vIdByProp);
+			delete varIdByVarIdByProp[vId];
+		}
+	}
+	for (const [dId, s] of rem) {
+		const d = descrById.get(dId);
+		for (const vId of deletedVarId) {
+			d.varIdSet.delete(vId);
+		}
+		for (const sId of s) {
+			d.srcIdSet.delete(sId);
+//todo--
+			if (d.sId === sId) {
+				console.warn(22222222);
 			}
 		}
 		if (!d.srcIdSet.size) {
@@ -243,28 +288,6 @@ function _clearTag(rem) {
 		}
 	}
 }
-/*--
-function _del(vId, s, sId, d, dId) {
-	s.delete(sId);
-	if (s.size) {// || sId === d.sId) {
-		return;
-	}
-	descrById.delete(dId);
-	srcIdSetByVarId.delete(vId);
-
-	if (varById[vId]) {
-		const vIdByProp = varIdByVarIdByProp[vId];
-		if (vIdByProp) {
-			for (const pId of vIdByProp.values()) {
-				delete varIdByVarIdByProp[vId];
-			}
-			delete varIdByVarIdByProp[vId];
-		}
-	} else {
-		delete varIdByVarIdByProp[vId];
-	}
-//	varIdByVar.delete(v);
-}*/
 //use in attr
 export function setAttribute($e, name, value) {
 //todo атрибут нелльзя создать, если в нем есть некорректные символы - решение ниже слишком исбыточное, на мой взгляд
@@ -317,7 +340,7 @@ export function show(req, $e) {
 	if (!$new || $new.nextSibling) {
 		throw check(new Error(">>>Tpl show:01: Template element invalid structure on show function. <template>.content.childNodes.length must be only one element."), $e);
 	}
-//	return addAnimation(() => {
+	return addAnimation(() => {
 		if ($new.nodeType === 1) {
 			moveProps($e, $new, true);
 		}
@@ -329,7 +352,7 @@ console.error(`если сваливаемся сюда с ошибкой "can't
 		}
 		$e.parentNode.replaceChild($new, $e);
 		return $new;
-//	});//, req.sync);
+	}, req.sync);
 }
 export function hide(req, $e) {
 //	if ($e.nodeName === "TEMPLATE") {
@@ -343,18 +366,21 @@ export function hide(req, $e) {
 	let $i = $e,
 		$p = [];
 	do {
-		if ($i[isCmd]) {
-			const iId = $i[srcId];
-			cache[iId].value = type_cacheValue();
-			cache[iId].current = type_cacheCurrent();
-//todo см. комментарий про local_id в clearScope
+		if ($i[p_isCmd]) {
+			const iId = $i[p_srcId],
+				c = cache[iId];
+			if (c) {
+				cache[iId].value = type_cacheValue();
+				cache[iId].current = type_cacheCurrent();
+			}
+//todo см. комментарий про [p_localId] в clearScope
 			clearScope($i, $i === $e && req.str || "");
 		}
 		if ($i.firstChild) {
 			$i = $i.firstChild;
 			continue;
 		}
-		if ($i.content && $i[isCmd] && $i.content.firstChild.firstChild) {
+		if ($i.content && $i[p_isCmd] && $i.content.firstChild.firstChild) {
 			$p.push($i);
 			$i = $i.content.firstChild.firstChild;
 			continue;
@@ -380,7 +406,7 @@ export function hide(req, $e) {
 			}
 		}
 	} while ($i);
-//	return addAnimation(() => {
+	return addAnimation(() => {
 		const $new = Tpl_doc.createElement("template");
 		if ($e.nodeType === 1) {
 			moveProps($e, $new, false);
@@ -388,10 +414,10 @@ export function hide(req, $e) {
 		$e.parentNode.replaceChild($new, $e);
 		$new.content.appendChild($e);
 		return $new;
-//	});//, req.sync);
+	}, req.sync);
 }
 function clearScope($e, str) {
-	const attrIt = getAttrItAfter(descrById.get($e[descrId]).attr.keys(), str);
+	const attrIt = getAttrItAfter(descrById.get($e[p_descrId]).attr.keys(), str);
 	for (let i = attrIt.next(); !i.done; i = attrIt.next()) {
 //		const n = i.value;
 //		if (reqCmd[n].cmdName === incCmdName) {//!!maybe todo пока работает только для inc
@@ -405,13 +431,13 @@ function clearScope($e, str) {
 //		}
 	}
 	if (str) {
-//todo если есть str то это с hide, а это значит, что мы не можем точно рассудить про local_id --- а если нет стр, то это значит мы удаляем или скрывам дочерний тег и можно грохать local_id
-// -- тут открытым остается вопрос про local_id и дочерний тег
+//todo если есть str то это с hide, а это значит, что мы не можем точно рассудить про [p_localId] --- а если нет стр, то это значит мы удаляем или скрывам дочерний тег и можно грохать [p_localId]
+// -- тут открытым остается вопрос про [p_localId] и дочерний тег
 		return;
 	}
-	if ($e.local_id) {
-		delete self.localScope[$e.local_id];
-//console.warn("2 remove data", $e.local_id, $e);
+	if ($e[p_localId]) {
+		delete self.localScope[$e[p_localId]];
+//console.warn("2 remove data", $e[p_localId], $e);
 	}
 }
 export function is$hide($i) {
@@ -423,13 +449,13 @@ export function is$hide($i) {
 	return true;
 }
 function moveProps($from, $to, isShow) {
-	const sId = $from[srcId];
-	$srcById[$to[srcId] = sId] = $to;
-	$to[descrId] = $from[descrId];
-	$to[isCmd] = $from[isCmd];
+	const sId = $from[p_srcId];
+	$srcById[$to[p_srcId] = sId] = $to;
+	$to[p_descrId] = $from[p_descrId];
+	$to[p_isCmd] = $from[p_isCmd];
 
-	$to.top_url = $from.top_url;
-	$to.local_id = $from.local_id;
+	$to[p_localId] = $from[p_localId];
+	$to[p_topURL] = $from[p_topURL];
 
 	if (isShow) {
 		return;
@@ -446,7 +472,7 @@ function moveProps($from, $to, isShow) {
 /*
 export function $goTagsDeep($e, func) {
 	func($e);
-	if ($e.nodeType === 1 && $e[descrId] && descrById.get($e[descrId]).isCustomHTML) {
+	if ($e.nodeType === 1 && $e[p_descrId] && descrById.get($e[p_descrId]).isCustomHTML) {
 		return $e;
 	}
 	for (let $i = $e.content ? $e.content.firstChild : $e.firstChild; $i; $i = $i.nextSibling) {
@@ -459,7 +485,7 @@ export function $goTagsDeep($e, func) {
 /*
 export function __$goCopy($from, $to, func) {
 	func($from, $to);
-	if (descrById.get($from[descrId]).isCustomHTML) {
+	if (descrById.get($from[p_descrId]).isCustomHTML) {
 		return $to;
 	}
 	const $ret = $to;
@@ -480,7 +506,7 @@ export function getIdx($e, str) {
 }
 export function getTopURL($e, str) {
 	if (str) {
-		const topURL = getAttrTopURL($e, str);//из-за if ($i.tpl_url) { - так как это должэно работать только для робителей
+		const topURL = getAttrTopURL($e, str);//из-за if ($i[p_topURL]) { - так как это должэно работать только для робителей
 		if (topURL) {
 			return topURL;
 		}
@@ -488,19 +514,19 @@ export function getTopURL($e, str) {
 	for (let $i = $e.parentNode; $i !== Tpl_$src; $i = $i.parentNode) {
 		if ($i.nodeType === 11) {//рендер внутри фрагмента возможен, например, for
 //console.log("getTopURL", $src, str);
-			return getTopURL($srcById[descrById.get($e[descrId]).sId]);
+			return getTopURL($srcById[descrById.get($e[p_descrId]).sId]);
 		}
-		const topURL = getAttrTopURL($i) || $i.tpl_url;
+		const topURL = getAttrTopURL($i) || $i[p_topURL];
 		if (topURL) {
 			return topURL;
 		}
 	}
 }
 function getAttrTopURL($e, str) {
-	if (!$e[isCmd]) {
+	if (!$e[p_isCmd]) {
 		return "";
 	}
-	const nattr = descrById.get($e[descrId]).attr.keys();
+	const nattr = descrById.get($e[p_descrId]).attr.keys();
 	let topURL = "";
 	if (str) {
 		for (const n of nattr) {
@@ -527,12 +553,12 @@ export function getLocalIdName(str) {
 export function getLocalId($e, str) {
 	return $e.getAttribute(localIdName + str);
 }
-export function getTopLocalId($e, str) {
+export function getTopLocal($e, str) {
 	let $i;
-	if (str) {
+	if (str && $e[p_isCmd]) {
 		const lId = getAttrTopLocalId($e, str);
 		if (lId) {
-			return lId;
+			return type_local(lId, $e);
 		}
 		$i = $e.parentNode;
 	} else {
@@ -540,16 +566,25 @@ export function getTopLocalId($e, str) {
 	}
 	for (; $i !== Tpl_$src; $i = $i.parentNode) {
 		if ($i.nodeType === 11) {//рендер внутри фрагмента возможен, например, for
-			return getTopLocalId($srcById[descrById.get($e[descrId]).sId]);
+			return getTopLocal($srcById[descrById.get($e[p_descrId]).sId]);
+		}
+		if (!$i[p_isCmd]) {
+			continue;
 		}
 		const lId = getAttrTopLocalId($i);
 		if (lId) {
-			return lId;
+			return type_local(lId, $i);
 		}
 	}
 }
+function type_local(id, $src) {
+	return {
+		id,
+		$src
+	};
+}
 function getAttrTopLocalId($e, str) {
-	const nattr = descrById.get($e[descrId]).attr.keys();
+	const nattr = descrById.get($e[p_descrId]).attr.keys();
 	let lId = "";
 	if (str) {
 		for (const n of nattr) {
@@ -563,7 +598,7 @@ function getAttrTopLocalId($e, str) {
 				break;
 			}
 		}
-		return lId || $e.local_id;
+		return lId || $e[p_localId];
 	}
 	for (const n of nattr) {
 		if (reqCmd[n].cmdName === incCmdName) {//!!maybe todo пока работает только для inc
@@ -573,5 +608,5 @@ function getAttrTopLocalId($e, str) {
 			}
 		}
 	}
-	return lId || $e.local_id;
+	return lId || $e[p_localId];
 }

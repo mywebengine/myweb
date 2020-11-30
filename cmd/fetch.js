@@ -1,5 +1,5 @@
-import {cache} from "../cache.js";
-import {srcId, cmdPref, defFetchReq, watchName, ifWatchName, paramName, ifParamName} from "../config.js";
+import {getCacheBySrcId} from "../cache.js";
+import {p_srcId, cmdPref, defFetchReq, watchName, ifWatchName, paramName, ifParamName, resultName, errorName, onLoadName, onOkName, onErrorName} from "../config.js";
 import {eval2, getVal, _getVal} from "../eval2.js";
 import {normalizeURL} from "../loc.js";
 import {getScope} from "../scope.js";
@@ -33,9 +33,9 @@ export default {
 		if (ifp.f) {
 			const pArr = [];
 			for (const i of fetchParams) {
-				pArr.push(getVal(req, i, req.$src, true));
+				pArr.push(getVal(req.$src, req.scope, i, true));
 			}
-			pArr.push(ifp.param || _getVal(req, paramName, req.$src, true));
+			pArr.push(ifp.param || _getVal(req.$src, req.scope, paramName, true));
 			afterRender.add(() => Promise.all(pArr)
 				.then(vals => getFetch(req, url, ...vals))
 //				.then(() => console.log(url))
@@ -49,10 +49,10 @@ export default {
 			const ifp = getIfparam(req);
 			if (ifp.f) {
 				for (const i of params) {
-					getVal(req, i, req.$src, true);
+					getVal(req.$src, req.scope, i, true);
 				}
 				if (!ifp.param) {
-					_getVal(req, "param", req.$src, true);
+					_getVal(req.$src, req.scope, "param", true);
 				}
 			}
 		}
@@ -68,21 +68,21 @@ async function getURL(req) {
 	if (!isIfWatch && req.$src.dataset[cmdPref + watchName] === undefined && req.$src.dataset[watchName] === undefined) {
 		return normalizeURL(url);
 	}
-	const watch = await getVal(req, isIfWatch && ifWatchName || watchName, req.$src, true);
+	const watch = await getVal(req.$src, req.scope, isIfWatch && ifWatchName || watchName, true);
 	if (isIfWatch && !watch) {
 //console.log(111, watch, req);
 		return "";
 	}
-	const sId = req.$src[srcId],
-		cur = cache[sId].current[req.str] || (cache[sId].current[req.str] = type_fetchCur());
-//console.log(sId, cur, watch === cur.watch);
-	if (cache[sId].isInit[req.str]) {
+	const c = getCacheBySrcId(req.$src[p_srcId]),
+		cur = c.current[req.str] || (c.current[req.str] = type_fetchCur());
+//console.log(cur, watch === cur.watch);
+	if (c.isInit[req.str]) {
 		if (watch === cur.watch) {
 //console.log(222, watch, cur[0], cur[1], req);
 			return "";
 		}
 	} else {
-		cache[sId].isInit[req.str] = true;
+		c.isInit[req.str] = true;
 	}
 	cur.watch = watch;
 	return normalizeURL(url);
@@ -92,9 +92,9 @@ async function getIfparam(req, url) {
 	if (req.$src.dataset[cmdPref + ifParamName] === undefined && req.$src.dataset[ifParamName] === undefined) {
 		return ifp;
 	}
-	ifp.param = await _getVal(req, ifParamName, req.$src, true);
-	const sId = req.$src[srcId],
-		cur = cache[sId].current[req.str] || (cache[sId].current[req.str] = type_fetchCur());
+	ifp.param = await _getVal(req.$src, req.scope, ifParamName, true);
+	const c = getCacheBySrcId(req.$src[p_srcId]),
+		cur = c.current[req.str] || (c.current[req.str] = type_fetchCur());
 	if (ifp.param === cur.ifparam) {
 		ifp.f = false;
 		return ifp;
@@ -184,27 +184,20 @@ function getFetch(req, url, method, mode, cache, credentials, headers, redirect,
 	return fetch(url, fParam)
 		.then(async res => {
 			req.scope = await getScope(req.$src, req.str);
-			await _getVal(req, "onload", res, false);
-			await _getVal(req, res.ok && "onok" || "onerror", res, false);
+			req.scope[resultName] = res;
+			req.scope[errorName] = null;
+			await _getVal(req.$src, req.scope, onLoadName, false);
+			await _getVal(req.$src, req.scope, res.ok && onOkName || onErrorName, false);
 		})
 		.catch(async err => {
 			req.scope = await getScope(req.$src, req.str);
-			const f = await _getVal(req, "onerror", err, false);
+			req.scope[resultName] = null;
+			req.scope[errorName] = err;
+			const f = await _getVal(req.$src, req.scope, onErrorName, false);
 			if (f === undefined || f) {
 				throw err;
 			}
 		});
-/*
-	try {
-		const res = await fetch(url, fParam);
-		_getVal(req, "onload", res, false);
-		_getVal(req, res.ok ? "onok" : "onerror", res, false);
-	} catch (err) {
-		const f = await _getVal(req, "onerror", err, false)
-		if (f === undefined || f) {
-			throw check(err);
-		}
-	}*/
 }
 function type_fParam(method, mode, cache, credentials, headers, redirect, referrer, body) {
 	return {
