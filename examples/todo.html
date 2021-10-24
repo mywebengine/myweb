@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
+		<script src="../myweb.js?debug" type="module" async="async"></script>
+		<link href="../myweb.css" type="text/css" rel="stylesheet" />
+		<link href="./todo/todo.css" type="text/css" rel="stylesheet" />
+		<title>Todo list - example, myweb</title>
+		<script>
+			function addTodo(todoScope, todo) {
+				console.info("This is REST was fake. And then request is fake todo object, becouse request will be replaced", todo);
+				todoScope.todos.push({ name: document.forms.addForm.elements.name.value });
+				document.forms.addForm.reset();
+			}
+			function onError(res, err) {
+				alert(`Error`);
+			}
+		</script>
+	</head>
+	<body>
+		<h1>Todo list - example, myweb</h1>
+		<div class="todos"
+			scope="todoScope"
+			is_filling="" filling.spinner.500="todoScope.todos">
+			<link fetch="!todoScope.todos && `./todo/todos.json`"
+				on.ok="todoScope.todos = await evt.detail.res.json()"
+				on.error="onError(evt.detail.res, evt.detail.err)" />
+			<div class="todos-top">
+				<form id="addForm"
+					on.submit.prevent="todoScope.addData = new FormData(this)">
+					<link watch="todoScope.addData"
+						fetch="todoScope.addData && new Request(`./todo/submit.json`, {
+								method: `post`,
+								body: todoScope.addData
+							})"
+						on.ok="addTodo(todoScope, await evt.detail.res.json())"
+						on.error="onError(evt.detail.res, evt.detail.err)" />
+					<label for="name">New todo</label>
+					<div>
+						<input id="name" name="name" required="" />
+					</div>
+					<button>Add</button>
+					<div class="todos-top-sum">${todoScope.todos?.filter(todo => !todo.ok).length} item left</div>
+				</form>
+				<div class="todos-filter">
+					<button attr.class.sel="!todoScope.filter"
+						on.click="delete todoScope.filter">All</button>
+					<button attr.class.sel="todoScope.filter === `active`"
+						on.click="todoScope.filter = `active`">Active</button>
+					<button attr.class.sel="todoScope.filter === `complited`"
+						on.click="todoScope.filter = `complited`">Complited</button>
+					<button attr.disabled="!todoScope.todos?.find(todo => todo.ok)"
+						on.click="todoScope.todos = todoScope.todos.filter(todo => !todo.ok)">Clear complited</button>
+				</div>
+			</div>
+			<div class="todos-cnt"
+				if.arr="todoScope.todos?.filter(todo => !todoScope.filter || !!todo.ok === (todoScope.filter === `complited`))">
+				<div class="todos-list"
+					if="arr.length > 0"
+					filling="true">
+					<label class="todos-list-select">
+						<input type="checkbox"
+							on.change="arr.forEach(todo => todo.ok = this.checked)"
+							attr.checked="arr.length === arr.filter(todo => todo.ok).length" />
+						Select all
+					</label>
+					<div class="todos-list-i"
+						foreach.todo.idx="arr"
+						attr.class.todos-list-i-ok="todo.ok">
+						<input type="checkbox"
+							attr.checked="todo.ok"
+							on.change="todo.ok = this.checked" />
+						<div contenteditable="true"
+							on.blur="todo.name = this.textContent"
+							html.text="todo.name"></div>
+						<button on.click="todoScope.todos.splice(idx, 1)">×</button>
+					</div>
+				</div>
+				<p elseif="arr">${(todoScope.filter || `all`).toUpperCase()} list is empty</p>
+			</div>
+		</div>
+	</body>
+</html>

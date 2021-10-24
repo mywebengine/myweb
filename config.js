@@ -1,91 +1,94 @@
 ﻿import attrCmd from "./cmd/attr.js";
 import execCmd from "./cmd/exec.js";
 import fetchCmd from "./cmd/fetch.js";
-import forCmd from "./cmd/for.js";
+import foreachCmd from "./cmd/foreach.js";
 import htmlCmd from "./cmd/html.js";
 import {ifCmd, switchCmd} from "./cmd/if.js";
 import incCmd from "./cmd/inc.js";
 import onCmd from "./cmd/on.js";
 import scopeCmd from "./cmd/scope.js";
+import fillingCmd from "./cmd/filling.js";
+import watchCmd from "./cmd/watch.js";
+
+//import {Tpl_cmd, reqCmd} from "./render/render.js";
+export const Tpl_cmd = {};//self.Tpl_cmd || {};
+export const reqCmd = self.Tpl_reqCmd || {};
 
 export const Tpl_doc = document;
 export const Tpl_$src = Tpl_doc.documentElement;
 
-export const p_srcId = Symbol();
-export const p_descrId = Symbol();
-export const p_isCmd = Symbol();
+//--export const p_srcId = self.Tpl_p_srcId || Symbol();
+//--export const p_descrId = Symbol();
+//--export const p_isCmd = Symbol();
 export const p_target = Symbol();
-export const p_localId = Symbol();
-export const p_topURL = Symbol();
+//--export const p_localId = Symbol();
+export const p_topUrl = Symbol();
 
-export let Tpl_delay = 0;
-export function setDelay(t, cb) {
-	if (!cb) {
-		Tpl_delay = t;
-		return;
-	}
-	const old = Tpl_delay;
-	Tpl_delay = t;
-	cb();
-	Tpl_delay = old;
-}
-
-self.p_srcId = p_srcId;
-self.p_descrId = p_descrId;
-self.p_isCmd = p_isCmd;
+//--self.p_srcId = p_srcId;
+//--self.p_descrId = p_descrId;
+//--self.p_isCmd = p_isCmd;
 self.p_target = p_target;
-self.p_localId = p_localId;
-self.p_topURL = p_topURL;
-self.setDelay = setDelay;
+//--self.p_localId = p_localId;
+self.p_topUrl = p_topUrl;
 
-//to perfomance tests
-export const isAsyncTask = true;
-export const isAsyncAnimation = false;
 export const defTaskOpt = {
-	timeout: 10
+	timeout: 160
 };
+export const visibleScreenSize = 2;
+export const qPackLength = 100;
 
-export const dataVarName = "data";
-export const cmdVarName = "cmd";
+export const globVarName = "glob";
+export const locVarName = "loc";
 
-export const cmdPref = "_";
-export const cmdArgsBegin = ".";
-export const cmdArgsDiv = ".";
-export const orderName = cmdPref + "order";
-export const idxName = cmdPref + "idx";
-export const saveName = cmdPref + "save";
-export const localIdName = cmdPref + "lid";
-
-export const startEventName = "start";
+//export const renderStartEventName = "renderstart";
+export const mountEventName = "mount";
 export const renderEventName = "render";
-export const onRenderName = "on" + renderEventName;
-export const isAsyncAnimationName = "asyncanimation";
+//export const incMountEventName = "incmount";
+export const removeEventName = "remove";
+
+export const loadEventName = "load";
+export const okEventName = "ok";
+export const errorEventName = "error";
+	export const defEventInit = {
+		bubbles: true,
+		cancelable: true,
+		composed: false
+	};
+
+//dataset attributes
+export const isWhenVisibleName = "whenvisible";
+
+export const cmdPref = "";
+export const cmdArgsDiv = ".";
+export const cmdArgsDivLen = cmdArgsDiv.length;
+//export const orderName = "_order";
+export const descrIdName = "_did" + cmdArgsDiv;
+export const asOneIdxName = "_aidx" + cmdArgsDiv;
+export const idxName = "_idx" + cmdArgsDiv;
+//export const saveName = "_save" + cmdArgsDiv;
+//--export const localIdName = cmdPref + "lid";
+export const isFillingName = "is_filling";
+export const isFillingDiv = "-";
 
 export const attrCmdName = cmdPref + "attr";
 	export const pushModName = "push";
 	export const replaceModName = "replace";
 
 export const execCmdName = cmdPref + "exec";
+export const fillingCmdName = cmdPref + "filling";
 
-export const forCmdName = cmdPref + "for";
+export const foreachCmdName = cmdPref + "foreach";
 export const fetchCmdName = cmdPref + "fetch";
 	export const defFetchReq = {
 		headers: {
 			"x-requested-with": "XMLHttpRequest"
 		}
 	};
-	export const watchName = "watch";
-	export const ifWatchName = "ifwatch";
-	export const paramName = "param";
-	export const ifParamName = "ifparam";
-	export const resultName = "res";
-	export const errorName = "err";
-	export const onLoadName = "onload";
-	export const onOkName = "onok";
-	export const onErrorName = "onerror";
+	export const resultDetailName = "res";
+	export const errorDetailName = "err";
 
 export const htmlCmdName = cmdPref + "html";
-	export const textCmdName = htmlCmdName + cmdArgsBegin + "t";
+	export const textCmdName = htmlCmdName + cmdArgsDiv + "t";
 
 export const ifCmdName = cmdPref + "if";
 export const elseifCmdName = cmdPref + "elseif";
@@ -98,17 +101,21 @@ export const incCmdName = cmdPref + "inc";
 
 export const onCmdName = cmdPref + "on";
 	export const preventDefaultModName = "prevent";
+	export const stopModName = "stop";
+	export const selfModName = "self";
+	export const eventScopeName = "evt";
 
 export const scopeCmdName = cmdPref + "scope";
+export const watchCmdName = cmdPref + "watch";
 
-export const Tpl_cmd = {};
 export function addCommand(cmdName, cmd) {
 	Tpl_cmd[cmdName] = cmd;
 }
 
 addCommand(attrCmdName, attrCmd);
+addCommand(execCmdName, execCmd);
 addCommand(fetchCmdName, fetchCmd);
-addCommand(forCmdName, forCmd);
+addCommand(foreachCmdName, foreachCmd);
 addCommand(htmlCmdName, htmlCmd);
 
 addCommand(ifCmdName, ifCmd);
@@ -122,9 +129,13 @@ addCommand(defaultCmdName, switchCmd);
 addCommand(incCmdName, incCmd);
 addCommand(onCmdName, onCmd);
 addCommand(scopeCmdName, scopeCmd);
-addCommand(execCmdName, execCmd);
-
-//if (!FormData.prototype[p_target]) {
+addCommand(fillingCmdName, fillingCmd);
+addCommand(watchCmdName, watchCmd);
+//ssr
+for (const str in reqCmd) {
+	reqCmd[str].cmd = Tpl_cmd[str.substr(0, str.indexOf(cmdArgsDiv))];
+}
+//if (FormData.prototype[p_target] !== null) {
 	FormData.prototype[p_target] = null;
 	Document.prototype[p_target] = null;
 	DocumentFragment.prototype[p_target] = null;

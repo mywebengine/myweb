@@ -1,0 +1,13 @@
+<div class="z"
+	on.mount="evt.target === this && _go(this, code)">
+	<div class="z-code">
+		<textarea spellcheck="false"
+			attr.value="code"
+			on.keydown="keyDown(this, evt)"
+			on.input="go(this.parentNode.parentNode, this.value)"></textarea>
+	</div>
+	<div class="z-div"></div>
+	<div class="z-view"></div>
+</div>
+<link href="./z.css" type="text/css" rel="stylesheet" />
+<script src="./z.js" type="module"></script>

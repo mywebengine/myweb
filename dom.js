@@ -1,66 +1,208 @@
-import {cache, type_cacheValue, type_cacheCurrent} from "./cache.js";
-import {Tpl_doc, Tpl_$src, p_srcId, p_descrId, p_localId, p_topURL, p_isCmd, incCmdName, textCmdName, idxName, localIdName} from "./config.js";
-import {$srcById, descrById, createSrc, getAttrItAfter} from "./descr.js";
+import {type_req, type_animation} from "./render/render.js";
+import {type_cacheValue, type_cacheCurrent} from "./cache.js";
+import {Tpl_doc, Tpl_$src, p_topUrl, visibleScreenSize, incCmdName, onCmdName, textCmdName, descrIdName, asOneIdxName, idxName/*--, localIdName*/, removeEventName, defEventInit,
+	reqCmd} from "./config.js";
+import {$srcById, srcById, srcBy$src, descrById, getNewId, createSrc, type_asOneIdx, type_idx, get$els} from "./descr.js";
 import {varIdByVar, varById, srcIdSetByVarId, varIdByVarIdByProp} from "./proxy.js";
-import {reqCmd} from "./req.js";
-import {addAnimation, check} from "./util.js";
+import {loadingCount, check} from "./util.js";
 
-export function preRender($e) {// = Tpl_$src) {
-	const d = createSrc($e);
-	if ($e.nodeName === "TEMPLATE") {
-		return d;
-	}
-	for (let $iD, iD, $i = $e.firstChild; $i; $i = $i.nextSibling) {
-		switch ($i.nodeType) {
-			case 1:
-				if (iD && iD.isAsOne) {
-//todo это не будет работать если после фора идет вставка на много тегов
-					let f = true;
-					for (const str of iD.attr.keys()) {
-						if (reqCmd[str].cmd.isAsOne) {
-							if (getIdx($i, str) > 0) {
-								f = false;
-								_preRender($i, $iD);//тут нужно переделать
-							}
-							break;
-						}
-					}
-					if (f) {
-						iD = preRender($i);
-					}
-				} else {
-					iD = preRender($i);
-				}
-				$iD = $i;
-			break;
-			case 3:
-				let $j = $i.previousSibling;
-				$i = replaceTextBlocks($i);
-				if (!$j) {
-					$j = $i.parentNode.firstChild;
-				}
-				while ($j !== $i && ($j = $j.nextSibling)) {
-					if ($j.nodeType === 1) {
-						createSrc($j);
-					}
-				}
+export function preRender($i, isLinking) {// = Tpl_$src) {//todo это не будет работать если после фора идет вставка на много тегов
+	const $parent = $i.parentNode,
+		$p = [],
+		descrAlias = new Map();
+	do {
+//////////////////////
+		if ($i.firstChild !== null) {
+			$i = $i.firstChild;
+			continue;
+		}
+		//todo непонятно это команда или нет
+		if ($i.nodeName === "TEMPLATE" && $i.content.firstChild.firstChild !== null) {
+			$p.push($i);
+			$i = $i.content.firstChild.firstChild;
+			continue;
+		}
+		$i = _preRenderCreate($i, descrAlias, isLinking);
+		if ($i.parentNode === $parent) {//если м ыне ушли вглубь - значит и вправо двигаться нельзя
 			break;
 		}
-	}
-	return d;
+		if ($i.nextSibling !== null) {
+			$i = $i.nextSibling;
+			continue;
+		}
+		do {
+			$i = $i.parentNode;
+			if ($i.parentNode === $parent) {
+				_preRenderCreate($i, descrAlias, isLinking);
+				$i = null;
+				break;
+			}
+			if ($i.parentNode.nodeType === 11) {
+				$i = $p.pop();
+				if ($i.parentNode === $parent) {
+					_preRenderCreate($i, descrAlias, isLinking);
+					$i = null;
+					break;
+				}
+			}
+			$i = _preRenderCreate($i, descrAlias, isLinking);
+			if ($i.nextSibling !== null) {
+				$i = $i.nextSibling;
+				break;
+			}
+		} while (true);
+	} while ($i);
 }
-function _preRender($e, $d) {
-	createSrc($e, $d[p_descrId]);
-	if ($e.nodeName === "TEMPLATE") {
-		return;
+function _preRenderCreate($e, descrAlias, isLinking) {
+	if ($e.nodeType === 1) {
+		if (isLinking) {
+			const src = _preRenderGetSrc($e, descrAlias);
+			if (!src.isCmd) {
+				return $e;
+			}
+			for (const str of src.descr.attr.keys()) {
+				const asOneIdx = $e.getAttribute(asOneIdxName + str),
+					idx = $e.getAttribute(idxName + str);
+				if (asOneIdx !== null) {
+					if (src.asOneIdx === null) {
+						src.asOneIdx = type_asOneIdx([[str, !isNaN(asOneIdx) ? Number(asOneIdx) : asOneIdx]]);
+					} else {
+						src.asOneIdx.set(str, !isNaN(asOneIdx) ? Number(asOneIdx) : asOneIdx);
+					}
+				}
+				if (idx !== null) {
+					if (src.idx === null) {
+						src.idx = type_idx([[!isNaN(idx) ? Number(idx) : idx]]);
+						continue;
+					}
+					src.idx.set(str, !isNaN(idx) ? Number(idx) : idx);
+				}
+/*!!!!!!!!!!!
+				if (!reqCmd[str].cmd.isAsOne) {
+					continue;
+				}
+				const $from = $i;
+				for (let $j = $i.nextSibling; $j !== null; $j = $j.nextSibling) {
+					if ($j.nodeType !== 1) {
+						continue;
+					}
+					if (get$asOneIdx($j, str) !== asOneIdx && !(get$Idx($j, str) > 0)) {
+						break;
+					}
+					_preRenderCopy($from, iDescr, $i = $j);
+				}
+				break;*/
+			}
+			return $e;
+		}
+		createSrc($e);
+		return $e;
 	}
-	for ($e = $e.firstChild, $d = $d.firstChild; $e; $e = $e.nextSibling, $d = $d.nextSibling) {
-		if ($e.nodeType === 1) {
-			_preRender($e, $d);
+	return $e.nodeType === 3 ? replaceTextBlocks($e) : $e;
+}
+function _preRenderGetSrc($e, descrAlias) {
+	const dId = $e.getAttribute(descrIdName);
+	if (dId === null) {
+		return createSrc($e);
+	}
+	const descr = descrAlias.get(dId);
+	if (descr !== undefined) {
+		return createSrc($e, descr, null, null);
+	}
+	const src = createSrc($e, createDescr($e, 0), null, null);
+	src.descr.sId = src.id;
+	descrAlias.set(dId, src.descr);
+	return src;
+}
+/*
+function _preRenderCopy($f, fDescr, $i) {
+	const $parent = $f.parentNode,
+		$p = [],
+		$fP = [];
+	do {
+		if ($i.nodeType === 1) {
+//console.log($f, $i);
+			createSrc($i, fDescr);
+		}
+//////////////////////
+		//todo команда или нет?
+		if ($i.nodeName === "TEMPLATE" && $i.content.firstChild.firstChild !== null) {
+			$p.push($i);
+			$i = $i.content.firstChild;
+		}
+		if ($f.nodeName === "TEMPLATE" && $f.content.firstChild.firstChild !== null) {
+			$fP.push($f);
+			$f = $f.content.firstChild;
+		}
+		if ($i.firstChild !== null) {
+			$i = $i.firstChild;
+			$f = $f.firstChild;
+			continue;
+		}
+		if ($i.parentNode === $parent) {//если м ыне ушли вглубь - значит и вправо двигаться нельзя
+			break;
+		}
+		if ($i.nextSibling !== null) {
+			$i = $i.nextSibling;
+			while ($f.nextSibling !== null) {
+				$f = $f.nextSibling;
+			}
+			continue;
+		}
+		do {
+			$i = $i.parentNode;
+			if ($i.parentNode === $parent) {
+//				$i = null;
+				$f = null;
+				break;
+			}
+			if ($i.parentNode.nodeType === 11) {
+				$i = $p.pop();
+				if ($i.parentNode === $parent) {
+//					$i = null;
+					$f = null;
+					break;
+				}
+			}
+			$f = $f.parentNode;
+			if ($f.parentNode.nodeType === 11) {
+				$f = $fP.pop();
+			}
+			if ($i.nextSibling !== null) {
+				$i = $i.nextSibling;
+				while ($f.nextSibling !== null) {
+					$f = $f.nextSibling;
+				}
+				break;
+			}
+		} while (true);
+	} while ($f);
+}*/
+function replaceTextBlocks($src) {
+	const text = $src.textContent;
+	if (text.indexOf("${") === -1 || $src.parentNode.nodeName === "SCRIPT") {
+		return $src;
+	}
+	if ($src.nextSibling === null && $src.previousSibling === null) {
+		$src.parentNode.setAttribute(textCmdName, "`" + text + "`");
+		return $src;
+	}
+	const $t = Tpl_doc.createElement("span");
+	$t.setAttribute(textCmdName, "`" + text + "`");
+	$src.parentNode.replaceChild($t, $src);
+	createSrc($t);
+	return $t;
+}
+export function joinText($i) {
+	$i = $i.firstChild;
+	for (let $next; $i !== null; $i = $i.nextSibling) {
+		while ($i.nodeType === 3 && ($next = $i.nextSibling) !== null && $next.nodeType === 3) {
+			$i.textContent += $e.removeChild($next).textContent;
 		}
 	}
 }
-export function replaceTextBlocks($src) {//, scope) {//когда рендерится - то он делает это в фрагменте и родители выше фрагмента не доступны
+/*--
+function replaceTextBlocks($src) {//, scope) {//когда рендерится - то он делает это в фрагменте и родители выше фрагмента не доступны
 //	if ($src.isTextRendered) {
 //		return $src;
 //	}
@@ -86,7 +228,7 @@ export function replaceTextBlocks($src) {//, scope) {//когда рендери
 	$src.parentNode.replaceChild($fr, $src);
 	return $last;
 }
-export function getMustacheBlocks(text) {
+function getMustacheBlocks(text) {
 	const textLen = text.length,
 		blocks = [];
 	for (let begin = 0, i = 0; i < textLen;) {
@@ -117,74 +259,89 @@ function type_mustacheBlock(begin, end, expr) {
 		end,
 		expr
 	};
-}
-export function removeChild($e, isClearLocalScope) {
-//console.error("remC", $e[p_srcId], $e);
+}*/
+export function removeChild($e) {
+//console.error("remC", srcBy$src.get($e), $e);
 	$e.parentNode.removeChild($e);
+//console.log("a-REMOVE", $e);
+	$e.dispatchEvent(new CustomEvent(removeEventName, defEventInit));
 	const rem = new Map();
-	let $i = $e,
+	let $i = $e;
+	const $parent = null,
 		$p = [];
 	do {
-		const iId = $i[p_srcId];
-//console.log(iId, $i);
-//alert(1);
-		if (iId) {
-			clearTag($i, iId, isClearLocalScope, rem);
+		const iSrc = srcBy$src.get($i);
+		if (iSrc !== undefined) {
+			clearTag($i, iSrc, rem);
 		}
-		if ($i.firstChild) {
+//////////////////////
+		if ($i.firstChild !== null) {
 			$i = $i.firstChild;
 			continue;
 		}
-		if ($i.content && $i[p_isCmd] && $i.content && $i.content.firstChild.firstChild) {
+		//todo а что если это просто тег?
+//		if ($i.nodeName === "TEMPLATE" && iSrc.isCmd && $i.content.firstChild.firstChild !== null) {//проверку на кастом не делается из соображений экономичности
+		if ($i.nodeName === "TEMPLATE" && iSrc.isCmd && !iSrc.descr.isCustomHtml && $i.content.firstChild.firstChild !== null) {
 			$p.push($i);
 			$i = $i.content.firstChild.firstChild;
 			continue;
 		}
-		if (!$i.parentNode) {
+		if ($i.parentNode === $parent) {//если м ыне ушли вглубь - значит и вправо двигаться нельзя
 			break;
 		}
-		if ($i.nextSibling) {
+		if ($i.nextSibling !== null) {
 			$i = $i.nextSibling;
 			continue;
 		}
-		while ($i = $i.parentNode) {
-			if ($i.nodeType === 11) {
-				$i = $p.pop();
-			}
-			if (!$i.parentNode) {
+		do {
+			$i = $i.parentNode;
+			if ($i.parentNode === $parent) {
 				$i = null;
 				break;
 			}
-			if ($i.nextSibling) {
+			if ($i.parentNode.nodeType === 11) {
+				$i = $p.pop();
+				if ($i.parentNode === $parent) {
+					$i = null;
+					break;
+				}
+			}
+			if ($i.nextSibling !== null) {
 				$i = $i.nextSibling;
 				break;
 			}
-		}
+		} while(true);
 	} while ($i);
-	if (rem.size) {
+	if (rem.size !== 0) {
 		requestIdleCallback(() => {
 //console.time("rem");
-			_clearTag(rem);
+			clearVars(rem);
 //console.timeEnd("rem");
 		});
 	}
 }
-function clearTag($e, sId, isClearLocalScope, rem) {
-	delete $srcById[sId];
-	if (!$e[p_isCmd]) {
-		descrById.delete($e[p_descrId]);
+function clearTag($e, src, rem) {
+//console.log($e, src.id, rem);
+	const sId = src.id,
+		descr = src.descr,
+		dId = descr.id;
+	$srcById.delete(sId);
+	srcById.delete(sId);
+	srcBy$src.delete($e);
+//console.error("DEL", src.id, $e, src.isCmd, descr);
+	if (!src.isCmd) {
+//простые теги тоже могут быть с одним описанием
+		descr.srcIdSet.delete(sId);
+		if (descr.srcIdSet.size === 0) {
+			descrById.delete(dId);
+		}
 		return;
 	}
-//console.error("DEL", sId, $e, $e[p_isCmd]);
-	delete cache[sId];
-	const dId = $e[p_descrId],
-		d = descrById.get(dId);
-	d.srcIdSet.delete(sId);
-	if (d.sId === sId) {
-		d.sId = d.srcIdSet.values().next().value;
-	}
-	if (isClearLocalScope) {
-		clearScope($e);
+//--	delete cache[sId];
+	loadingCount.delete(sId);
+	descr.srcIdSet.delete(sId);
+	if (descr.sId === sId) {
+		descr.sId = descr.srcIdSet.values().next().value;//todo REM! тут может быть undef - это при условии что все элемены цикла пошли на удаление (это при замене через inc) - и раз undef то в rem есть все элементы и первый изних очистит всё, а остальные нужно пропустить
 	}
 	const r = rem.get(dId);
 	if (r) {
@@ -193,16 +350,20 @@ function clearTag($e, sId, isClearLocalScope, rem) {
 	}
 	rem.set(dId, new Set([sId]));
 }
-function _clearTag(rem) {
+function clearVars(rem) {
 	const vIdSet = new Set(),
 		sIdSet = new Set(),
 		deletedVarId = new Set();//,
 //		skipDelBySrcId = {};
 	for (const [dId, s] of rem) {
 		const d = descrById.get(dId);
+		if (!d) {//todo REM!
+			continue;
+		}
 		for (const vId of d.varIdSet) {
 			vIdSet.add(vId);
 		}
+//}
 		for (const sId of s) {
 			sIdSet.add(sId);
 //			if (d.isAsOne && sId != d.sId) {
@@ -238,7 +399,7 @@ function _clearTag(rem) {
 //console.log(vIdByProp, sId, pId);
 					s.delete(sId);
 					propS.delete(sId);
-					if (!propS.size) {
+					if (propS.size === 0) {
 						deletedVarId.add(pId);
 						srcIdSetByVarId.delete(pId);
 						vIdByProp.delete(pName);
@@ -250,7 +411,7 @@ function _clearTag(rem) {
 //			continue;
 //		}
 //console.log(2, vId, s);
-		if (!s.size) {
+		if (s.size === 0) {
 			deletedVarId.add(vId);
 			srcIdSetByVarId.delete(vId);
 			const v = varById[vId];
@@ -259,20 +420,23 @@ function _clearTag(rem) {
 			if (vIdByProp) {
 				delete varIdByVarIdByProp[vId];
 //todo
-				if (vIdByProp.size) {
+				if (vIdByProp.size !== 0) {
 					console.warn("должно быть пусто", vId, vIdByProp);
 				}
 //--				for (const pId of vIdByProp.values()) {
 //					srcIdSetByVarId.delete(pId);
 //				}
 			}
-		} else if (vIdByProp && !vIdByProp.size) {
+		} else if (vIdByProp && vIdByProp.size === 0) {
 //console.warn(11111, vId, vIdByProp);
 			delete varIdByVarIdByProp[vId];
 		}
 	}
 	for (const [dId, s] of rem) {
 		const d = descrById.get(dId);
+		if (!d) {//todo REM!
+			continue;
+		}
 		for (const vId of deletedVarId) {
 			d.varIdSet.delete(vId);
 		}
@@ -283,39 +447,299 @@ function _clearTag(rem) {
 				console.warn(22222222);
 			}
 		}
-		if (!d.srcIdSet.size) {
+		if (d.srcIdSet.size === 0) {
 			descrById.delete(dId);
 		}
 	}
 }
+export function cloneNode(req, $e) {
+	if ($e.nodeType === 11) {
+		const $fr = Tpl_doc.createDocumentFragment();
+		for ($e = $e.firstChild; $e !== null; $e = $e.nextSibling) {
+			$fr.appendChild(cloneNode(req, $e));
+		}
+		return $fr;
+	}
+	const $n = $e.cloneNode(true);
+	if ($n.nodeType !== 1) {
+		return $n;
+	}
+	const $on = $n.nodeName !== "TEMPLATE" ? $n : $n.content.firstChild,
+		src = srcBy$src.get(req.$src);//todo а что если это просто тег?
+	for (const [n, v] of src.descr.attr) {
+		if (n === req.str) {
+			break;
+		}
+		const rc = reqCmd[n];
+		if (rc.cmdName === onCmdName) {
+//console.log(111111, n, v, $on);
+			rc.cmd.render(type_req($on, n, v, req.scope, req.sync, req.local));
+		}
+	}
+	const l = loadingCount.get(src.id);
+	if (l !== undefined) {
+		loadingCount.set($n, l);
+	}
+	return $n;
+}
+export function q_cloneNode(req, $els, beginIdx, len) {
+	const $arr = new Array(len),
+		on = [],
+		$elsLen = $els.length;
+	let fSrc = null;
+	for (let i = 0, f; i < $elsLen; i++) {
+		const $i = $els[i];
+		fSrc = srcBy$src.get($i);
+		if (fSrc === undefined || !fSrc.isCmd) {
+			continue;
+		}
+		break;
+	}
+	if (fSrc === null) {
+		console.warn(">>>Tpl dom:q_cloneNode:", req, $els, beginIdx, len);
+		throw check(new Error(`>>>Tpl dom:q_cloneNode: среди элементов для клонирования нет элемента с командой, такого не должно быть`), req.$src, req);
+	}
+	const fDescr = fSrc.descr;
+	for (const [n, v] of fDescr.attr) {
+		if (n === req.str) {
+			break;
+		}
+		const rc = reqCmd[n];
+		if (rc.cmdName === onCmdName) {
+			on.push(type_q_cloneNodeOn(rc.cmd, n, v));
+		}
+	}
+	const onLen = on.length,
+		l = loadingCount.get(fSrc.id),
+		baseAsOne = new Set(),
+		asOneVal = new Array(len),
+		aIt = fDescr.asOneSet.keys();
+	for (let i = aIt.next(); !i.done; i = aIt.next()) {
+		if (i.value !== req.str) {
+			continue;
+		}
+		for (i = aIt.next(); !i.done; i = aIt.next()) {
+			baseAsOne.add(i.value);
+		}
+	}
+	for (let i = 0; i < len; i++) {
+		$arr[i] = new Array($elsLen);
+		asOneVal[i] = new Map();
+	}
+	for (let i, idx, j = 0; j < $elsLen; j++) {
+		const $jArr = new Array(len),
+			$j = $els[j];
+		q_cloneNodeCreate($j, $jArr, len, asOneVal, 0, baseAsOne);
+		q_cloneNodeCreateChildren($j, $jArr, len, asOneVal);
+		for (i = 0, idx = beginIdx; i < len; i++, idx++) {
+			const $i = $arr[i][j] = $jArr[i],
+				iSrc = srcBy$src.get($i);
+			if (iSrc === undefined) {
+				continue;
+			}
+			setIdx(iSrc, req.str, idx);
+			if (onLen !== 0) {
+				for (k = 0; k < onLen; k += 3) {
+					const o = on[k];
+					o.cmd.render(type_req($i, o.str, o.expr, req.scope, req.sync, req.local));
+				}
+			}
+			if (l !== undefined) {
+				loadingCount.set($i, l);
+			}
+		}
+	}
+	return $arr;
+}
+function q_cloneNodeCreateChildren($i, $arr, $arrLen, asOneVal) {
+	const $tP = new Array($arrLen),
+		$parent = $i.parentNode,
+		$p = [];
+	for (let i = 0; i < $arrLen; i++) {
+		$tP[i] = [];
+	}
+	do {
+//////////////////////
+		const iSrc = srcBy$src.get($i);
+		if (iSrc !== undefined && !iSrc.descr.isCustomHtml) {
+			if ($i.firstChild !== null) {
+				$i = q_cloneNodeCreate($i.firstChild, $arr, $arrLen, asOneVal, 1);
+				continue;
+			}
+			//todo а что если это просто тег?
+			if ($i.nodeName === "TEMPLATE") {
+				const iSrc = srcBy$src.get($i);
+				if (iSrc !== undefined && iSrc.isCmd && $i.content.firstChild.firstChild !== null) {
+					$p.push($i);
+					for (let i = 0; i < $arrLen; i++) {
+						$tP[i].push($arr[i]);
+					}
+					$i = q_cloneNodeCreate($i.content.firstChild.firstChild, $arr, $arrLen, asOneVal, 1);
+					continue;
+				}
+			}
+		}
+		if ($i.parentNode === $parent) {//если м ыне ушли вглубь - значит и вправо двигаться нельзя
+			break;
+		}
+		if ($i.nextSibling !== null) {
+			$i = q_cloneNodeCreate($i.nextSibling, $arr, $arrLen, asOneVal, 2);
+			continue;
+		}
+		do {
+			$i = $i.parentNode;
+//todo
+			for (let i = 0; i < $arrLen; i++) {
+				$arr[i] = $arr[i].parentNode;
+			}
+			if ($i.parentNode === $parent)  {
+				$i = null;
+				break;
+			}
+			if ($i.parentNode.nodeType === 11) {
+				$i = $p.pop();
+				for (let i = 0; i < $arrLen; i++) {
+					$arr[i] = $tP[i].pop();
+				}
+				if ($i.parentNode === $parent)  {
+					$i = null;
+					break;
+				}
+			}
+			if ($i.nextSibling !== null) {
+				$i = q_cloneNodeCreate($i.nextSibling, $arr, $arrLen, asOneVal, 2);
+				break;
+			}
+		} while (true);
+	} while ($i !== null);
+}
+function q_cloneNodeCreate($e, $arr, $arrLen, asOneVal, type, baseAsOne) {
+	const src = srcBy$src.get($e);
+	if (src === undefined) {
+		if (type === 2) {
+			for (let i = 0; i < $arrLen; i++) {
+				$arr[i] = $arr[i].parentNode.appendChild($e.cloneNode());
+			}
+			return $e;
+		}
+		if (type === 1) {
+			for (let i = 0; i < $arrLen; i++) {
+				$arr[i] = $arr[i].appendChild($e.cloneNode());
+			}
+			return $e;
+		}
+		for (let i = 0; i < $arrLen; i++) {
+			$arr[i] = $e.cloneNode();
+		}
+		return $e;
+	}
+	const descr = src.descr,
+		idx = src.idx,
+		save = src.save;
+	if (descr.asOneSet === null) {
+		if (type === 2) {
+			for (let i = 0; i < $arrLen; i++) {
+				createSrc($arr[i] = $arr[i].parentNode.appendChild($e.cloneNode()), descr, null, idx === null ? null : type_idx(idx)).save = save;
+			}
+			return $e;
+		}
+		if (type === 1) {
+			for (let i = 0; i < $arrLen; i++) {
+				createSrc($arr[i] = $arr[i].appendChild($e.cloneNode()), descr, null, idx === null ? null : type_idx(idx)).save = save;
+			}
+			return $e;
+		}
+		for (let i = 0; i < $arrLen; i++) {
+			createSrc($arr[i] = $e.cloneNode(), descr, null, idx === null ? null : type_idx(idx)).save = save;
+		}
+		return $e;
+	}
+	const asOneIdx = src.asOneIdx;
+	if (type === 2) {
+		for (let i = 0; i < $arrLen; i++) {
+			createSrc($arr[i] = $arr[i].parentNode.appendChild($e.cloneNode()), descr, type_asOneIdx(asOneIdx), type_idx(src.idx)).save = save;
+		}
+		q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, asOneIdx);
+		return $e;
+	}
+	if (type === 1) {
+		for (let i = 0; i < $arrLen; i++) {
+			createSrc($arr[i] = $arr[i].appendChild($e.cloneNode()), descr, type_asOneIdx(asOneIdx), type_idx(src.idx)).save = save;
+		}
+		q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, asOneIdx);
+		return $e;
+	}
+	for (let i = 0; i < $arrLen; i++) {
+		createSrc($arr[i] = $e.cloneNode(), descr, type_asOneIdx(asOneIdx), type_idx(src.idx)).save = save;
+	}
+	q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, baseAsOne);
+	return $e;
+}
+function q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, asOneIdx) {
+	for (let i = 0; i < $arrLen; i++) {
+		const $i = $arr[i],
+			iSrc = srcBy$src.get($i);
+		for (const n of asOneIdx.keys()) {
+			const curIdx = iSrc.asOneIdx.get(n),
+				v = asOneVal[i].get(curIdx);
+			if (v !== undefined) {
+				setAsOneIdx(iSrc, n, v);
+				continue;
+			}
+			const vv = getNewId();
+			asOneVal[i].set(curIdx, vv)
+			setAsOneIdx(iSrc, n, vv);
+		}
+	}
+}
+function type_q_cloneNodeOn(cmd, str, expr) {
+	return {
+		cmd,
+		str,
+		expr
+	};
+}
 //use in attr
+/*не нужно из-за того что будет срабатывать только один раз - дальше кэш
+export function getAttribute($e, name) {
+	if ($e.nodeName === "INPUT") {
+		switch (name) {
+			case "value":
+				return $e.value;
+			case "checked":
+				return $e.checked ? "checked" : "";
+		}
+	}
+	return $e.getAttribute(name);
+}*/
 export function setAttribute($e, name, value) {
 //todo атрибут нелльзя создать, если в нем есть некорректные символы - решение ниже слишком исбыточное, на мой взгляд
 //	for (let i = name.indexOf("$"); i > 0; i = name.indexOf("$")) {
 //		name = name.substr(0, i) + name.substr(i + 1);
 //	}
-//console.log($e);
+	setAttributeValue($e, name, value);
 	$e.setAttribute(name, value);
 //!!! думаю что так можно
 //	getDescrAttrsBy$scr($e)[name] = value;
+}
+export function setAttributeValue($e, name, value) {
 	switch (name) {
 		case "value":
-//			if (value) {
+			if ($e === document.activeElement && typeof $e.setSelectionRange === "function") {
+				const pos = $e.selectionStart;
 				$e.value = value;
-//			} else {
-//				$e.value = undefined;
-//			}
+				$e.setSelectionRange(pos, pos);
+			} else {
+				$e.value = value;
+			}
 		break;
 		case "checked":
-			$e.checked = value !== "false";
+			$e.checked = !!value;
 		break;
 	}
 }
 //use in attr
 export function removeAttribute($e, name) {
-	$e.removeAttribute(name);
-//!! см. выше
-//	getDescrAttrsBy$scr($e).delete(name);
 	switch (name) {
 		case "value":
 			$e.value = "";
@@ -324,138 +748,116 @@ export function removeAttribute($e, name) {
 			$e.checked = false;
 		break;
 	}
+	$e.removeAttribute(name);
+//!! см. выше
+//	getDescrAttrsBy$scr($e).delete(name);
 }
-/*
-function getAttribute($e, name) {
-	return getDescrAttrsBy$scr($e).get(name) || null;
-}*/
 
 export function show(req, $e) {
-//console.log("show", $e);
-//	if ($e.nodeName !== "TEMPLATE") {
-	if (!$e.content) {
-		return $e;
+//console.error("show", $e);
+	if ($e.nodeName !== "TEMPLATE") {
+		return;// $e;
 	}
+//!! todo если сваливаемся сюда с ошибкой "can't access property "replaceChild", $e.parentNode is null" - это означает, что новый рндер пошел раньше, чем кончился текущий - так не должно быть 
+	if ($e.parentNode === null) {
+console.error(`если сваливаемся сюда с ошибкой "can't access property "replaceChild", $e.parentNode is null" - это означает, что новый рндер пошел раньше, чем кончился текущий - так не должно быть`, $e, $new, sync);
+alert(1);
+	}
+	req.sync.animation.add(type_animation(() => _show(req, $e), req.local, 0));//srcBy$src.get($e).id]));
+}
+function _show(req, $e) {
 	const $new = $e.content.firstChild;
-	if (!$new || $new.nextSibling) {
+	if (!$new || $new.nextSibling !== null) {
+		//todo была ошибка, что $e ет в srcBy$src - овоторить не получается
 		throw check(new Error(">>>Tpl show:01: Template element invalid structure on show function. <template>.content.childNodes.length must be only one element."), $e);
 	}
-	return addAnimation(() => {
-		if ($new.nodeType === 1) {
-			moveProps($e, $new, true);
-		}
-//!! todo если сваливаемся сюда с ошибкой "can't access property "replaceChild", $e.parentNode is null" - это означает, что новый рндер пошел раньше, чем кончился текущий - так не должно быть 
-		if (!$e.parentNode) {
-console.error(`если сваливаемся сюда с ошибкой "can't access property "replaceChild", $e.parentNode is null" - это означает, что новый рндер пошел раньше, чем кончился текущий - так не должно быть`, $e, $new, sync);
-//alert(1);
-			return $new;
-		}
-		$e.parentNode.replaceChild($new, $e);
-		return $new;
-	}, req.sync);
+	if ($new.nodeType === 1 && srcBy$src.has($e)) {
+		moveProps($e, $new, true);
+	}
+//!!!	if (src.id === srcBy$src.get(req.$src).id) {
+	if (req.$src === $e) {
+		req.$src = $new;
+	}
+	$e.parentNode.replaceChild($new, $e);
 }
 export function hide(req, $e) {
-//	if ($e.nodeName === "TEMPLATE") {
-	if ($e.content) {
-		return $e;
+	if ($e.nodeName === "TEMPLATE") {
+		return;// $e;
 	}
-//	if ($e.nodeType === 8) {
-//		return $e;
+	req.sync.animation.add(type_animation(() => _hide($e), req.local, srcBy$src.get($e).id));
+}
+function _hide($e) {
+//console.log("_hide", $e);
+	const $new = Tpl_doc.createElement("template");
+//	if ($e.nodeType === 1) {
+//		moveProps($e, $new, false);
 //	}
-	const $parent = $e.parentNode;
-	let $i = $e,
+	let $i = $e;
+	const $parent = $i.parentNode,
 		$p = [];
 	do {
-		if ($i[p_isCmd]) {
-			const iId = $i[p_srcId],
-				c = cache[iId];
-			if (c) {
-				cache[iId].value = type_cacheValue();
-				cache[iId].current = type_cacheCurrent();
+		const iSrc = srcBy$src.get($i);
+		if (iSrc !== undefined) {
+			const c = iSrc.cache;//это тоже самое что и $i.isCmd
+			if (c !== null) {//todo тут можно удалять кэш только для дочерних элементов, но так как еще нужно удалить кэш для команд-после, то такой подход оправдан
+				c.value = type_cacheValue();
+				c.current = type_cacheCurrent();
 			}
-//todo см. комментарий про [p_localId] в clearScope
-			clearScope($i, $i === $e && req.str || "");
 		}
-		if ($i.firstChild) {
+//////////////////////
+		if ($i.firstChild !== null) {
 			$i = $i.firstChild;
 			continue;
 		}
-		if ($i.content && $i[p_isCmd] && $i.content.firstChild.firstChild) {
+		//todo а что если это просто тег?
+		if ($i.nodeName === "TEMPLATE" && iSrc.isCmd && $i.content.firstChild.firstChild !== null) {//проверку на кастом не делается из соображений экономичности
 			$p.push($i);
 			$i = $i.content.firstChild.firstChild;
 			continue;
 		}
-		if ($i.parentNode === $parent) {
+		if ($i.parentNode === $parent) {//если м ыне ушли вглубь - значит и вправо двигаться нельзя
 			break;
 		}
-		if ($i.nextSibling) {
+		if ($i.nextSibling !== null) {
 			$i = $i.nextSibling;
 			continue;
 		}
-		while ($i = $i.parentNode) {
-			if ($i.nodeType === 11) {
-				$i = $p.pop();
-			}
+		do {
+			$i = $i.parentNode;
 			if ($i.parentNode === $parent) {
 				$i = null;
 				break;
 			}
-			if ($i.nextSibling) {
+			if ($i.parentNode.nodeType === 11) {
+				$i = $p.pop();
+				if ($i.parentNode === $parent) {
+					$i = null;
+					break;
+				}
+			}
+			if ($i.nextSibling !== null) {
 				$i = $i.nextSibling;
 				break;
 			}
-		}
-	} while ($i);
-	return addAnimation(() => {
-		const $new = Tpl_doc.createElement("template");
-		if ($e.nodeType === 1) {
-			moveProps($e, $new, false);
-		}
-		$e.parentNode.replaceChild($new, $e);
-		$new.content.appendChild($e);
-		return $new;
-	}, req.sync);
-}
-function clearScope($e, str) {
-	const attrIt = getAttrItAfter(descrById.get($e[p_descrId]).attr.keys(), str);
-	for (let i = attrIt.next(); !i.done; i = attrIt.next()) {
-//		const n = i.value;
-//		if (reqCmd[n].cmdName === incCmdName) {//!!maybe todo пока работает только для inc
-			const lId = getLocalId($e, i.value);
-//console.log(lId);
-//alert(1)
-			if (lId) {
-				delete self.localScope[lId];
-//console.warn("remove data", lId, $e);
-			}
-//		}
+		} while (true);
+	} while ($i !== null);
+	if ($e.nodeType === 1) {
+		moveProps($e, $new, false);
 	}
-	if (str) {
-//todo если есть str то это с hide, а это значит, что мы не можем точно рассудить про [p_localId] --- а если нет стр, то это значит мы удаляем или скрывам дочерний тег и можно грохать [p_localId]
-// -- тут открытым остается вопрос про [p_localId] и дочерний тег
-		return;
-	}
-	if ($e[p_localId]) {
-		delete self.localScope[$e[p_localId]];
-//console.warn("2 remove data", $e[p_localId], $e);
-	}
-}
-export function is$hide($i) {
-	do {
-		if ($i === Tpl_$src) {
-			return false;
-		}
-	} while ($i = $i.parentNode);
-	return true;
+	//!!переписывать req.$src в данном случаи не имет смысла
+	$e.parentNode.replaceChild($new, $e);
+	$new.content.appendChild($e);
 }
 function moveProps($from, $to, isShow) {
-	const sId = $from[p_srcId];
-	$srcById[$to[p_srcId] = sId] = $to;
-	$to[p_descrId] = $from[p_descrId];
-	$to[p_isCmd] = $from[p_isCmd];
+//!!<-- show hide
+	const src = srcBy$src.get($from);
+	$srcById.set(src.id, $to);
+	srcById.set(src.id, src);
+//	srcBy$src.delete($from);
+	srcBy$src.set($to, src);
 
-	$to[p_localId] = $from[p_localId];
-	$to[p_topURL] = $from[p_topURL];
+//--	$to[p_localId] = $from[p_localId];
+	$to[p_topUrl] = $from[p_topUrl];
 
 	if (isShow) {
 		return;
@@ -469,144 +871,123 @@ function moveProps($from, $to, isShow) {
 		setAttribute($to, a.name, a.value);
 	}
 }
+export function is$hide($i) {
+	do {
+		if ($i === Tpl_$src) {
+			return false;
+		}
+		$i = $i.parentNode;
+	} while ($i !== null);
+	return true;
+}
+export function isAnimationVisible(animate) {
+	return animate.viewedSrcId === 0 ? true : is$visible($srcById.get(animate.viewedSrcId));
 /*
-export function $goTagsDeep($e, func) {
-	func($e);
-	if ($e.nodeType === 1 && $e[p_descrId] && descrById.get($e[p_descrId]).isCustomHTML) {
-		return $e;
 	}
-	for (let $i = $e.content ? $e.content.firstChild : $e.firstChild; $i; $i = $i.nextSibling) {
-		if ($i.nodeType === 1) {
-			$goTagsDeep($i, func);
+	for (const sId in animate.viewedSrcId) {
+		if (!is$visibleBySrcId(sId)) {
+			return false;
 		}
 	}
-	return $e;
-}*/
-/*
-export function __$goCopy($from, $to, func) {
-	func($from, $to);
-	if (descrById.get($from[p_descrId]).isCustomHTML) {
-		return $to;
-	}
-	const $ret = $to;
-	for ($from = $from.firstChild, $to = $to.firstChild; $from; $from = $from.nextSibling, $to = $to.nextSibling) {
-		if ($from.nodeType === 1) {
-			__$goCopy($from, $to, func);
+	return true;*/
+}
+const $scroll = document.scrollingElement;
+export function is$visible($e) {
+	while ($e.nodeType !== 1) {
+		$e = $e.nextSibling;
+		if ($e === null) {
+			return true;
 		}
 	}
-	return $ret;
-}*/
-
+	const visibleK = 1 - visibleScreenSize,
+		left = $scroll.clientWidth * visibleK,
+		right = $scroll.clientWidth + left * -1,
+		top = $scroll.clientHeight * visibleK,
+		bottom = $scroll.clientHeight + top * -1,
+		b = $e.getBoundingClientRect();
+	return !((b.top > bottom || b.top + b.height < top) || (b.left > right || b.left + b.width < left));
+}
+export function setAsOneIdx(src, str, idx) {
+	if (src.asOneIdx === null) {
+		src.asOneIdx = type_asOneIdx();
+	}
+	src.asOneIdx.set(str, idx);
+//!!
+	if (self.Tpl_debugLevel === 0) {
+		return;
+	}
+	const $src = $srcById.get(src.id),
+		n = asOneIdxName + str;
+	$src.setAttribute(n, idx);
+	if ($src.nodeName === "TEMPLATE") {
+		$src.content.firstChild.setAttribute(n, idx);
+	}
+}
+/*
 export function getIdxName(str) {
 	return idxName + str;
+}*/
+export function getIdx(src, str) {
+	if (src.idx !== null) {
+		return src.idx.get(str);
+	}
 }
-export function getIdx($e, str) {
-	return $e.getAttribute(idxName + str);
-//	return $e.getAttribute(getIdxName(str));
+export function setIdx(src, str, idx) {
+	if (src.idx === null) {
+		src.idx = type_idx();
+	}
+	src.idx.set(str, idx);
+//!!
+	if (self.Tpl_debugLevel === 0) {
+		return;
+	}
+	const $src = $srcById.get(src.id),
+		n = idxName + str;
+	$src.setAttribute(n, idx);
+	if ($src.nodeName === "TEMPLATE") {
+		$src.content.firstChild.setAttribute(n, idx);
+	}
 }
-export function getTopURL($e, str) {
+export function getTopUrl(src, str) {
 	if (str) {
-		const topURL = getAttrTopURL($e, str);//из-за if ($i[p_topURL]) { - так как это должэно работать только для робителей
-		if (topURL) {
-			return topURL;
+		const topUrl = getAttrTopUrl(src, str);//из-за if ($i[p_topUrl]) { - так как это должэно работать только для робителей
+		if (topUrl !== undefined) {
+			return topUrl;
 		}
 	}
-	for (let $i = $e.parentNode; $i !== Tpl_$src; $i = $i.parentNode) {
+	for (let $i = $srcById.get(src.id).parentNode; $i !== Tpl_$src; $i = $i.parentNode) {
+/*--
 		if ($i.nodeType === 11) {//рендер внутри фрагмента возможен, например, for
-//console.log("getTopURL", $src, str);
-			return getTopURL($srcById[descrById.get($e[p_descrId]).sId]);
-		}
-		const topURL = getAttrTopURL($i) || $i[p_topURL];
-		if (topURL) {
-			return topURL;
+//console.log("getTopUrl", $src, str);
+			return getTopUrl($srcById.get(descrById.get(srcBy$src.get($e).descrId).sId)]);
+		}*/
+		const topUrl = getAttrTopUrl(srcBy$src.get($i)) || $i[p_topUrl];
+		if (topUrl !== undefined) {
+			return topUrl;
 		}
 	}
 }
-function getAttrTopURL($e, str) {
-	if (!$e[p_isCmd]) {
-		return "";
+function getAttrTopUrl(src, str) {
+	if (!src.isCmd) {
+		return;
 	}
-	const nattr = descrById.get($e[p_descrId]).attr.keys();
-	let topURL = "";
+	const nattr = src.descr.attr.keys();
+	let topUrl;
 	if (str) {
 		for (const n of nattr) {
 			if (n === str) {
 				break;
 			}
 			if (reqCmd[n].cmdName === incCmdName) {//!!maybe todo пока работает только для inc
-				topURL = getIdx($e, n);
+				topUrl = getIdx(src, n);
 			}
 		}
-		return topURL;
+		return topUrl;
 	}
 	for (const n of nattr) {
 		if (reqCmd[n].cmdName === incCmdName) {//!!maybe todo пока работает только для inc
-			topURL = getIdx($e, n);
+			topUrl = getIdx(src, n);
 		}
 	}
-	return topURL;
-}
-
-export function getLocalIdName(str) {
-	return localIdName + str;
-}
-export function getLocalId($e, str) {
-	return $e.getAttribute(localIdName + str);
-}
-export function getTopLocal($e, str) {
-	let $i;
-	if (str && $e[p_isCmd]) {
-		const lId = getAttrTopLocalId($e, str);
-		if (lId) {
-			return type_local(lId, $e);
-		}
-		$i = $e.parentNode;
-	} else {
-		$i = $e;
-	}
-	for (; $i !== Tpl_$src; $i = $i.parentNode) {
-		if ($i.nodeType === 11) {//рендер внутри фрагмента возможен, например, for
-			return getTopLocal($srcById[descrById.get($e[p_descrId]).sId]);
-		}
-		if (!$i[p_isCmd]) {
-			continue;
-		}
-		const lId = getAttrTopLocalId($i);
-		if (lId) {
-			return type_local(lId, $i);
-		}
-	}
-}
-function type_local(id, $src) {
-	return {
-		id,
-		$src
-	};
-}
-function getAttrTopLocalId($e, str) {
-	const nattr = descrById.get($e[p_descrId]).attr.keys();
-	let lId = "";
-	if (str) {
-		for (const n of nattr) {
-			if (reqCmd[n].cmdName === incCmdName) {//!!maybe todo пока работает только для inc
-				const _lId = getLocalId($e, n);
-				if (_lId) {
-					lId = _lId;
-				}
-			}
-			if (n === str) {
-				break;
-			}
-		}
-		return lId || $e[p_localId];
-	}
-	for (const n of nattr) {
-		if (reqCmd[n].cmdName === incCmdName) {//!!maybe todo пока работает только для inc
-			const _lId = getLocalId($e, n);
-			if (_lId) {
-				lId = _lId;
-			}
-		}
-	}
-	return lId || $e[p_localId];
+	return topUrl;
 }

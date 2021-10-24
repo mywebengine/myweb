@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
+		<script src="../myweb.js?debug" type="module" async="async"></script>
+		<link href="../myweb.css" type="text/css" rel="stylesheet" />
+		<script>
+			const h1 = "filling command";
+		</script>
+		<title>${h1} - myweb</title>
+		<style>
+			[is_filling-skeleton_n1] {
+				background: url("./filling/skeleton_n1.svg") no-repeat 0 0 !important;
+				background-size: contain !important;
+				min-height: 85px;
+			}
+			[is_filling-cyan] {
+				background-color: cyan !important;
+				min-height: 85px;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>${h1} - example</h1>
+		<div is_filling=""
+			filling.spinner.1000="data.isReady"
+			filling.skeleton_n1.2000="data.isReady"
+			exec="if (!data.isReady) setTimeout(() => data.isReady = true, 3000)">
+			<fieldset>
+				<label>
+					<input type="checkbox"
+						attr.checked="data.isReady"
+						on.input="data.isReady = this.checked" />
+					data.isReady
+				</label>
+			</fieldset>
+		</div>
+		<section>
+			<h2>Inc</h2>
+			<link filling.spinner="data.isReady"
+				inc..cyan="`./inc/inc1.html`"
+				filling.skeleton_n1.500="if (self.a) {aaaaa()} return data.isReady" />
+		</section>
+	</body>
+</html>

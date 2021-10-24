@@ -1,70 +1,61 @@
-﻿import {getCacheBySrcId} from "../cache.js";
-import {p_srcId, p_descrId/*, textCmdName*/} from "../config.js";
-import {descrById} from "../descr.js";
+﻿import {type_animation} from "../render/render.js";
+import {srcBy$src} from "../descr.js";
 import {eval2, q_eval2} from "../eval2.js";
-import {addAnimation} from "../util.js";
 
 export default {
-	async render(req) {
-		const f = setValue(req, req.$src, await eval2(req, req.$src, true));
-		return f && addAnimation(f, req.sync) || null;
+	isCustomHtml: true,
+	render(req) {
+//console.log(111, req.$src);
+		return eval2(req, req.$src, true)
+			.then(val => setValue(req, req.$src, val));
 	},
-	async q_render(req, arr, isLast) {
-		const val = await q_eval2(req, arr, isLast),
-			len = arr.length,
-			fSet = new Set(),
-			scope = req.scope;
-		for (let i = 0; i < len; i++) {
-			if (!isLast[i]) {
-				req.scope = arr[i].scope;
-				const f = setValue(req, arr[i].$src, val[i]);
-				if (f) {
-					fSet.add(f);
+	q_render(req, arr, isLast) {
+//console.log(222, req.$src, arr);
+		const arrLen = arr.length;
+		return q_eval2(req, arr, isLast)
+			.then(vals => {
+				const pArr = new Array(arrLen);
+				for (let i = 0; i < arrLen; i++) {
+					if (!isLast[i]) {
+						pArr[i] = vals[i];
+					}
 				}
-			}
-		}
+				return Promise.all(pArr);
+			})
+			.then(vals => {
+//				const scope = req.scope;
+				for (let i = 0; i < arrLen; i++) {
+					if (!isLast[i]) {
+///						req.scope = arr[i].scope;
+						setValue(req, arr[i].$src, vals[i]);
+					}
+				}
 //!!! todo подумать: надо ли
-		req.scope = scope;
-		if (fSet.size) {
-			return addAnimation(() => {
-				for (const f of fSet) {
-					f();
-				}
-			}, req.sync);
-		}
-		return null;
-	},
-	linker(req) {
-/*
-		descrById.get(req.$src[p_descrId]).isCustomHTML = true;
-		const cur = getCurentValue(req, req.$src[p_srcId]);
-		cur[0] = eval2(req, req.$src, true);
-		return null;*/
+//				req.scope = scope;
+				return null;
+			});
 	}
 };
 function setValue(req, $src, val) {
-	descrById.get($src[p_descrId]).isCustomHTML = true;
-	const c = getCacheBySrcId($src[p_srcId]),
-		cur = c.current[req.str];
-//console.error("html", $src[p_srcId], $src, val, cur, val === cur);
-	if (val === cur) {
+//	descrById.get($src[p_descrId]).isCustomHtml = true;
+//	const c = getCacheBySrcId($src[p_srcId]),
+	const c = srcBy$src.get($src).cache;
+	if (req.sync.p.renderParam.isLinking) {
+		c.current[req.str] = val;
 		return null;
 	}
-	c.current[req.str] = val;
+	if (val === c.current[req.str]) {
+		return null;
+	}
+//console.error("html", $src[p_srcId], $src, val, c.current[req.str], val === c.current[req.str], req);
 	if (req.reqCmd.args[0]) {
-		if (req.inFragment) {
-			$src.textContent = val;
-			return null;
-		}
-		return () => {
-			$src.textContent = val;
-		};
-	}
-	if (req.inFragment) {
-		$src.innerHTML = val;
+		req.sync.animation.add(type_animation(() => {
+			c.current[req.str] = $src.textContent = val;
+		}, req.local, srcBy$src.get($src).id));
 		return null;
 	}
-	return () => {
-		$src.innerHTML = val;
-	};
+	req.sync.animation.add(type_animation(() => {
+		c.current[req.str] = $src.innerHTML = val;
+	}, req.local, srcBy$src.get($src).id));
+	return null;
 }

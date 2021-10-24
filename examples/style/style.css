@@ -1,0 +1,41 @@
+@import url("./header.css");
+@import url("./main.css");
+@import url("./footer.css");
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+	height: 100%;
+	background: white;
+}
+body {
+	--gap: 30px;
+	--gap2: 15px;
+        --menu_width: 150px;
+        --cnt_width: 600px;
+
+	display: flex;
+	flex-direction: column;
+	font-family: arail, sans-serif;
+	font-size: 14px;
+	line-height: 20px;
+	color: #222;
+}
+.w {
+/*
+	margin: 0 auto;
+	max-width: 920px;*/
+	box-sizing: border-box;
+	padding: var(--gap);
+}
+a[href] {
+	text-decoration: none;
+	color: blue;
+}
+a:visited {
+	color: blue;
+}
+a[href]:hover {
+	text-decoration: underline;
+}

@@ -4,23 +4,20 @@
  * Released under the MIT License.
  * https://github.com/mywebengine/myweb
  */
-export default new Promise((resolve, reject) => {
-	const f = () => {
-		getLineNo()
-			.then(resolve)
-			.catch(reject);
-	}
+export default new Promise(resolve => {
 	if (document.readyState === "loading") {
-		document.addEventListener("DOMContentLoaded", f);
-	} else {
-		f();
+		document.addEventListener("DOMContentLoaded", () => getLineNo()
+			.then(resolve));
+		return;
 	}
+	getLineNo()
+		.then(resolve);
 });
 export async function getLineNo($src = document.documentElement, url = location.pathname) {
 //	if ($src.getLineNo()) {
 //		return Promise.resolve();
 //	}
-	const res = await fetch(url);
+	const res = await fetch(url)
 	if (res.ok) {
 		getLineNo.mark(getLineNo.type_markCtx(url, await res.text()), $src);
 		return;
@@ -39,13 +36,13 @@ getLineNo.mark = function(ctx, $e) {
 		$e.setAttribute(getLineNo.lineNoAttrName, `${ctx.url}:${ctx.line}`);
 		ctx.html = ctx.html.substr(idx + 1);
 	}
-	for (let $i = $e.firstChild; $i; $i = $i.nextSibling) {
+	for (let $i = $e.firstChild; $i !== null; $i = $i.nextSibling) {
 		if ($i.nodeType !== 1) {
 			continue;
 		}
 		getLineNo.mark(ctx, $i);
-		if ($i.content) {
-			for (let $j = $i.content.firstChild; $j; $j = $j.nextSibling) {
+		if ($i.nodeName === "TEMPLATE") {
+			for (let $j = $i.content.firstChild; $j !== null; $j = $j.nextSibling) {
 				getLineNo.mark(ctx, $j);
 			}
 		}

@@ -1,18 +1,13 @@
-﻿import {check} from "../util.js";
+﻿import {p_target} from "../config.js";
+import {check} from "../util.js";
 
 export default {
-	render,
-	linker: render,
-	setScope
+	render
 };
 function render(req) {
-	if (req.expr) {
-		req.scope[req.expr] = req.scope;
-		return null;
+	if (req.expr === "") {
+		throw check(new Error(">>>Tpl scope:render: Need set scope name"), req.$src, req);
 	}
-	throw check(new Error(">>>Tpl scope:01: Need set variable(s) name"), req);
-}
-function setScope(req) {
-	render(req);
-	return true;
+	req.scope[p_target][req.expr] = req.scope;
+	return null;
 }

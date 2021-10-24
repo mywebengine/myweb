@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
+		<script src="../myweb.js?debug" type="module" async="async"></script>
+		<link href="../myweb.css" type="text/css" rel="stylesheet" />
+		<script>
+			if (!self.data) {
+				data = {};
+			}
+			const h1 = "on command";
+			data.text = "abcdefg";
+		</script>
+		<title>${h1} - myweb</title>
+	</head>
+	<body on.mount="console.log(`mount`, evt.target)"
+		on.render="console.log(`render`, evt.target)">
+		<h1>${h1} - example</h1>
+		<fieldset>
+			<label for="text">data.text</label>
+			<input id="text" type="text"
+				on.input="data.text = this.value"
+				attr.value="data.text" />
+		</fieldset>
+		<ul on.click="alert(evt.target.tagName)">
+			<li foreach.val.key="data.text"
+				exec.str="`${key} => ${val}`">
+				<a href="#"
+					html.t="str"
+					on.click.prevent="alert(str);"></a>
+			</li>
+		</ul>
+	</body>
+</html>

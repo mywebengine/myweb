@@ -1,0 +1,63 @@
+﻿html {
+	--gap: 10px;
+        --b-color: silver;
+}
+.todos {
+	margin-bottom: 60px;
+}
+.todos-top,
+.todos-top form,
+.todos-filter {
+	display: flex;
+	align-items: center;
+	gap: var(--gap);
+}
+.todos-top {
+	flex-wrap: wrap;
+	padding: 0 0 var(--gap) 0;
+	border-bottom: solid 1px var(--b-color);
+}
+.todos-top form {
+	flex-grow: 1;
+	white-space: nowrap;
+}
+.todos-top form input {
+	width: 100%;
+	box-sizing: border-box;
+}
+.todos-filter {
+	flex-wrap: wrap;
+}
+.todos-top-sum {
+	font-style: italic;
+}
+.todos-list-i {
+	display: grid;
+	grid-template-columns:
+		auto	1fr	auto;
+	gap: var(--gap);
+	padding: var(--gap);
+	border-top: solid 1px var(--b-color);
+}
+.todos-list-select {
+	display: flex;
+	gap: var(--gap);
+	align-items: center;
+	padding: var(--gap);
+	font-style: italic;
+	cursor: pointer;
+}
+.todos-list-i-ok {
+	background: green;
+	color: white;
+}
+
+input[type="checkbox"],
+button:not([disabled]),
+label {
+	cursor: pointer;
+}
+.sel {
+	font-weight: bold;
+	cursor: default !important;
+}

@@ -1,68 +1,53 @@
-import {p_srcId, p_descrId, p_isCmd} from "./config.js";
-import {$srcById, descrById, get$first, getNextStr} from "./descr.js";
-import {reqCmd} from "./req.js";
-
-export const cache = {};
-self.cache = cache;
+import {srcBy$src, get$first, getNextStr} from "./descr.js";
 
 export function type_cache() {
 	return {
 		isInit: type_cacheInit(),
+		current: type_cacheCurrent(),
 		value: type_cacheValue(),
-		current: type_cacheCurrent()
+		attrSyncCur: type_cacheAttrSyncCur()
 	};
 }
 export function type_cacheInit() {
 	return {};
 }
-export function type_cacheValue() {
-	return {};
-}
 export function type_cacheCurrent() {
 	return {};
 }
-export function getCacheBySrcId(sId) {
-	const c = cache[sId];
-	return c || (cache[sId] = type_cache());
+export function type_cacheValue() {
+	return {};
 }
-export function getCacheValue($e, str) {
-	const c = cache[getSrcId($e, str)];
-	if (c && str in c.value) {
-		return type_val(c.value[str]);
-	}
+function type_cacheAttrSyncCur() {
+	return {};
 }
-function type_val(value) {
+export function type_cacheAttrSyncCurI(syncId, value) {
 	return {
+		syncId,
 		value
 	};
 }
-export function setCacheValue($e, str, v) {
-	const sId = getSrcId($e, str),
-		c = cache[sId] || (cache[sId] = type_cache());
-	c.value[str] = v;
-}
-export function getSrcId($e, str) {
-	const sId = $e[p_srcId];
-//todo--
-	if (!$srcById[sId]) {//если уже удалили
-console.warn("2323");
-alert(111);
-		return;
+export function getSrcId($i, str) {
+//todo если _for1 _for2 - кэш будет браться для for2 c первого элемента
+	const src = srcBy$src.get($i);
+//todo
+	if (src === undefined) {
+		console.warn("2323 всё норм, но нужно последить - сейчас такое бываес с _loading -> _inc");
+//debugger
+		return 0;
 	}
-	const r = reqCmd[str];
-	if (!r || !r.cmd.isAsOne) {
-		return sId;
-	}
-//todo сделать с гетКэш с d.sId
-	const nStr = getNextStr($e, str);
-	if (!nStr) {
-		return sId;
-	}
-	const d = descrById.get($e[p_descrId]);
-	$e = get$first($e, d.get$elsByStr, nStr);
-	while (!$e[p_isCmd]) {
-		$e = $e.nextSibling;
-	}
-//console.warn(11112, sId, str, $e);
-	return $e[p_srcId];
+	const descr = src.descr;
+	if (descr.asOneSet === null || !descr.asOneSet.has(str)) {
+		return src.id;
+	}	
+	const nStr = getNextStr(src, str);
+	$i = get$first($i, descr.get$elsByStr, nStr);
+	do {
+		const iSrc = srcBy$src.get($i);
+		if (iSrc !== undefined && iSrc.isCmd) {
+			return iSrc.id;
+		}
+		$i = $i.nextSibling;
+	} while ($i !== null);
+//todo
+	throw new Error("getSrcId");
 }

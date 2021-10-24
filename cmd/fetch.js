@@ -1,15 +1,9 @@
-import {getCacheBySrcId} from "../cache.js";
-import {p_srcId, cmdPref, defFetchReq, watchName, ifWatchName, paramName, ifParamName, resultName, errorName, onLoadName, onOkName, onErrorName} from "../config.js";
-import {eval2, getVal, _getVal} from "../eval2.js";
-import {normalizeURL} from "../loc.js";
-import {getScope} from "../scope.js";
-import {afterRender, type_renderRes} from "../render/algo.js";
-import {check} from "../util.js";
-
-const fetchParams = ["method", "mode", "cache", "credentials", "headers", "redirect", "referrer", "body", "contentType"];
-
-export default {
-	async render(req) {
+import {type_animation, type_renderRes} from "../render/render.js";
+import {type_cacheValue, type_cacheCurrent} from "../cache.js";
+import {defFetchReq, loadEventName, okEventName, errorEventName, resultDetailName, errorDetailName} from "../config.js";
+import {srcBy$src} from "../descr.js";
+import {eval2} from "../eval2.js";
+import {dispatchEvt, check} from "../util.js";
 /*
     return fetch(url, {
         method: 'POST', // *GET, POST, PUT, DELETE, etc.
@@ -24,128 +18,39 @@ export default {
         referrer: 'no-referrer', // no-referrer, *client
         body: JSON.stringify(data), // тип данных в body должен соответвовать значению заголовка "Content-Type"
     })*/
+//--const fetchParams = ["method", "mode", "cache", "credentials", "headers", "redirect", "referrer", "body", "contentType"];
+
+self.Tpl_fetchDefGetError = undefined;//default error handler
+
+export default {
+	render(req) {
 //console.log("fetch", req);
-		const url = await getURL(req);
-		if (!url) {
-			return type_renderRes(true);
-		}
-		const ifp = await getIfparam(req, url);
-		if (ifp.f) {
-			const pArr = [];
-			for (const i of fetchParams) {
-				pArr.push(getVal(req.$src, req.scope, i, true));
-			}
-			pArr.push(ifp.param || _getVal(req.$src, req.scope, paramName, true));
-			afterRender.add(() => Promise.all(pArr)
-				.then(vals => getFetch(req, url, ...vals))
-//				.then(() => console.log(url))
-			);
-		}
-		return type_renderRes(true);
-	},
-	linker(req) {
-/*
-		if (getURL(req)) {
-			const ifp = getIfparam(req);
-			if (ifp.f) {
-				for (const i of params) {
-					getVal(req.$src, req.scope, i, true);
+		return getUrl(req)
+			.then(r => {
+				if (r === null) {
+					return type_renderRes(true);
 				}
-				if (!ifp.param) {
-					_getVal(req.$src, req.scope, "param", true);
-				}
-			}
-		}
-		return type_renderRes(true);*/
+				const f = r instanceof Response ? getRes(req, r, null) : getFetch(req, r);
+				req.sync.afterAnimation.add(type_animation(() => f, req.local, 0));
+				return null;
+			});
 	}
 };
-async function getURL(req) {
-	const url = req.reqCmd.args[0] ? req.expr : await eval2(req, req.$src, true);
-	if (!url) {
-		return "";
-	}
-	const isIfWatch = req.$src.dataset[cmdPref + ifWatchName] !== undefined || req.$src.dataset[ifWatchName] !== undefined;
-	if (!isIfWatch && req.$src.dataset[cmdPref + watchName] === undefined && req.$src.dataset[watchName] === undefined) {
-		return normalizeURL(url);
-	}
-	const watch = await getVal(req.$src, req.scope, isIfWatch && ifWatchName || watchName, true);
-	if (isIfWatch && !watch) {
-//console.log(111, watch, req);
-		return "";
-	}
-	const c = getCacheBySrcId(req.$src[p_srcId]),
-		cur = c.current[req.str] || (c.current[req.str] = type_fetchCur());
-//console.log(cur, watch === cur.watch);
-	if (c.isInit[req.str]) {
-		if (watch === cur.watch) {
-//console.log(222, watch, cur[0], cur[1], req);
-			return "";
-		}
-	} else {
-		c.isInit[req.str] = true;
-	}
-	cur.watch = watch;
-	return normalizeURL(url);
-}
-async function getIfparam(req, url) {
-	const ifp = type_ifparam(true, null);
-	if (req.$src.dataset[cmdPref + ifParamName] === undefined && req.$src.dataset[ifParamName] === undefined) {
-		return ifp;
-	}
-	ifp.param = await _getVal(req.$src, req.scope, ifParamName, true);
-	const c = getCacheBySrcId(req.$src[p_srcId]),
-		cur = c.current[req.str] || (c.current[req.str] = type_fetchCur());
-	if (ifp.param === cur.ifparam) {
-		ifp.f = false;
-		return ifp;
-	}
-	if (!ifp.param) {
-		ifp.f = false;
-	}
-	cur.ifparam = ifp.param;
-	return ifp;
-}
-function type_fetchCur() {
-	return {
-		watch: undefined,
-		ifparam: undefined
-	};
-}
-function type_ifparam(f, param) {
-	return {
-		f,
-		param
-	};
-}
-function getFetch(req, url, method, mode, cache, credentials, headers, redirect, referrer, body, contentType, param) {
-	const fParam = type_fParam(method || "GET", mode, cache, credentials, headers || {}, redirect, referrer, body);
-	if (param) {
-		for (const i of fetchParams) {
-			if (param[i] !== undefined) {
-				fParam[i] = param[i];
+function getUrl(req) {
+	return eval2(req, req.$src, true)
+		.then(r => {
+			if (typeof r === "string") {
+				return r !== "" ? new Request(r) : null;
 			}
-		}
-		if (param.contentType) {
-			contentType = param.contentType;
-		}
-		if (param.query) {
-			const q = [];
-			for (const n in param.query) {
-				const v = param.query[n];
-				if (Array.isArray(v)) {
-					for (const i of v) {
-						q.push(type_qParam(n, i));
-					}
-				} else {
-					q.push(type_qParam(n, v));
-				}
-			}
-			if (url.indexOf('?') === -1) {
-				url += "?";
-			}
-			url += q.join("&");
-		}
+			return r instanceof Request || r instanceof Response ? r : null;
+		});
+}
+function getFetch(req, r) {
+	if (req.sync.stat !== 0) {
+		clear(req);
+		return;
 	}
+/*
 	if (contentType) {
 		switch (contentType.toUpperCase()) {
 			case "JSON":
@@ -164,53 +69,60 @@ function getFetch(req, url, method, mode, cache, credentials, headers, redirect,
 				fParam.headers["Content-Type"] = contentType;
 			break;
 		}
-	} else if (fParam.body && typeof fParam.body === "object" && !(fParam.body instanceof FormData)) {
+	} else if (typeof fParam.body === "object" && !isFormData) {
 		fParam.headers["Content-Type"] = "application/json";
 		fParam.body = JSON.stringify(fParam.body);
-	}
+	}*/
 	for (const n in defFetchReq) {
 		if (n === "headers") {
 			for (const n in defFetchReq.headers) {
-				if (fParam.headers[n] === undefined) {
-					fParam.headers[n] = defFetchReq.headers[n];
+				if (r.headers[n] === undefined) {
+					r.headers[n] = defFetchReq.headers[n];
 				}
 			}
 			continue;
 		}
-		if (fParam[n] === undefined) {
-			fParam[n] = defFetchReq[n];
+		if (r[n] === undefined) {
+			r[n] = defFetchReq[n];
 		}
 	}
-	return fetch(url, fParam)
-		.then(async res => {
-			req.scope = await getScope(req.$src, req.str);
-			req.scope[resultName] = res;
-			req.scope[errorName] = null;
-			await _getVal(req.$src, req.scope, onLoadName, false);
-			await _getVal(req.$src, req.scope, res.ok && onOkName || onErrorName, false);
-		})
-		.catch(async err => {
-			req.scope = await getScope(req.$src, req.str);
-			req.scope[resultName] = null;
-			req.scope[errorName] = err;
-			const f = await _getVal(req.$src, req.scope, onErrorName, false);
-			if (f === undefined || f) {
-				throw err;
+	return fetch(r)
+		.then(res => getRes(req, res, null))
+		.catch(err => getRes(req, null, err));
+}
+function getRes(req, res, err) {
+	if (req.sync.stat !== 0) {
+		clear(req);
+		return;
+	}
+	req.sync.afterAnimation.add(type_animation(() => req.sync.beforeAnimation.add(type_animation(() => {//это нужно для того что бы избежать ситуации, когда ранее уже был загружен и был сет (который вызывает отмену рендера и очистку текущего)
+		const det = type_fetchDetailEvent(res, err);
+		if (err !== null) {
+			dispatchEvt(req.$src, errorEventName, det);
+			if (self.Tpl_fetchDefGetError) {
+				return self.Tpl_fetchDefGetError(det);
 			}
-		});
+			return;
+		}
+		dispatchEvt(req.$src, loadEventName, det);
+		if (res.ok) {
+			dispatchEvt(req.$src, okEventName, det);
+		}
+	}, req.local, 0)), req.local, 0));
 }
-function type_fParam(method, mode, cache, credentials, headers, redirect, referrer, body) {
+function clear(req) {
+	if (self.Tpl_debugLevel !== 0) {
+		console.info("clear fetch => ", req);
+	}
+	const c = srcBy$src.get(req.$src).cache;
+//	if (c) {
+		c.value = type_cacheValue();//todo тут можно удалять кэш только для дочерних элементов, но так как еще нужно удалить кэш для команд-после, то такой подход оправдан
+		c.current = type_cacheCurrent();
+//	}
+}
+function type_fetchDetailEvent(res, err) {
 	return {
-		method,
-		mode,
-		cache,
-		credentials,
-		headers,
-		redirect,
-		referrer,
-		body
+		[resultDetailName]: res,
+		[errorDetailName]: err
 	};
-}
-function type_qParam(n, v) {
-	return encodeURIComponent(n) + "=" + encodeURIComponent(v);
 }

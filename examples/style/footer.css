@@ -1,0 +1,6 @@
+.f {
+}
+.f > .w {
+	border-top: solid 1px #ccc;
+	padding-left: calc(var(--menu_width) + var(--gap) * 2);
+}

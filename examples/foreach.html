@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
+		<script src="../myweb.js?debug=1" type="module" async="async"></script>
+		<link href="../myweb.css" type="text/css" rel="stylesheet" />
+		<script>
+			if (!self.glob) {
+				glob = {};
+			}
+			const h1 = "foreach command";
+			glob.text = "baa";
+			glob.arr = glob.text.split("");
+		</script>
+		<title>${h1} - myweb</title>
+	</head>
+	<body>
+		<h1>${h1} - example</h1>
+		<section>
+			<h2>String as Array</h2>
+			<fieldset>
+				<label for="text">glob.text</label>
+				<input id="text" type="text"
+					attr.value="glob.text"
+					oninput="glob.text = this.value" />
+			</fieldset>
+			<ul if="glob.text">
+				<li foreach.val.key="glob.text">
+					${key * 1 + 1}) ${val.toUpperCase()}
+				</li>
+			</ul>
+		</section>
+		<section>
+			<h2>Array</h2>
+			<fieldset>
+				<label for="unshift">Unshift to glob.arr</label>
+				<input id="unshift" type="text"
+					oninput="glob.arr.unshift(this.value)" />
+			</fieldset>
+			<fieldset>
+				<label for="push">Push to glob.arr</label>
+				<input id="push" type="text"
+					oninput="glob.arr.push(this.value)" />
+			</fieldset>
+			<ul ___if="glob.arr.length > 0">
+				<li foreach.i="[1, 2]">
+					<ul>
+						<li attr.style="`color: ${glob.color || 'red'}`"
+							foreach.val="glob.arr">
+							${val}
+						</li>
+					</ul>
+				</li>
+			</ul>
+		</section>
+		<!--section>
+			<h2>Chain</h2>
+			<ul if="glob.arr.length > 0">
+				<li foreach.foo.idx="glob.arr"
+					if="isNaN(foo)"
+						foreach.bar="foo + `-bar`"
+							attr.style="`color: ${idx % 2 ? 'red' : 'green'}`">
+							${idx} => ${"bar".toUpperCase()}
+				</li>
+			</ul>
+		</section-->
+	</body>
+</html>

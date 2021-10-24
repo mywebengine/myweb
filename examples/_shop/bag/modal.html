@@ -1,0 +1,8 @@
+﻿<div>
+	<ul :if="data.bag && data.bag.length" class="bag-products">
+		<div :inc.u="../order/listing.html"></div>
+	</ul>
+	<h3 class="price">Order sum: {{data.bag.reduce((sum, p) => sum + p.price * (p.amount || 1), 0)}}</h3>
+	<button onclick="location.hash = `/order`">Get order</button>
+	<button onclick="curWin.close()">Continue shoping</button>
+</div>

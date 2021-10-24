@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
+		<script src="../myweb.js?debug" type="module" async="async"></script>
+		<link href="../myweb.css" type="text/css" rel="stylesheet" />
+		<script>
+			if (!self.data) {
+				data = {};
+			}
+			const h1 = "html command";
+			data.text = "row1<br />\n<b>row2</b>";
+		</script>
+		<title>${h1} - myweb</title>
+	</head>
+	<body>
+		<h1>${h1} - example</h1>
+		<fieldset>
+			<label for="text">data.text</label>
+			<textarea id="text" style="width: 100%; height: 100px;"
+				attr.value="data.text"
+				oninput="data.text = this.value"></textarea>
+		</fieldset>
+		<section>
+			<h2>HTML format</h2>
+			<div html="data.text"></div>
+		</section>
+		<section>
+			<h2>Text format</h2>
+			<div html.t="data.text"></div>
+		</section>
+		<section>
+			<h2>$<span>{...}</span> format</h2>
+			<div>${data.text}</div>
+		</section>
+		<section>
+			<h2>Pre HTML</h2>
+			<pre html="data.text"></pre>
+		</section>
+		<section>
+			<h2>Pre text</h2>
+			<pre html.t="data.text"></pre>
+		</section>
+	</body>
+</html>

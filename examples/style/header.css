@@ -1,0 +1,46 @@
+.h {
+}
+.h > .w {
+	display: grid;
+	grid-template-areas:
+		"logo			menu";
+	grid-template-columns:
+		var(--menu_width)	1fr;
+	gap: var(--gap);
+	padding: var(--gap);
+	align-items: center;
+	border-bottom: solid 1px #ccc;
+}
+.h-logo {
+	grid-area: logo;
+	font-size: 33px;
+	font-family: arial;
+	font-weight: bold;
+	text-decoration: none;
+	letter-spacing: -2px;
+	line-height: 1em;
+	margin-top: -0.2em;
+	color: blue;
+}
+.h-logo a[href], 
+.h-logo a:visited {
+	color: inherit;
+}
+.h-menu {
+	grid-area: menu;
+}
+.h-menu ul {
+	display: flex;
+	gap: var(--gap2);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.h-menu li {
+	padding: 5px;
+}
+.h-menu > ul > li {
+}
+.h-menu a[href] {
+	color: inherit;
+}

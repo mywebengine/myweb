@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
+		<script src="../myweb.js?debug" type="module" async="async"></script>
+		<link href="../myweb.css" type="text/css" rel="stylesheet" />
+		<script>
+			if (!self.data) {
+				data = {};
+			}
+			const h1 = "loc object, routing";
+			data.text = "abcdefg";
+		</script>
+		<title>${h1} - myweb</title>
+	</head>
+	<body>
+		<h1>${h1} - example</h1>
+		<pre>${JSON.stringify(loc, null, 8)}</pre>
+		<section>
+			<h2>Change address</h2>
+			<ul>
+				<li>
+					<a attr.href.push="`/next_page`">Next page</a>
+				</li>
+				<li>
+					<a attr.href.push="`/new_page`">New page</a>
+				</li>
+				<li>
+					<a attr.href.push="`/231__NOT_FOUND__4323452`">Not found page</a>
+				</li>
+			</ul>
+			<ul>
+				<li>
+					<button onclick="history.back()">history.back()</button>
+				</li>
+				<li>
+					<button onclick="history.pushState(undefined, undefined, `/myweb/examples/loc.html`);
+						setLoc(location.href)">Go to loc example page</button>
+				</li>
+				<li>
+					<button onclick="history.forward()">history.forward()</button>
+				</li>
+			</ul>
+		</section>
+		<section>
+			<h2>Content</h2>
+			<div style="padding: 20px; background: #eee">
+				<link if="loc.name === `myweb`"
+					inc="`/myweb/examples/loc/main.html`" />
+				<link else=""
+					inc="`/myweb/examples/loc/${loc.name}.html`"
+					data-error-url="`/myweb/examples/loc/404.html`"
+
+
+					inc="fetch(`/myweb/examples/loc/${loc.name}.html`)
+						.then(res => res.ok ? res : fetch(`/myweb/examples/loc${res.status}.html`))"
+					
+					inc="`/myweb/examples/loc/${loc.name}.html`"
+					exec.is-show404="false"
+					on.error="isShow404 = evt.detail.inc.status === 404"
+					inc...404="isShow404 && `/myweb/examples/loc/404.html`" />
+			</div>
+		</section>
+	</body>
+</html>

@@ -1,0 +1,22 @@
+﻿<div style="background: red; color: #fff;"
+	on.mount="onMount(this, evt)">
+	<div inc.u="inc0.html"
+		attr.data-name="this.parentNode.dataset.name"></div>
+	<p exeс="aaa()">Include #1</p>
+	<slot name="slot1"></slot>
+</div>
+<script type="module">
+	export function aaa() {
+		console.log("aaa");
+	}
+	export const bbbVal = 11;
+	export default function bbb() {
+		console.log("bbb", bbbVal);
+	}
+	export function onMount($e, evt) {
+		if ($e !== evt.target) {
+			return;
+		}
+		console.log("inc 1 mount", evt);
+	}
+</script>

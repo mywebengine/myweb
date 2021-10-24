@@ -87,7 +87,7 @@ function isIn($r, $e) {
 	if ($r === $e) {
 		return true;
 	}
-	for ($e = $e.firstChild; $e; $e = $e.nextSibling) {
+	for ($e = $e.firstChild; $e !== null; $e = $e.nextSibling) {
 		if ($e.nodeType === 1 && isIn($r, $e)) {
 			return true;
 		}

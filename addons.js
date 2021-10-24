@@ -1,5 +1,3 @@
-//const dRe = /\d/g;
-const DRe = /\D/g;
 /*
 export function getLocalNumber(val, fmt) {
 	if (!val || typeof(val) !== "string") {
@@ -33,67 +31,7 @@ export function formatFunc(val, fmt) {
 //		useGrouping: false
 	});
 }*/
-
-function hideEnum(obj, pName) {
-	Object.defineProperty(obj, pName, {
-		enumerable: false
-	});
-}
-
-if (!String.prototype.q) {
-	const aRe = /`/g;
-	const qRe = /'/g;
-	const qqRe = /'/g;
-	String.prototype.a = function() {
-		return this.replace(aRe, '\\`');
-	}
-	String.prototype.q = function() {
-		return this.replace(qRe, "\\'");
-	}
-	String.prototype.qq = function() {
-		return this.replace(qqRe, '\\"');
-	}
-	for (const n of ["a", "q", "qq"]) {
-		Number.prototype[n] = function() {
-			return this.toString().qq();
-		}
-		for (const o of [String.prototype, Number.prototype]) {
-			hideEnum(o, n);
-		}
-	}
-/*
-	self.LocaleNumber = function(n) {
-		if (!this) {
-			return new self.LocaleNumber(n);
-		}
-		this.value = n;
-	}
-	self.LocaleNumber.prototype = {
-		valueOf() {
-			return Number(this.value);
-		},
-		toString() {
-			return Number(this.value).toLocaleString();
-		}
-	};*/
-
-//	String._locale = "en-Us";
-	String.localeDotSymbol = (0.1).toLocaleString(String._locale).indexOf(".") === -1 ? "," : ".";
-	String.prototype.toNumber = function() {
-		const dotIdx = this.lastIndexOf(String.localeDotSymbol);
-		return Number(dotIdx === -1 ? this.replace(DRe, "") : this.substr(0, dotIdx).replace(DRe, "")  + "." + this.substr(dotIdx + 1));
-	}
-	hideEnum(String.prototype, "toNumber");
-
-	String.prototype.json = function() {
-		try {
-			return JSON.parse(this);
-		} catch(err) {
-			console.error(err);
-		}
-	}
-	hideEnum(String.prototype, "json");
-
+if (!String.prototype.copyToClipboard) {
 	String.prototype.copyToClipboard = function() {
 		const $f = document.createElement("input");
 		$f.type = "text";
@@ -102,21 +40,15 @@ if (!String.prototype.q) {
 		$f.style.position = "absolute";
 		$f.style.left = "-1000px";
 		document.body.appendChild($f);
-		$f.select();
-/*
-		const range = document.createRange();
-		range.selectNodeContents($f);
-		const sel = self.getSelection();
-		sel.removeAllRanges();
-		sel.addRange(range);*/
-
+//		$f.select();
+		$f.focus();
 		$f.setSelectionRange(0, this.length);//<- hz - maybe safari???
-
 		document.execCommand("copy");
-//		$f.parentNode.removeChild($f);
+		$f.parentNode.removeChild($f);
 	}
 	hideEnum(String.prototype, "copyToClipboard");
 }
+/*
 if (!FormData.prototype.toJSON) {
 	FormData.prototype.toJSON = function() {
 		const obj = {};
@@ -140,12 +72,17 @@ if (!HTMLFormElement.prototype.toJSON) {
 		return obj;
 	}
 //	hideEnum(HTMLFormElement.prototype, "toJSON");
+}*/
+function hideEnum(obj, pName) {
+	Object.defineProperty(obj, pName, {
+		enumerable: false
+	});
 }
-//!!удалить когда наступит момент
+//todo удалить когда наступит момент
 if (!self.requestIdleCallback) {
 	self.requestIdleCallback = function(f) {
 		const startTime = Date.now();
-		return setTimeout(function() {
+		return setTimeout(() => {
 			f({
 				didTimeout: false,
 				timeRemaining() {

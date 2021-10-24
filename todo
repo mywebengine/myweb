@@ -1,4 +1,24 @@
-﻿2) _for _for
+﻿https://vuejs.org/v2/guide/events.html
+
+0)!!! заменить передачу attr в renderTag getScope ... на str - перенести логику по СТР из ГЕРСКОПА в РЕНДЕРТАГ 
+-- сейчас мы для ренджера готовим скоп и атрибуты, а надо будет сделать что мы готовим скоп родителя и передаем стр - после чего дополняем скоп
+
+0) <div id="_mw10" _if="true"></div>???
+- сделать без id запонить по объекту элемента
+
+0) foreach _inc, _inc.url
+	- создает новые структуру не одинаковую для всех элементов
+        - может бытьь это и норм, нужно понять зачем сейчас нужно понимание того что теги одного описания в цикле
+        - одно и то же описание позволяет сократить время обработки команты (атрибутов)
+        ->>> на крайней случай можно запретить ИНК в нутри фора
+
+01) для команды _on в случая когда <div _on_input="..." _inc="..." - сделать так, что бы addEvent был назначен после вставки
+02) 	<link _inc.u="../MySNT/list.html" slot="main" />
+	222<link _inc.u="../page/vip.html" slot="main" />11
+
+	-- исчезают 222 и 111
+
+2) _for _for
 
 3) _if _for
 		_if _for
@@ -14,6 +34,17 @@
 
 7) inc default slot
 
-8) fetch watch реагирует на изменение результата, т.е если результат был undef и 
 
-9) linkers
+
+8) <div _inc.u="/ctrl/edit.htm" _if - если удалить if то непонятно выводится ошибка
+					data-id="email"
+					data-_label="locale.sboFiatForm.email"
+					data-_value="self.data.user?.email"
+					data-placeholder="info@gmail.com"
+					data-type="email"
+					data-required=""></div>
+				<input _else="" type="hidden" name="email" _attr.value="self.data.user.email" />
+
+
+9) inc:112 	if (req.$src.dataset[cmdPref + "errorUrl"] === undefined) {
+10) dispatchEvent on <template> - dont work

@@ -1,9 +1,8 @@
-﻿import {cache, type_cacheValue, type_cacheCurrent} from "./cache.js";
-import {Tpl_$src, p_srcId, p_descrId, p_isCmd, p_target, dataVarName, cmdVarName} from "./config.js";
-import {$srcById, descrById, getNewId} from "./descr.js";
-import {getIdx, getTopLocal} from "./dom.js";
 import {renderBySrcIdSet} from "./render/algo.js";
-import {reqCmd} from "./req.js";
+import {type_cacheValue} from "./cache.js";
+import {Tpl_$src, p_target} from "./config.js";
+import {$srcById, srcById, srcBy$src, descrById, getNewId, get$els} from "./descr.js";
+import {getIdx/*--, getTopLocal*/} from "./dom.js";
 import {oset} from "./util.js";
 
 export const varIdByVar = new Map();
@@ -31,7 +30,7 @@ self.aa = function() {
 				for (const pId of varIdByVarIdByProp[vvId].values()) {
 					if (pId === vId) {
 						for (const sId of srcIdSet) {
-							if (!$srcById[sId]) {
+							if (!$srcById.has(sId)) {
 								console.log(111222, vId, sId);
 							}
 						}
@@ -48,7 +47,7 @@ self.aa = function() {
 			}
 		} else {
 			for (const sId of srcIdSet) {
-				if (!$srcById[sId]) {
+				if (!$srcById.has(sId)) {
 					console.log(11111, vId, sId);
 				}
 			}
@@ -60,7 +59,7 @@ self.aa = function() {
 			continue;
 		}
 		for (const sId of s) {
-			if (!$srcById[sId]) {
+			if (!$srcById.has(sId)) {
 				console.log(1, sId);
 			}
 		}
@@ -71,7 +70,7 @@ self.aa = function() {
 				if (propS) {// && propS.has(sId)) {
 //					_del(pId, propS, sId);//, d, dId);
 					for (const sId of propS) {
-						if (!$srcById[sId]) {
+						if (!$srcById.has(sId)) {
 							console.log(2, sId);
 						}
 					}
@@ -101,23 +100,14 @@ export let cur$src;
 export function setCur$src($src) {
 	cur$src = $src;
 }
-let isScoping;
-export function setIsScoping(f) {
-	isScoping = f;
-}
-export let proxyStat = 1;
-export function setProxyStat(stat) {
-	proxyStat = stat;
-}
-export let proxySetInSet = [];
-export function setProxySetInSet(v) {
-	proxySetInSet = v;
-}
+export const proxyStat = {
+	value: 1
+};
 
 export function getProxy(v) {
 	if (typeof v === "object" && v !== null) {
 		const t = v[p_target];
-		if (t || t === null) {
+		if (t || t === null) {//null to skiped objects
 			return v;
 		}
 	} else {
@@ -133,7 +123,10 @@ export function getProxy(v) {
 	}
 //todo Sen and Map || not todo
 	for (const i in v) {
-		v[i] = getProxy(v[i]);
+		const val = v[i];
+		if (typeof val === "object" && val !== null && val !== v && Object.getOwnPropertyDescriptor(v, i)?.writable) {
+			v[i] = getProxy(val);
+		}
 	}
 	return new Proxy(v, proxyHandler);
 }
@@ -145,15 +138,18 @@ const proxyHandler = {
 //if (n == "then") {
 //console.error("get", t, n, t[n], cur$src, typeof t[n] === "object");
 //}
-		if (proxyStat === 0) {
-			proxyStat = 1;
+		if (proxyStat.value === 0) {
+			proxyStat.value = 1;
 		}
 		if (n === p_target) {
 			return t;
 		}
-		const v = t[n];
-		if (cur$src && !isSkipValueType[typeof v] && !isSkipNameType[typeof n]) {
+		const v = t[n],
+			type = typeof v;
+		if (cur$src && !isSkipValueType[type] && !isSkipNameType[typeof n]) {
 			addVar(t, n, getTarget(v), cur$src);
+//???		} else if (type === "function") {
+//			return v.bind(t);
 		}
 		return v;
 	},
@@ -161,68 +157,71 @@ const proxyHandler = {
 //console.log('set', n, v, "old=>", t[n]);//, Object.getOwnPropertyDescriptor(t, n) && Object.getOwnPropertyDescriptor(t, n).value);
 		if (Array.isArray(t) && n === "length") {
 			const oVal = t[n];
-			if (v !== oVal && !Reflect.set(t, n, v)) {//todo проверить: push и ... изменяю длину в фоне - это условие не сработает, а вот splice на удаление вроде бы выдает разные значения
-				return false;
-			}
+			t[n] = v;
+//			if (v !== oVal && !Reflect.set(t, n, v)) {//todo проверить: push и ... изменяю длину в фоне - это условие не сработает, а вот splice на удаление вроде бы выдает разные значения
+//				return false;
+//			}
 			setVal(t, n, v, oVal);
 			return true;
-//			t[n] = v;
-//			setVal(t, n, v, oVal);
-//			return true;
 		}
 		const vTarget = getTarget(v);
 		if (n in t) {
 			const oldVTarget = getTarget(t[n]);
+//связоно с тем что обновить элемент стоит даже если значение такое же та как он может быть изменен как то оначе например через this.value = 1111
 			if (vTarget === oldVTarget) {
 				return true;
 			}
-			if (Reflect.set(t, n, getProxy(v))) {
+			t[n] = getProxy(v);
+//			if (Reflect.set(t, n, getProxy(v))) {
 				setVal(t, n, vTarget, oldVTarget);
 				return true;
-			}
-			return false;
-//			t[n] = getProxy(v);
-//			setVal(t, n, vTarget, oldVTarget);
-//			return true;
+//			}
+//			return false;
 		}
-		if (Reflect.set(t, n, getProxy(v))) {
+		t[n] = getProxy(v);
+//		if (Reflect.set(t, n, getProxy(v))) {
 			setVal(t, n, vTarget, undefined);
 			return true;
-		}
-		return false;
-//		t[n] = getProxy(v);
-//		setVal(t, n, vTarget, undefined);
-//		return true;
+//		}
+//		return false;
 	},
 	deleteProperty(t, n) {
 		const oldV = getTarget(t[n]);
 //console.log('del', t, n, "old=>", oldV);
-//		if (n in t) {
-			if (Reflect.deleteProperty(t, n)) {
-//console.log(1, t, n);
+		if (n in t) {
+			delete t[n];
+//			if (Reflect.deleteProperty(t, n)) {
 				setVal(t, n, undefined, oldV);
 				return true;
-			}
-			return false;
-//			delete t[n];
-//			setVal(t, n, undefined, getTarget(t[n]));
-//		}
-//		return true;
+//			}
+//			return false;
+		}
+//console.log('del skip', t, n, "old=>", oldV);
+		return true;
 	}
 };
+//todo
+self.getProxy = getProxy;
+self.proxyHandler = proxyHandler;
+
 const unshiftHandler = {
 	apply(t, thisValue, args) {
 		getTarget(thisValue)[_isUnshift] = true;
-		Reflect.apply(t, thisValue, args);
-//		t.apply(thisValue, args);
+		t.apply(thisValue, args);
+//		Reflect.apply(t, thisValue, args);
 	}
 };
-export function addVar(t, n, v, $src) {
-//console.log("addVar", n, v, t, $src, $src[p_srcId]);
-//	gc();
+//export 
+function addVar(t, n, v, $src) {
 	const tId = varIdByVar.get(t),
-		sId = $src[p_srcId],
-		d = descrById.get($src[p_descrId]);
+		src = srcBy$src.get($src),
+		sId = src.id,
+		descr = src.descr;
+//	if (!sId) {
+//		console.warn("2323 всё норм, но нужно последить - сейчас такое бываес с _loading -> _inc");
+//debugger;
+//		return;
+//	}
 	if (isScalarType[typeof v] || v === null) {
 		if (Array.isArray(t) && !isNaN(n)) {
 			n = Number(n);
@@ -236,14 +235,14 @@ export function addVar(t, n, v, $src) {
 //console.log(1, tId);
 			}
 //1
-			d.varIdSet.add(tId);
+			descr.varIdSet.add(tId);
 
 			const vIdByProp = varIdByVarIdByProp[tId];
 			if (vIdByProp) {
 				const propId = vIdByProp.get(n);
 				if (propId) {
 //1
-					d.varIdSet.add(propId);//<--100%
+					descr.varIdSet.add(propId);//<--100%
 
 					const s = srcIdSetByVarId.get(propId);
 					if (s) {
@@ -259,7 +258,7 @@ export function addVar(t, n, v, $src) {
 				srcIdSetByVarId.set(newPropId, new Set([sId]));
 //console.log(3, newPropId);
 //1
-				d.varIdSet.add(newPropId);
+				descr.varIdSet.add(newPropId);
 				return;
 			}
 			const newPropId = getNewId();
@@ -267,7 +266,7 @@ export function addVar(t, n, v, $src) {
 			srcIdSetByVarId.set(newPropId, new Set([sId]));
 //console.log(4, newPropId);
 //1
-			d.varIdSet.add(newPropId);
+			descr.varIdSet.add(newPropId);
 			return;
 		}
 		const nId = getNewId();
@@ -276,14 +275,14 @@ export function addVar(t, n, v, $src) {
 		srcIdSetByVarId.set(nId, new Set([sId]));
 //console.log(5, nId);
 //1
-		d.varIdSet.add(nId);
+		descr.varIdSet.add(nId);
 
 		const newPropId = getNewId();
 		varIdByVarIdByProp[nId] = new Map([[n, newPropId]]);
 		srcIdSetByVarId.set(newPropId, new Set([sId]));
 //console.log(6, newPropId, t, n, v, $src);
 //1
-		d.varIdSet.add(newPropId);
+		descr.varIdSet.add(newPropId);
 		return;
 	}
 	if (tId) {
@@ -295,7 +294,7 @@ export function addVar(t, n, v, $src) {
 //console.log(7, tId);
 		}
 //1
-		d.varIdSet.add(tId);
+		descr.varIdSet.add(tId);
 	} else {
 		const nId = getNewId();
 		varIdByVar.set(t, nId);
@@ -303,7 +302,7 @@ export function addVar(t, n, v, $src) {
 		srcIdSetByVarId.set(nId, new Set([sId]));
 //console.log(8, sId);
 //1
-		d.varIdSet.add(nId);
+		descr.varIdSet.add(nId);
 	}
 	const vId = varIdByVar.get(v);
 	if (vId) {
@@ -315,7 +314,7 @@ export function addVar(t, n, v, $src) {
 //console.log(9, sId);
 		}
 //1
-		d.varIdSet.add(vId);
+		descr.varIdSet.add(vId);
 		return;
 	}
 	const newValId = getNewId();
@@ -324,11 +323,11 @@ export function addVar(t, n, v, $src) {
 	srcIdSetByVarId.set(newValId, new Set([sId]));
 //console.log(10, sId);
 //1
-	d.varIdSet.add(newValId);
+	descr.varIdSet.add(newValId);
 }
 function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); - если так сделалть, то после первого - будут удалены varIdByVar.get(oldId), что приведет к тому что все пойдет по ветке !oldId - непонятно нужно ли что-то с этим делать??
 	const tId = varIdByVar.get(t);
-//console.info('setVar', "name=>", n, "\nvalue=>", v, "\ntarget=>", t, "\ntId=>", tId, "\noldVal=>", oldV);
+//console.info('setVar', "name=>", n, "\nvalue=>", v, "\ntarget=>", t, "\ntId=>", tId, "\noldVal=>", oldV, t[_isUnshift]);
 	if (!tId) {//!tId - такое получается когда данные изменяются, а отрисовки ещё небыло - первая загрузка странцы и добавление данных на старте - это корректно
 		return;
 	}
@@ -336,9 +335,11 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 		n = Number(n);
 	}
 	const vIdByProp = varIdByVarIdByProp[tId],
-		oldScalarId = vIdByProp && vIdByProp.get(n) || 0,
-		oId = oldScalarId || varIdByVar.get(oldV) || 0;
-//console.error('setVar', tId, oId, oldScalarId, n, t);
+		oldScalarId = vIdByProp ? vIdByProp.get(n) : 0,
+		oId = oldScalarId ? varIdByVar.get(oldV) : 0;
+	if (self.Tpl_debugLevel === 2) {
+		console.info("Tpl_proxy => setVar", "\n\tname=>", n, "\n\tvalue=>", v, "\n\toldVal=>", oldV, "\n\ttId=>", tId, "\n\ttarget=>", t, "\n\toldId=>", oId, "\n\toldScalarId=>", oldScalarId);
+	}
 	if (t[_isUnshift]) {
 		if (n === "length") {
 			_setVal(t, n, oldV, srcIdSetByVarId.get(tId), oId);
@@ -348,9 +349,25 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 	}
 //console.error('setVar', n, v, tId, oId, oldV, oldScalarId, cur$src);
 	if (cur$src) {
-//		proxyStat = 2;
-		proxySetInSet.push(type_proxySetInSet(t, n, v, cur$src));
+//		proxyStat.value = 2;
+		addVar(t, n, v, cur$src);
 	}
+/*!!нет в этом смысла
+	if (!oId) {//если в разметке нет этого свойства, а оно используется в расчётах - для того чтобы на следующем круге понять что оно уже использовалось и не нужно чистить кэш по условию !oId
+		if (isScalarType[typeof v] || v === null) {
+			const newPropId = getNewId();
+			if (vIdByProp) {
+				vIdByProp.set(n, newPropId);
+			} else {
+				varIdByVarIdByProp[tId] = new Map([[n, newPropId]]);
+			}
+		} else {
+			const newId = getNewId();
+			varIdByVar.set(v, newId);
+			varById[newId] = v;
+		}
+	}*/
+/*--
 	if (!oId) {
 		const s = srcIdSetByVarId.get(tId);//для push - нового элемента нет, а обновить надо - это актуально когда нет if .length
 		if (s) {
@@ -362,145 +379,244 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 			renderBySrcIdSet(s);
 		}
 		return;
-	}
-	if (oldScalarId && !isScalarType[typeof v] || v === null) {//это нужно для того: Изначально data.filter в proxy.get (при рендере) установится как скаляр (=undef), - если новое значение объект, то нужно удалить ид из свойств
+	}*/
+	if (oldScalarId && !isScalarType[typeof v] && v !== null) {//это нужно для того: Изначально data.filter в proxy.get (при рендере) установится как скаляр (undef), - если новое значение объект, то нужно удалить ид из свойств
 		vIdByProp.delete(n);
 //!!todo GC
-		if (!vIdByProp.size) {
+		if (vIdByProp.size === 0) {
 			delete varIdByVarIdByProp[tId];
 		}
 	}
-	_setVal(t, n, oldV, srcIdSetByVarId.get(oId), oId, oldScalarId);
+	_setVal(t, n, oldV, srcIdSetByVarId.get(oId || tId), oId);
 }
-function _setVal(t, n, oldV, s, oId, oldScalarId) {
+function _setVal(t, n, oldV, s, oId) {
 	if (!s) {
 //!!todo
-console.error("!S!", t, n, oldV, s, oId, oldScalarId);
+//console.error("!S!", t, n, oldV, s, oId);
 //alert(1);
 		return;
 	}
+//console.error("_setVal", t, n, oldV, s, oId);
 	const toRender = new Set(s),
-		vSet = new Set(s);
+		toClear = new Set();//s);
 	for (const sId of s) {
-		const $i = $srcById[sId];
-		if (!$i) {//похоже это при удалении элементов
+		const $i = $srcById.get(sId);
+		if (!$i || toClear.has(sId)) {//похоже это при удалении элементов
 //			console.warn(2, sId);
 			continue;
 		}
-		setInnerSrcIdSetBy$src(vSet, $i);
+/*2021-06-16 - ниже проще
+		setInnerSrcIdSetBy$src(toClear, $i);
 		const d = descrById.get($i[p_descrId]);
 		if (!d.isAsOne) {
 			continue;
 		}
 		for (const str of d.attr.keys()) {
-			if (reqCmd[str].cmd.isAsOne) {
-				const idx = getIdx($i, str);
-				for (let $j = $i.nextSibling; $j; $j = $j.nextSibling) {
-//					if ($j.nodeType === 1) {
-					if ($j[p_isCmd]) {
-						if (getIdx($j, str) !== idx) {
-							break;
-						}
-						vSet.add($j[p_srcId]);
-						setInnerSrcIdSetBy$src(vSet, $j);
+			if (!reqCmd[str].cmd.isAsOne) {
+				continue;
+			}
+			const idx = getIdx($i, str);
+console.log(idx, d);
+			for (let $j = $i.nextSibling; $j !== null; $j = $j.nextSibling) {
+console.log(1, $j);
+//				if ($j.nodeType === 1) {
+				if ($j[p_isCmd]) {
+					if (getIdx($j, str) !== idx) {
+console.log(11, $j);
+						break;
+					}
+					toClear.add($j[p_srcId]);
+					setInnerSrcIdSetBy$src(toClear, $j);
+				}
+			}
+			break;
+		}*/
+/*
+//2021-06-18
+		const d = descrById.get($i[p_descrId]);
+		if (!d.isAsOne) {
+			setInnerSrcIdSetBy$src(toClear, $i);
+			continue;
+		}
+console.log(1111, d.srcIdSet, n, t[n], s);
+//if (t[n] === undefined) {
+//	debugger;
+//}
+		for (const sId of d.srcIdSet) {
+			if (!toClear.has(sId)) {
+				toClear.add(sId);
+console.log(1, sId, $srcById[sId]);
+				setInnerSrcIdSetBy$src(toClear, $srcById[sId]);
+			}
+		}*/
+//2021-07-20 - data.arr[2] = 1111 - не очитит data.arr, но и не нужно - так как в кэше ссылка на arr
+		const iDescr = srcBy$src.get($i).descr;
+		if (iDescr.asOneSet === null) {
+			toClear.add(sId);
+			setInnerSrcIdSetBy$src(toClear, $i);
+			continue;
+		}
+		const $els = get$els($i, iDescr.get$elsByStr, "");
+		for (let j = $els.length - 1; j > -1; j--) {
+			const $j = $els[j],
+				jSrc = srcBy$src.get($j);
+			if (jSrc === undefined) {
+				continue;
+			}
+			toClear.add(jSrc.id);
+			setInnerSrcIdSetBy$src(toClear, $j);
+		}
+//todo--
+/*
+		const attrIt = descr.attr.keys();
+		for (let i = attrIt.next(); !i.done; i = attrIt.next()) {
+			const str = i.value;
+			if (!reqCmd[str].cmd.isAsOne) {
+				continue;
+			}
+			const idx = getIdx(src, str);
+//todo leto zima local
+//!! в случаи когда обновление прилось только на один элемент (это что-то типа _for="f ? arr1 : arr2"), сейчас очищаем кэш для всех элементов, только в случаи когда обновление пришлось на нулевой элемент (когда все нули) - этобедет коректно работать если _for* будет добавлять новые элементы в конец (сецчас это так - и должно остаться так, по пичине отложенного рендера в скроле)
+// - это не совсем то что хочется, но работать будет, всё из-за _for="f ? arr1 : arr2", когда меням f
+// --- это не так работает, сейчас когда вычислялся  фор - привязка идет тольтко к базовому элементу, все остальные не привязаны в выражению у фор
+			if (idx === 0) {
+				let isFirst = true;
+				for (i = attrIt.next(); !i.done; i = attrIt.next()) {
+					if (reqCmd[i.value].cmd.isAsOne && getIdx(src, i.value) !== 0) {
+						isFirst = false;
+						break;
 					}
 				}
-				break;
-			}
-		}
-	}
-	if (isScoping) {
-		return;
-	}
-	if (oId) {
-		const deletedVarId = new Set();
-		for (const sId of vSet) {
-			const c = cache[sId];
-			if (c) {
-				c.value = type_cacheValue();
-//console.log(sId, n, oId, cache[sId].value);
-/*todo
-				if (!t[_isUnshift]) {
-					c.current = type_cacheCurrent();
-console.log(11111111, sId);
-				}*/
-				decVar(t, n, oldV, sId, oId, deletedVarId);
-			}
-		}
-		if (deletedVarId.size) {
-			requestIdleCallback(() => {
-				for (const vId of deletedVarId) {
-					for (const d of descrById.values()) {
-						if (d.varIdSet && d.varIdSet.has(vId)) {
-							d.varIdSet.delete(vId);
+				if (isFirst) {
+					for (const iId of descr.srcIdSet) {//можно взять все на этом уровне по фыЩтуШвч
+						if (iId !== sId) {
+							toClear.add(iId);
+							setInnerSrcIdSetBy$src(toClear, $srcById[iId]);
 						}
+					}
+					continue;
+				}
+			}
+//--			setInnerSrcIdSetBy$src(toClear, $i);
+			for (let $j = $i.nextSibling; $j !== null; $j = $j.nextSibling) {
+//				if ($j.nodeType === 1) {
+				const jSrc = srcBy$src.get($j);
+				if (jSrc !== undefined && jSrc.isCmd) {
+					if (getIdx(jSrc, str) !== idx) {
+						break;
+					}
+					toClear.add(jSrc.id);
+					setInnerSrcIdSetBy$src(toClear, $j);
+				}
+			}
+			break;
+		}*/
+	}
+//console.log(1, toClear, n);
+/*
+for (const sId of toClear) {
+	console.log(2, sId, $srcById[sId]);
+}*/
+	if (oId !== 0) {
+		const deletedVarId = new Set();
+		for (const sId of toClear) {
+			const c = srcById.get(sId).cache;
+			if (c === null) {
+				continue;
+			}
+			c.value = type_cacheValue();
+/*todo
+			if (!t[_isUnshift]) {
+				c.current = type_cacheCurrent();
+console.log(11111111, sId);
+			}*/
+			decVar(t, n, oldV, sId, oId, deletedVarId);
+		}
+		if (deletedVarId.size !== 0) {
+//todo
+			requestIdleCallback(() => {
+				for (const d of descrById.values()) {
+					if (d.varIdSet === null) {
+						continue;
+					}
+					for (const vId of deletedVarId) {
+//						if (d.varIdSet.has(vId)) {
+							d.varIdSet.delete(vId);
+//						}
 					}
 				}
 			});
 		}
 	} else {
-		for (const sId of vSet) {
-			const c = cache[sId];
-			if (c) {
-				c.value = type_cacheValue();
-				c.current = type_cacheCurrent();
-//--				decVar(t, n, oldV, sId, oId);
+//console.log(1111, n, oldV);
+		for (const sId of toClear) {
+			const c = srcById.get(sId).cache;
+			if (c === null) {
+				continue;
 			}
+			c.value = type_cacheValue();//<-если это новый элемент массива
+//todo c.current нужен для храниения текущего значения команды, удаляя его мы нарушаем идею его использования
+//			c.current = type_cacheCurrent();
+//--			decVar(t, n, oldV, sId, oId);
 		}
 	}
+//console.error("renderBySrcIdSet => ", t, n, t[n], oldV, toRender, cur$src);
 	renderBySrcIdSet(toRender);
 }
-function setInnerSrcIdSetBy$src(vSet, $i) {
+function setInnerSrcIdSetBy$src(toClear, $i) {
 	const $parent = $i.parentNode;
 	do {
-		if ($i[p_isCmd]) {
-			vSet.add($i[p_srcId]);
+//		if ($i[p_isCmd]) {
+//			toClear.add($i[p_srcId]);
+		const iSrc = srcBy$src.get($i);
+		if (iSrc !== undefined) {
+			toClear.add(iSrc.id);
 		}
-		if ($i.firstChild) {
+//////////////////////
+		if ($i.firstChild !== null) {
 			$i = $i.firstChild;
 			continue;
 		}
 		if ($i.parentNode === $parent) {
 			break;
 		}
-		if ($i.nextSibling) {
+		if ($i.nextSibling !== null) {
 			$i = $i.nextSibling;
 			continue;
 		}
-		while ($i = $i.parentNode) {
+//		while ($i = $i.parentNode) {
+		do {
+			$i = $i.parentNode;
 			if ($i.parentNode === $parent) {
 				$i = null;
 				break;
 			}
-			if ($i.nextSibling) {
+			if ($i.nextSibling !== null) {
 				$i = $i.nextSibling;
 				break;
 			}
-		}
+		} while (true);
 	} while ($i);
 }
 function decVar(t, n, v, sId, vId, deletedVarId) {
-	if (!vId) {
+	if (vId === 0) {
 		if (isScalarType[typeof v] || v === null) {
 			const vIdByProp = varIdByVarIdByProp[varIdByVar.get(t)];
 			if (vIdByProp) {
-				vId = vIdByProp.get(n);
+				vId = vIdByProp.get(n) || 0;
 			}
 		} else {
-			vId = varIdByVar.get(v);
+			vId = varIdByVar.get(v) || 0;
 		}
 	}
-	if (vId) {
+	if (vId !== 0) {
 		const s = srcIdSetByVarId.get(vId);
 		if (!s || !s.has(sId)) {
 			delVar(vId, v, t, n, deletedVarId);
 			return;
 		}
 		s.delete(sId);
-//if (sId == 26) {
-//console.log(222222, vId, t, n, v, sId);
-//}
-		if (!s.size) {
+		if (s.size === 0) {
 			delVar(vId, v, t, n, deletedVarId);
 		}
 	}
@@ -527,13 +643,13 @@ function delVar(vId, v, t, n, deletedVarId) {
 		const vIdByProp = varIdByVarIdByProp[vId = varIdByVar.get(t)];
 		if (vIdByProp) {
 			vIdByProp.delete(n);
-			if (!vIdByProp.size) {
+			if (vIdByProp.size === 0) {
 				delete varIdByVarIdByProp[vId];
 			}
 		}
 		return;
 	}
-	//пробегать по свойствам объекта и удалять их - не нужно, так как свойства могут быть (объекты и скаляры) использоваться гденибудь
+	//пробегать по свойствам объекта и удалять их - не нужно, так как свойства могут быть (объекты и скаляры) использоваться где-нибудь ещё
 	varIdByVar.delete(v);
 	delete varById[vId];
 //!!	delete varIdByVarIdByProp[vId];
@@ -546,97 +662,4 @@ function delVar(vId, v, t, n, deletedVarId) {
 			srcIdSetByVarId.delete(pId);
 		}
 	}
-}
-function type_proxySetInSet(t, n, v, $src) {
-	return {
-		t,
-		n,
-		v,
-		$src
-	};
-}
-
-export function getLocalScopeProxyHandler($e, str, propName) {
-	return {
-		get(t, n) {
-			const v = t[n];
-//console.error("inc get", t, n, t[n], !!(v || n in t[p_target]), $e, str);
-			if (v || n in t) {
-				return v;
-			}
-//console.log("scope.js", n, str, $e);
-			do {
-				const l = getTopLocal($e, str);
-				if (!l) {
-					break;
-				}
-				const lD = self.localScope[l.id][propName];//,
-//					lV = lD[n];
-//				if (lV) {
-//					return lV; 
-//				}
-				if (n in lD) {
-					return lD[n];
-				}
-				$e = l.$src.parentNode;
-				if (!$e || $e.nodeType === 11) {
-					$e = $srcById[descrById.get(l.$src[p_descrId]).sId].parentNode;
-				}
-			} while ($e !== Tpl_$src);
-//console.log(777, t, n, $e, str, propName);
-			if (self[propName]) {
-				return self[propName][n];
-			}
-		},
-		set(t, n, v) {
-//console.log(1, n, t);
-			if (n in t) {
-//console.log(2, n, t, t[n]);
-				return Reflect.set(t, n, v);
-			}
-			do {
-				const l = getTopLocal($e, str);
-				if (!l) {
-					break;
-				}
-				const lD = self.localScope[l.id][propName];
-				if (n in lD) {
-					return Reflect.set(lD, n, v);
-				}
-				$e = l.$src.parentNode;
-				if (!$e || $e.nodeType === 11) {
-					$e = $srcById[descrById.get(l.$src[p_descrId]).sId].parentNode;
-				}
-			} while ($e !== Tpl_$src);
-			if (self[propName] && n in self[propName]) {
-//console.log(4, n, t);
-				return Reflect.set(self[propName], n, v);
-			}
-			return Reflect.set(t, n, v);
-		},
-		deleteProperty(t, n) {
-			if (n in t) {
-				return Reflect.deleteProperty(t, n);
-			}
-			do {
-				const l = getTopLocal($e, str);
-				if (!l) {
-					break;
-				}
-				const lD = self.localScope[l.id][propName];
-				if (n in lD) {
-					return Reflect.deleteProperty(lD, n);
-				}
-				$e = l.$src.parentNode;
-				if (!$e || $e.nodeType === 11) {
-					$e = $srcById[descrById.get(l.$src[p_descrId]).sId].parentNode;
-				}
-			} while ($e !== Tpl_$src);
-			if (self[propName] && n in self[propName]) {
-				return Reflect.deleteProperty(self[propName], n);
-			}
-//console.log(11, t, n);
-			return Reflect.deleteProperty(t, n);
-		}
-	};
 }

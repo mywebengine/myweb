@@ -1,75 +1,19 @@
-﻿import {p_srcId, cmdPref, isAsyncTask, isAsyncAnimation, defTaskOpt} from "./config.js";
-import {eval2} from "./eval2.js";
-import {type_req} from "./req.js";
+﻿//import {type_req/*, type_animation*/} from "./render/render.js";
+import {/*, cmdPref, */isFillingName, isFillingDiv, defEventInit} from "./config.js";
+import {srcBy$src} from "./descr.js";
+import {is$hide} from "./dom.js";
+import {getProxy} from "./proxy.js";
 
-export const spaceRe = /\s+/g;
+//--todo
+//export const spaceRe = /\s+/g;
 
-export const addTask = (() => {
-	if (isAsyncTask) {
-		return function(f, sync, opt) {
-			return new Promise(resolve => {
-				requestIdleCallback(() => {
-					resolve(f());
-				}, opt || defTaskOpt);
-			});
-/*
-			if (!opt.deadline) {
-				return sync.tasks.push(requestIdleCallback(f, opt));
-			}
-			return sync.tasks.push(requestIdleCallback(() => {
-				if (Date.now() < o.deadline) {
-					f();
-				}
-			}, opt));*/
-		}
-	}
-	return function(f) {
-//		return Promise.resolve(f());
-		return f();
-	}
-})();
-export function addAnimation(f, sync) {
-	if (sync.isAsyncAnimation) {
-		return new Promise(resolve => {
-			requestAnimationFrame(() => {
-				resolve(f());
-			});
-		});
-	}
-	return f();
-}
-/*
-export const addAnimation = (() => {
-	if (isAsyncAnimation) {
-		return function(f) {//, sync) {//, opt) {
-			return new Promise(resolve => {
-				requestAnimationFrame(() => {
-					resolve(f());
-				});
-			});
-//			if (!opt || !opt.deadline) {
-//				return sync.animations.push(requestAnimationFrame(f));
-//			}
-//			return sync.animations.push(requestAnimationFrame(() => {
-//				if (Date.now() < opt.deadline) {
-//					f();
-//				}
-//			}));
-		}
-	}
-	return function(f) {
-//		return Promise.resolve(f());
-		return f();
-	}
-})();*/
-export function check(res, reqOr$src, scope, fileName, lineNum, colNum) {
+export function check(res, $src, req, scope, fileName, lineNum, colNum) {
 	if (!(res instanceof Error)) {
 //todo
 console.warn("check", res);
 alert(222);
 		return;
 	}
-	const $src = reqOr$src.$src || reqOr$src;
         let errMsg = ">>>Tpl error";
         if ($src.getLineNo) {
         	const pos = $src.getLineNo() || $src.parentNode.getLineNo();
@@ -79,17 +23,17 @@ alert(222);
         }
 	errMsg += `\n${res.toString()}`;
 	const params = [];
-        if (reqOr$src.str) {
-	        params.push(`\n${reqOr$src.str} =>`, reqOr$src.expr);
-	}
-	params.push(`\n$src =>`, $src, `\nsId =>`, $src[p_srcId]);
-	if (reqOr$src.$src) {
-		params.push("\nreq =>", reqOr$src);
+	params.push(`\n$src =>`, $src, `\nsId =>`, srcBy$src.get($src)?.id);
+	if (req) {
+		params.push("\nreq =>", req);
+	        params.push(`\n${req.str} =>`, req.expr);
 	}
 	if (scope) {
 		params.push("\nscope =>", scope);
 	}
-	console.error(errMsg, ...params);
+//	if (self.Tpl_debugLevel !== 0) {
+		console.info(errMsg, ...params);
+//	}
 	if (fileName) {
 		res = new Error(res, fileName, lineNum, colNum);
 	}
@@ -99,7 +43,7 @@ alert(222);
 		const onError = $src.dataset.onerror;
 		if (onError) {
 			try {
-				new Function("err", onError).call(reqOr$src.$src, res);
+				new Function("err", onError).call($src, res);
 			} catch (err) {
 				console.error(`>>>Tpl error in onerror handler: ${onError}\n$src =>`, $src);
 				return err;
@@ -112,27 +56,11 @@ alert(222);
 
 export function oset(t, n, v) {
 	const o = t[n];
-	if (typeof o !== "object") {// || Array.isArray(t)) {
-		return Reflect.set(t, n, v);
-	}
-	if (typeof v !== "object" || v === null) {
-		const f = Reflect.set(t, n, v);
-		if (Array.isArray(o)) {
-			o.splice(0, o.length);
-			return f;
-		}
-//		if (o instanceof Set || o instanceof Map) {
-//			o.clear();
-//			return f;
-//		}
-		for (const i in o) {
-			delete o[i];
-		}
-		return f;
-	}
-//	if (typeof o !== "object" || typeof v !== "object" || v === null) {
+	if (typeof o !== "object" || o === null || typeof v !== "object" || v === null) {
 //		return Reflect.set(t, n, v);
-//	}
+		t[n] = v;
+		return true;
+	}
 	if (Array.isArray(o)) {
 		return _osetArray(t, n, v);
 	}
@@ -145,7 +73,34 @@ export function oset(t, n, v) {
 	}*/
 	return _osetObject(t, n, v);
 }
+function _osetArray(t, n, v) {
+	if (!Array.isArray(v)) {
+//		return Reflect.set(t, n, v);
+		t[n] = v;
+		return true;
+	}
+	const o = t[n],
+		oLen = o.length,
+		vLen = v.length;
+	for (let i = 0; i < oLen && i < vLen; i++) {
+		oset(o, i, v[i]);
+	}
+	const l = oLen - vLen;
+	if (l > 0) {
+		o.splice(vLen, l);
+		return true;
+	}
+	for (let i = oLen; i < vLen; i++) {
+		o.push(v[i]);
+	}
+	return true;
+}
 function _osetObject(t, n, v) {
+	if (typeof v !== "object" || v === null) {
+//		return Reflect.set(t, n, v);
+		t[n] = v;
+		return true;
+	}
 	const o = t[n];
 	for (const i in o) {
 		if (!(i in v)) {
@@ -154,41 +109,10 @@ function _osetObject(t, n, v) {
 	}
 	for (const i in v) {
 		oset(o, i, v[i]);
-/*
-		if (!oset(o, i, v[i])) {
-			console.error("oset", o, i, v[i]);
-			return false;
-		}*/
 	}
 	return true;
 }
-function _osetArray(t, n, v) {
-	const o = t[n],
-		oLen = o.length;
-	if (Array.isArray(v)) {
-		const vLen = v.length;
-		for (let i = 0; i < oLen && i < vLen; i++) {
-//			_oset(o, v, i);
-			oset(o, i, v[i]);
 /*
-			if (!oset(o, i, v[i])) {
-				console.error("oset", o, i, v[i]);
-				return false;
-			}*/
-		}
-		const l = oLen - vLen;
-		if (l > 0) {
-			o.splice(vLen, l);
-			return true;
-		}
-		for (let i = oLen; i < vLen; i++) {
-			o.push(v[i]);
-		}
-		return true;
-	}
-	o.splice(0, oLen);
-	return Reflect.set(t, n, v);
-}
 function _osetSet(t, n, v) {
 	const o = t[n];
 	if (v instanceof Set) {
@@ -233,16 +157,16 @@ function _osetMap(t, n, v) {
 	}
 	o.clear();
 	return Reflect.set(t, n, v);
-}
+}*/
 export function del(obj, prop) {
 	const val = obj[prop];
 	delete obj[prop];
 	return val;
 }
 export function ocopy(val) {
-	if (typeof val !== "object") {
-		return val;
-	}
+//	if (typeof val !== "object" || val === null) {
+//		return val;
+//	}
 	const cpy = {};
 	for (const i in val) {
 		cpy[i] = val[i];
@@ -250,26 +174,41 @@ export function ocopy(val) {
 	return cpy;
 }
 /*
+export function ocopy2(val) {
+	if (typeof val !== "object" || val === null) {
+		return [val, val];
+	}
+	const c1 = {},
+		c2 = {};
+	for (const i in val) {
+		c1[i] = c2[i] = val[i];
+	}
+//todo!!	return [getProxy(c1), c2];
+	return [getProxy(c1), c1];
+}*/
+/*
 export function copy(val) {
 	if (Array.isArray(val)) {
 		return val.slice();
 	}
-	if (typeof val === "object" && val !== null) {
-//		if (val instanceof Map) {
-//			return new Map(val);
-//		}
-//		if (val instanceof Set) {
-//			return new Set(val);
-//		}
-		//return Object.assign({}, val);
-		const c = {};
-		for (const key in val) {
-			c[key] = val[key];
-		}
-		return c;
+	if (typeof val !== "object" || val === null) {
+		return val;
 	}
-	return val;
+//	if (val instanceof Map) {
+//		return new Map(val);
+//	}
+//	if (val instanceof Set) {
+//		return new Set(val);
+//	}
+	//return Object.assign({}, val);
+	const c = {};
+	for (const key in val) {
+		c[key] = copy(val[key]);
+	}
+	return c;
 }*/
+/*
+//todo--
 export function get$props($body, req) {
 	const cmdPrefLen = cmdPref.length,
 		t = {
@@ -277,22 +216,11 @@ export function get$props($body, req) {
 		},
 		pArr = [];
 	for (const n in $body.dataset) {
-		if (n.indexOf(cmdPref) == 0) {
-			if (req) {
-				pArr.push(eval2(type_req($body, n, $body.dataset[n], req.scope, req.sync, req.inFragment), $body, true)
-					.then(val => type_get$prop(n.substr(cmdPrefLen), val)));
-				continue;
-			}
-			try {
-				pArr.push(type_get$prop(n, eval($body.dataset[n])));
-			} catch (err) {
-				throw check(err, type_req($body, n, $body.dataset[n], req.scope, req.sync, req.inFragment));
-			}
-		} else {
-			t[n] = $body.dataset[n];
-		}
+		const str = n.indexOf(cmdPref) == 0 && n.substr(cmdPrefLen) || n;
+		pArr.push(getVal($body, req.scope, str, true)
+			.then(val => type_get$prop(str, val)));
 	}
-	if (!pArr.length) {
+	if (pArr.length === 0) {
 		return t;
 	}
 	return Promise.all(pArr)
@@ -308,26 +236,135 @@ function type_get$prop(n, val) {
 		n,
 		val
 	};
+}*/
+export function kebabToCamelStyle(str) {
+	if (!str) {
+		return str;
+	}
+	const words = str.split('-'),
+		wordsLen = words.length;
+	if (wordsLen == 1) {
+		return str;
+	}
+	str = words[0];
+	for (let i = 1; i < wordsLen; i++) {
+		if (words[i] !== "") {
+			str += words[i][0].toUpperCase() + words[i].substr(1);
+		}
+	}
+	return str;
 }
-export function kebabToCamelStyle(name) {
-	if (!name) {
+export function dispatchEvt($src, evtName, detail) {
+	const p = {
+		detail
+	};
+	for (const i in defEventInit) {
+		p[i] = defEventInit[i];
+	}
+	$src.dispatchEvent(new CustomEvent(evtName, p));
+}
+export const loadingCount = new Map();
+//todo
+self.loadingCount = loadingCount;
+function type_loading() {
+	return new Map([["", 0]]);
+}
+export async function showLoading($e, testFunc, type = "", waitTime = -1) {
+//--	req.sync.animation.add(type_animation(async () => {
+		if (await testFunc()) {
+console.log(1111);
+			decLoading($e, type);
+			return;
+		}
+console.log(222);
+		const src = srcBy$src.get($e),
+			lKey = src !== undefined ? src.id : $e;
+		if (!loadingCount.has(lKey)) {
+			loadingCount.set(lKey, type_loading());
+		}
+		const l = loadingCount.get(lKey);
+		if (waitTime < 0) {
+			toggleLoading($e, "", true, l);
+			toggleLoading($e, type, true, l);
+			return;
+		}
+		toggleLoading($e, "", true, l);
+		if (type !== "") {
+			setTimeout(async () => {
+				if (!await testFunc() && loadingCount.has(lKey)) {
+					toggleLoading($e, type, true, l);
+				}
+			}, waitTime);
+		}
+//	}, req.local, 0));
+}
+function decLoading($e, type) {
+	const src = srcBy$src.get($e),
+		lKey = src !== undefined ? src.id : $e,
+		l = loadingCount.get(lKey);
+console.log(lKey, l);
+	if (l === undefined) {
 		return;
 	}
-	const ns = name.split('-'),
-		nLen = ns.length;
-	if (nLen > 1) {
-		let n = ns[0];
-		for (let i = 1; i < nLen; i++) {
-			if (ns[i]) {
-				n += ns[i][0].toUpperCase() + ns[i].substr(1);
+	if (type !== "") {
+		const v = l.get(type) - 1
+		l.set(type, v);
+		if (v <= 0) {
+			toggleLoading($e, type, false, l);
+		}
+	}
+	const v = l.get("") - 1;
+	l.set("", v);
+	if (v > 0) {
+		return;
+	}
+	toggleLoading($e, "", false, l);
+	for (const [key, count] of loadingCount) {
+		for (const [tp, v] of count) {
+			if (v > 0) {
+				continue;
+			}
+			if (tp === "") {
+				loadingCount.delete(key);
 			}
 		}
-		return n;
 	}
-	return name;
+}
+function toggleLoading($e, type, f, l) {
+//todo
+	if (is$hide($e)) {
+console.warn(43243242);
+alert(1);
+		return;
+	}
+	const lName = type === "" ? isFillingName : isFillingName + isFillingDiv + type;
+	if (!f) {
+		$e.removeAttribute(lName, "");
+		if ($e.nodeName === "TEMPLATE") {
+			$e.content.firstChild.removeAttribute(lName, "");
+		}
+		return;
+	}
+	if (type === "") {
+		const c = l.get("");
+		l.set("", c + 1);
+	} else {
+		const c = l.get(type);
+		if (c === undefined) {
+			l.set(type, 1);
+		} else {
+			l.set(type, c + 1);
+		}
+	}
+	$e.setAttribute(lName, "");
+	if ($e.nodeName === "TEMPLATE") {
+		$e.content.firstChild.setAttribute(lName, "");
+	}
 }
 
 self.oset = oset;
 self.del = del;
 self.ocopy = ocopy;
-self.get$props = get$props;
+//--self.get$props = get$props;
+self.showLoading = showLoading;
+self.dispatchEvt = dispatchEvt;

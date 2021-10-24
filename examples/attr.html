@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
+		<script src="../myweb.js?debug" type="module" async="async"></script>
+		<link href="../myweb.css" type="text/css" rel="stylesheet" />
+		<script>
+			if (!self.data) {
+				data = {};
+			}
+			const h1 = "attr command";
+			data.color = "red";
+		</script>
+		<title>${h1} - myweb</title>
+	</head>
+	<body>
+		<h1>${h1} - example</h1>
+		<section>
+			<h2>Set attribute value</h2>
+			<fieldset>
+				<label for="red">data.color</label>
+				<select id="red"
+					attr.value="data.color.toLowerCase()"
+					onchange="data.color = this.value">
+					<option value="red">Red</option>
+					<option value="green">Green</option>
+					<option value="blue">Blue</option>
+				</select>
+			</fieldset>
+			<fieldset>
+				<label for="color">data.color</label>
+				<input id="color" type="text"
+					attr.value="data.color"
+					oninput="data.color = this.value" />
+			</fieldset>
+			<p attr.style="`color: ${data.color}`">Color: ${data.color}</p>
+		</section>
+		<section>
+			<h2>Toggle attribute value</h2>
+			<p class="a c"
+				attr.class.b="true"
+				attr.class.c="false">text</p>
+		</section>
+		<section>
+			<h2>Tag A, href attribute: history push and replace URL</h2>
+			<p>
+				<a attr.href.push="`#/push`">push</a>
+			</p>
+			<p>
+				<a attr.href.replace="`#/replace`">replace</a>
+			</p>
+		</section>
+	</body>
+</html>
