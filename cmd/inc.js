@@ -6,13 +6,13 @@ import {Tpl_doc, Tpl_$src, p_target, cmdPref, cmdArgsDiv, cmdArgsDivLen, incCmdN
 import {srcBy$src, getAttrAfter, getAttrItAfter, get$els, getNewId, type_asOneIdx, type_idx, type_save} from "../descr.js";
 import {preRender, joinText, removeChild, cloneNode, getIdx, setAsOneIdx, setIdx, getTopUrl} from "../dom.js";
 import {eval2} from "../eval2.js";
-import {/*normalizeUrl, */getUrl} from "../loc.js";
-import {loadingCount, showLoading, check, ocopy} from "../util.js";
+import {getUrl} from "../loc.js";
+import {getRequest, loadingCount, showLoading, check, ocopy} from "../util.js";
 
-export const incCache = {};
+export const incCache = new Map();
 const waitingStack = new Map();
 //self.incCache = incCache;
-self.waitingStack = waitingStack;
+//self.waitingStack = waitingStack;
 
 export default {
 	get$els($src, str, expr, pos) {
@@ -26,7 +26,7 @@ export default {
 //console.info("inc", req);
 //alert(1);
 		const include = await incGet(req);
-		if (!include) {
+		if (include === null) {
 			return type_renderRes(true);
 		}
 		const pos = -1,
@@ -35,15 +35,11 @@ export default {
 			oldVal = getIdx(srcBy$src.get(req.$src), req.str);
 //console.log(111, req, $els, oldVal, srcBy$src.get(req.$src));
 //alert(1);
-//console.log(444, $els, req, `${$elsLen} > 1 && ${oldVal} && oldVal === ${include.url}`, $elsLen > 1 && oldVal && oldVal === include.url);
-//alert(1);
-		if ($elsLen > 1 && oldVal === include.url) {//уже в доме
+		//если выражение вернуло Request или Response, то такой запрос будет всегда запрашиваться
+		if ($elsLen > 1 && include.url !== "" && oldVal === include.url) {//уже в доме
 //console.log(444, $els, req, `${$elsLen} > 1 && ${oldVal} && oldVal === ${include.url}`, $elsLen > 1 && oldVal && oldVal === include.url);
 //alert(22);
-			if ($elsLen > 3) {//если много тегов, тогда ренедрим их
-				return getInc(req, include, $els, $elsLen);
-			}
-			return null;//продолжаем рендер следующей команды
+			return $elsLen > 3 ? getInc(req, include, $els, $elsLen) : null;//если много тегов, тогда ренедрим их или продолжаем рендер следующей команды
 		}
 		const $last = $els[$elsLen - 1];
 		if (include.readyState === "complete") {
@@ -54,37 +50,52 @@ export default {
 		if (loading.isShow) {
 			showLoading(req.$src, () => false, loading.type, loading.waitTime);
 		}
-		if (!waitingStack.has(include.url)) {
-			waitingStack.set(include.url, fetch(include.url, defFetchReq)
-				.then(f => getIncHtml(req, include, f))
+		const incKey = getIncKey(include);
+		if (!waitingStack.has(incKey)) {
+			waitingStack.set(include.url, (include.req !== null ? fetch(include.req) : include.res)
+//				.then(res => getIncHtml(req, include, res))
+				.then(res => res.text())
 				.then(html => {
-					waitingStack.delete(include.url);
+					waitingStack.delete(incKey);
 					return createIncFragment(req, include, html);
 				}));
 		}
-		const w = waitingStack.get(include.url);
+		const w = waitingStack.get(incKey);
 		req.sync.afterAnimation.add(type_animation(() => w
 			.then(() => req.sync.stat === 0 && getNewInc(req, include, oldVal, $els, $elsLen, loading)), req.local, 0));
 		return type_renderRes(true, null, $last);
 	}
 };
 async function incGet(req) {
-	const u = req.reqCmd.args[0] ? req.expr : await eval2(req, req.$src, true);
-	if (!u) {
-		return null;
-	}
-	const url = getUrl(u, getTopUrl(srcBy$src.get(req.$src), req.str)),
-		include = incCache[url];
-	if (include) {
-		return include;
-	}
-	return incCache[url] = type_include("loading", url);
+	return eval2(req, req.$src, true)
+		.then(val => {
+			if (typeof val !== "string") {
+				const r = getRequest(val, "");
+				if (r === null) {
+					return null;
+				}
+				return r instanceof Request ? type_include("loading", "", r, null) : type_include("loading", "", null, r);
+			}
+			const r = getRequest(val, getTopUrl(srcBy$src.get(req.$src), req.str)),
+				url = r.url,
+				include = incCache.get(url);
+			if (include !== undefined) {
+				return include;
+			}
+			const inc = type_include("loading", url, r, null);
+			incCache.set(url, inc);
+			return inc;
+		});
 }
-function type_include(readyState, url) {
+function getIncKey(include) {
+	return include.url !== "" ? include.url : include.res;
+}
+function type_include(readyState, url, req, res) {
 	return {
 		readyState,
 		url,
-//		descrByDescrId: {},
+		req,
+		res,
 		$fr: null,
 		$tags: null,
 		scope: null
@@ -92,9 +103,9 @@ function type_include(readyState, url) {
 }
 function type_inLoading(req) {
 	return {
-		isShow: req.reqCmd.args[1] !== undefined || req.reqCmd.args[2] !== undefined,
-		type: req.reqCmd.args[1],
-		waitTime: req.reqCmd.args[2]
+		isShow: req.reqCmd.args[0] !== undefined || req.reqCmd.args[1] !== undefined,
+		type: req.reqCmd.args[0],
+		waitTime: req.reqCmd.args[1]
 	};
 }
 function getIncHtml(req, include, res) {
@@ -255,7 +266,6 @@ function checkScript(err, $e, req, url) {
 	}
 	const line = $e.getLineNo(),
 		numIdx = line.lastIndexOf(":");
-//	return check(err, $e, req, null, normalizeUrl(line.substr(0, numIdx)), Number(line.substr(numIdx + 1)) - 1 + err.lineNumber);
 	return check(err, $e, req, null, line.substr(0, numIdx), Number(line.substr(numIdx + 1)) - 1 + err.lineNumber);
 }
 //new
@@ -333,13 +343,16 @@ alert(1);
 		break;
 	}
 	if (oldVal !== undefined) {
-		const old = incCache[oldVal];
-		if (old.$tags !== null) {
-			for (let i = old.$tags.length - 1; i > -1; i--) {
-				const $i = old.$tags[i];
+		const oldInc = incCache.get(oldVal);
+		if (oldInc.$tags !== null) {
+			for (let i = oldInc.$tags.length - 1; i > -1; i--) {
+				const $i = oldInc.$tags[i];
 				$i.parentNode.removeChild($i);
 //or				Tpl_doc.head.removeChild($i);
 			}
+		}
+		if (oldInc.url === "") {
+			incCache.delete(getIncKey(oldInc));
 		}
 	}
 	$parent.insertBefore($new, $lastNext);
@@ -360,7 +373,9 @@ async function renderNewInc(req, $e) {
 		const [n, v] = i.value,
 			cn = reqCmd[n].cmdName;
 //todo inc args --
-		if (v && ((cn !== incCmdName && cn !== fetchCmdName) || !reqCmd[n].args[0]) && cn !== elseCmdName && cn !== defaultCmdName && cn !== onCmdName) {
+//		if (v && ((cn !== incCmdName && cn !== fetchCmdName) || !reqCmd[n].args[0]) && cn !== elseCmdName && cn !== defaultCmdName && cn !== onCmdName) {
+//todo наверное всё же не так! для иквов фетчей это может стать проблемой
+		if (v && cn !== elseCmdName && cn !== defaultCmdName && cn !== onCmdName) {
 			await eval2(type_req($e, n, v, req.scope, req.sync, req.local), $e, true);//привязываем к новым тегам команды ДО
 		}
 		if (n === req.str) {
@@ -532,11 +547,12 @@ function cloneIncFragment(req, include, oldVal, loading) {
 				n += cmdArgsDiv;
 				k = n.length;
 			}
+/*--
 			k = n.indexOf(cmdArgsDiv, k + 1);
 			if (k === -1) {
 				n += cmdArgsDiv;
 				k = n.length;
-			}
+			}*/
 
 			k = n.indexOf(cmdArgsDiv, k + 1);
 			if (k === -1) {
@@ -633,26 +649,6 @@ function makeSlots(req, $fr) {
 		}
 	}
 }
-/*
-function dispatchEvent(evtName, req, include, $body) {
-	const url = include.url.substring(0, include.url.indexOf(".", include.url.lastIndexOf("/"))) + ".js";
-	self.dispatchEvent(new CustomEvent(evtName + url, type_customEventInit(include, $body, req)));
-	self.dispatchEvent(new CustomEvent(evtName, type_customEventInit(include, $body, req)));
-}
-function type_customEventInit(include, $body, req) {
-	const p = {
-		detail: {
-			include,
-			$body,
-			req
-//			req: Object.freeze(req)
-		}
-	};
-	for (const i in defEventInit) {
-		p[i] = defEventInit[i];
-	}
-	return p;
-}*/
 function incGet$els($src, str, expr, pos) {
 	if ($src.nodeType === 1 && !isRenderdInc($src, str)) {
 		return [$src];

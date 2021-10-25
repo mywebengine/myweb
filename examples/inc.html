@@ -35,10 +35,10 @@
 		</section>
 		<section>
 			<h2>Base</h2>
-			<div inc.url="inc/inc1.html" data-name="Part1">
+			<div inc="`inc/inc1.html`" data-name="Part1">
 				<p slot="slot1">Slot value: 1</p>
 			</div>
-			<div inc.u="inc/inc2.html" data-name="Part2">
+			<div inc="`inc/inc2.html`" data-name="Part2">
 				<p slot="slot1">slot Value: 2</p>
 			</div>
 			<div inc="glob.dynamicUrl" data-name="Part3">
@@ -47,9 +47,9 @@
 		</section>
 		<section>
 			<h2>Chain include</h2>
-			<div inc.u="inc/inc1.html" data-name="Part chain" 
-				inc="glob.dynamicUrl"
-				inc.u3="inc3.html">
+			<div inc="`inc/inc1.html`" data-name="Part chain" 
+				inc...1="glob.dynamicUrl"
+				inc...2="`inc3.html`">
 				<p slot="slot1">Slot value: Chain inc</p>
 			</div>
 		</section>

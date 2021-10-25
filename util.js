@@ -1,8 +1,9 @@
-﻿//import {type_req/*, type_animation*/} from "./render/render.js";
-import {/*, cmdPref, */isFillingName, isFillingDiv, defEventInit} from "./config.js";
+﻿//import {type_animation} from "./render/render.js";
+import {isFillingName, isFillingDiv, defFetchReq, defEventInit} from "./config.js";
 import {srcBy$src} from "./descr.js";
 import {is$hide} from "./dom.js";
-import {getProxy} from "./proxy.js";
+import {getUrl} from "./loc.js";
+//import {getProxy} from "./proxy.js";
 
 //--todo
 //export const spaceRe = /\s+/g;
@@ -253,6 +254,12 @@ export function kebabToCamelStyle(str) {
 		}
 	}
 	return str;
+}
+export function getRequest(val, topUrl) {
+	if (typeof val === "string") {
+		return val !== "" ? new Request(getUrl(val, topUrl), defFetchReq) : null;
+	}
+	return val instanceof Request || val instanceof Response ? val : null;
 }
 export function dispatchEvt($src, evtName, detail) {
 	const p = {

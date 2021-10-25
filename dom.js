@@ -949,9 +949,9 @@ export function setIdx(src, str, idx) {
 	}
 }
 export function getTopUrl(src, str) {
-	if (str) {
+	if (str !== "") {
 		const topUrl = getAttrTopUrl(src, str);//из-за if ($i[p_topUrl]) { - так как это должэно работать только для робителей
-		if (topUrl !== undefined) {
+		if (topUrl !== "") {
 			return topUrl;
 		}
 	}
@@ -962,18 +962,19 @@ export function getTopUrl(src, str) {
 			return getTopUrl($srcById.get(descrById.get(srcBy$src.get($e).descrId).sId)]);
 		}*/
 		const topUrl = getAttrTopUrl(srcBy$src.get($i)) || $i[p_topUrl];
-		if (topUrl !== undefined) {
+		if (topUrl !== "") {
 			return topUrl;
 		}
 	}
+	return "";
 }
 function getAttrTopUrl(src, str) {
 	if (!src.isCmd) {
-		return;
+		return "";
 	}
 	const nattr = src.descr.attr.keys();
-	let topUrl;
-	if (str) {
+	let topUrl = "";
+	if (str !== "") {
 		for (const n of nattr) {
 			if (n === str) {
 				break;
