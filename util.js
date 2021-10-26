@@ -1,5 +1,5 @@
 ﻿//import {type_animation} from "./render/render.js";
-import {isFillingName, isFillingDiv, defFetchReq, defEventInit} from "./config.js";
+import {isFillingName, isFillingDiv, defRequestInit, defEventInit} from "./config.js";
 import {srcBy$src} from "./descr.js";
 import {is$hide} from "./dom.js";
 import {getUrl} from "./loc.js";
@@ -257,7 +257,7 @@ export function kebabToCamelStyle(str) {
 }
 export function getRequest(val, topUrl) {
 	if (typeof val === "string") {
-		return val !== "" ? new Request(getUrl(val, topUrl), defFetchReq) : null;
+		return val !== "" ? new Request(getUrl(val, topUrl), defRequestInit) : null;
 	}
 	return val instanceof Request || val instanceof Response ? val : null;
 }

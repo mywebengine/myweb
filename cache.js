@@ -8,17 +8,17 @@ export function type_cache() {
 		attrSyncCur: type_cacheAttrSyncCur()
 	};
 }
-export function type_cacheInit() {
-	return {};
+function type_cacheInit() {
+	return new Set();
 }
 export function type_cacheCurrent() {
-	return {};
+	return new Map();
 }
 export function type_cacheValue() {
-	return {};
+	return new Map();
 }
 function type_cacheAttrSyncCur() {
-	return {};
+	return new Map();
 }
 export function type_cacheAttrSyncCurI(syncId, value) {
 	return {
@@ -26,7 +26,7 @@ export function type_cacheAttrSyncCurI(syncId, value) {
 		value
 	};
 }
-export function getSrcId($i, str) {
+export function getCacheSrcId($i, str) {
 //todo если _for1 _for2 - кэш будет браться для for2 c первого элемента
 	const src = srcBy$src.get($i);
 //todo
@@ -49,5 +49,5 @@ export function getSrcId($i, str) {
 		$i = $i.nextSibling;
 	} while ($i !== null);
 //todo
-	throw new Error("getSrcId");
+	throw new Error("getCacheSrcId");
 }

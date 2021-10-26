@@ -38,10 +38,12 @@ self.addEventListener("scroll", async () => {
 				animation.add(a);
 			}
 		}
-		if (animation.size !== 0) {
-			addAnimation(sync, animation, null, null)
-				.then(() => animationsReady(animation));
+		if (animation.size === 0) {
+			return;
 		}
+console.log(animation)
+		addAnimation(sync, animation, null, null);
+//			.then(() => animationsReady(animation));
 	}
 }, {
 	passive: true
@@ -52,7 +54,7 @@ self.addEventListener("popstate", () => {
 }, {
 	passive: true
 });
-if (url.search.indexOf("skip") === -1) {
+if (url.search.indexOf("skip=1") === -1) {
 	const onload = () => {
 		self.removeEventListener("load", onload);
 		self.removeEventListener("DOMContentLoaded", onload);

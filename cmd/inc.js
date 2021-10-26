@@ -1,16 +1,17 @@
 import {renderTag, type_req, setReqCmd, type_animation, type_renderRes} from "../render/render.js";
 //import pimport from "../_pimport.js";
 import createArrFragment from "../arrfr.js";
-import {Tpl_doc, Tpl_$src, p_target, cmdPref, cmdArgsDiv, cmdArgsDivLen, incCmdName, fetchCmdName, foreachCmdName, elseCmdName, defaultCmdName, onCmdName, isFillingName, isFillingDiv/*, orderName*/, asOneIdxName, idxName, defEventInit, defFetchReq,
+import {Tpl_doc, Tpl_$src, p_target, cmdPref, cmdArgsDiv, cmdArgsDivLen, incCmdName, fetchCmdName, foreachCmdName, elseCmdName, defaultCmdName, onCmdName, isFillingName, isFillingDiv, asOneIdxName, idxName, defRequestInit,
 	reqCmd} from "../config.js";
-import {srcBy$src, getAttrAfter, getAttrItAfter, get$els, getNewId, type_asOneIdx, type_idx, type_save} from "../descr.js";
-import {preRender, joinText, removeChild, cloneNode, getIdx, setAsOneIdx, setIdx, getTopUrl} from "../dom.js";
-import {eval2} from "../eval2.js";
+import {srcBy$src, getAttrAfter, getAttrItAfter, get$els, type_asOneIdx, type_idx, type_save} from "../descr.js";
+import {preRender, joinText, removeChild, cloneNode, getIdx, setIdx, getTopUrl} from "../dom.js";
+import {eval2, q_eval2} from "../eval2.js";
 import {getUrl} from "../loc.js";
 import {getRequest, loadingCount, showLoading, check, ocopy} from "../util.js";
 
-export const incCache = new Map();
 const waitingStack = new Map();
+export const incCache = new Map();
+const incScriptCache = new Map();
 //self.incCache = incCache;
 //self.waitingStack = waitingStack;
 
@@ -22,129 +23,113 @@ export default {
 	get$first($src, str, expr, pos) {
 		return incGet$first($src, str, expr, pos);
 	},
-	async render(req) {
-//console.info("inc", req);
-//alert(1);
-		const include = await incGet(req);
-		if (include === null) {
-			return type_renderRes(true);
-		}
-		const pos = -1,
-			$els = incGet$els(req.$src, req.str, req.expr, pos),
-			$elsLen = $els.length,
-			oldVal = getIdx(srcBy$src.get(req.$src), req.str);
-//console.log(111, req, $els, oldVal, srcBy$src.get(req.$src));
-//alert(1);
-		//если выражение вернуло Request или Response, то такой запрос будет всегда запрашиваться
-		if ($elsLen > 1 && include.url !== "" && oldVal === include.url) {//уже в доме
-//console.log(444, $els, req, `${$elsLen} > 1 && ${oldVal} && oldVal === ${include.url}`, $elsLen > 1 && oldVal && oldVal === include.url);
-//alert(22);
-			return $elsLen > 3 ? getInc(req, include, $els, $elsLen) : null;//если много тегов, тогда ренедрим их или продолжаем рендер следующей команды
-		}
-		const $last = $els[$elsLen - 1];
-		if (include.readyState === "complete") {
-			getNewInc(req, include, oldVal, $els, $elsLen, null);
-			return type_renderRes(true, null, $last);
-		}
-		const loading = type_inLoading(req);
-		if (loading.isShow) {
-			showLoading(req.$src, () => false, loading.type, loading.waitTime);
-		}
-		const incKey = getIncKey(include);
-		if (!waitingStack.has(incKey)) {
-			waitingStack.set(include.url, (include.req !== null ? fetch(include.req) : include.res)
-//				.then(res => getIncHtml(req, include, res))
-				.then(res => res.text())
-				.then(html => {
-					waitingStack.delete(incKey);
-					return createIncFragment(req, include, html);
-				}));
-		}
-		const w = waitingStack.get(incKey);
-		req.sync.afterAnimation.add(type_animation(() => w
-			.then(() => req.sync.stat === 0 && getNewInc(req, include, oldVal, $els, $elsLen, loading)), req.local, 0));
-		return type_renderRes(true, null, $last);
+	render(req) {
+		return eval2(req, req.$src, true)
+			.then(val => incRender(req, val));
+	},
+	q_render(req, arr, isLast) {
+		return q_eval2(req, arr, isLast)
+			.then(vals => {
+				const arrLen = arr.length,
+					res = new Array(arrLen);
+				for (let i = 0; i < arrLen; i++) {
+					if (!isLast.has(i)) {
+						res[i] = incRender(type_req(arr[i].$src, req.str, req.expr, arr[i].scope, req.sync, req.local), vals[i]);
+					}
+				}
+				return res;
+			});
 	}
 };
-async function incGet(req) {
-	return eval2(req, req.$src, true)
-		.then(val => {
-			if (typeof val !== "string") {
-				const r = getRequest(val, "");
-				if (r === null) {
-					return null;
-				}
-				return r instanceof Request ? type_include("loading", "", r, null) : type_include("loading", "", null, r);
-			}
-			const r = getRequest(val, getTopUrl(srcBy$src.get(req.$src), req.str)),
-				url = r.url,
-				include = incCache.get(url);
-			if (include !== undefined) {
-				return include;
-			}
-			const inc = type_include("loading", url, r, null);
-			incCache.set(url, inc);
-			return inc;
-		});
+function incRender(req, val) {
+//console.info("inc", req);
+//alert(1);
+	const include = incGet(req, val);
+	if (include === null) {
+		return type_renderRes(true);
+	}
+	const pos = -1,
+		$els = incGet$els(req.$src, req.str, req.expr, pos),
+		$elsLen = $els.length,
+		oldVal = getIdx(srcBy$src.get(req.$src), req.str);
+//console.log(111, req, $els, oldVal, srcBy$src.get(req.$src));
+//alert(1);
+	//если выражение вернуло Request или Response, то такой запрос будет всегда запрашиваться
+	if ($elsLen !== 1 && oldVal === include.key) {//уже в доме
+//console.log(444, $els, req, `${$elsLen} !== 1 && ${oldVal} === ${include.key}`, $elsLen !== 1 && oldVal === include.key);
+//alert(22);
+		return $elsLen > 3 ? getInc(req, include, $els, $elsLen) : null;//если много тегов, тогда ренедрим их или продолжаем рендер следующей команды
+	}
+//todo cancel
+//	include.counter++;
+	const $last = $els[$elsLen - 1];
+	if (include.readyState === "complete") {
+		getNewInc(req, include, oldVal, $els, $elsLen, null);
+		return type_renderRes(true, null, $last);
+	}
+	const loading = type_incLoading(req);
+	if (loading.isShow) {
+		showLoading(req.$src, () => false, loading.type, loading.waitTime);
+	}
+	if (!waitingStack.has(include.key)) {
+		waitingStack.set(include.url, (include.res === null ? fetch(include.req) : include.res)
+			.then(res => res.text())
+			.then(html => {
+				waitingStack.delete(include.key);
+				return createIncFragment(req, include, html);
+			}));
+	}
+	const w = waitingStack.get(include.key);
+	req.sync.afterAnimation.add(type_animation(() => w
+		.then(() => req.sync.stat === 0 && getNewInc(req, include, oldVal, $els, $elsLen, loading)), req.local, 0));
+	return type_renderRes(true, null, $last);
 }
-function getIncKey(include) {
-	return include.url !== "" ? include.url : include.res;
+function incGet(req, val) {
+	if (typeof val !== "string") {
+		const r = getRequest(val, "");
+		if (r === null) {
+			return null;
+		}
+		const inc = r instanceof Request ? type_include("loading", r.url, r, null) : type_include("loading", r.url, null, r);
+		incCache.set(inc.key, inc);
+		return inc;
+	}
+	const r = getRequest(val, getTopUrl(srcBy$src.get(req.$src), req.str)),
+		include = incCache.get(r.url);
+	if (include !== undefined) {
+		return include;
+	}
+	const inc = type_include("loading", r.url, r, null);
+	incCache.set(inc.key, inc);
+	return inc;
 }
 function type_include(readyState, url, req, res) {
 	return {
+		key: url !== "" ? url : (res === null ? req : res),
 		readyState,
 		url,
 		req,
 		res,
 		$fr: null,
 		$tags: null,
-		scope: null
+		scope: null//,
+//		counter: 0
 	};
 }
-function type_inLoading(req) {
+function type_incLoading(req) {
+	const a0 = req.reqCmd.args[0],
+		a1 = req.reqCmd.args[1];
 	return {
-		isShow: req.reqCmd.args[0] !== undefined || req.reqCmd.args[1] !== undefined,
-		type: req.reqCmd.args[0],
-		waitTime: req.reqCmd.args[1]
+		isShow: a1 !== "" && a1 !== undefined || a0 !== "" && a0 !== undefined,
+		type: a0,
+		waitTime: a1
 	};
-}
-function getIncHtml(req, include, res) {
-	if (res.ok) {
-		return res.text();
-	}
-	//todo on.error
-//todo
-	const str = cmdPref + "errorUrl",
-		errorUrl = req.$src.dataset[str];
-	if (!errorUrl) {
-		return check(new Error(`>>>Tpl inc:getIncHtml: Request ${include.url} stat ${res.status}`), req.$src, req);
-	}
-	return eval2(type_req(req.$src, str, errorUrl, req.scope, req.sync, req.local), req.$src, true)
-		.then(url => getIncErrorHtml(req, url));
-/*
-	const errorUrl = req.$src.dataset[cmdPref + "errorUrl"] || req.$src.dataset.errorUrl;
-	if (!errorUrl) {
-		return check(new Error(`>>>Tpl inc:getIncHtml: Request ${include.url} stat ${res.status}`), req.$src, req);
-	}
-	if (req.$src.dataset[cmdPref + "errorUrl"] === undefined) {
-		return getIncErrorHtml(req, errorUrl);
-	}
-	req.expr = errorUrl;
-	return eval2(req, req.$src, true)
-		.then(url => getIncErrorHtml(req, url));*/
-}
-function getIncErrorHtml(req, url) {
-	url = getUrl(url, getTopUrl(srcBy$src.get(req.$src), req.str));
-	return fetch(url, defFetchReq)
-		.then(res => res.ok ? res.text() : check(new Error(`>>>Tpl inc:getIncErrorHtml: Request ${url} stat ${res.status}`), req.$src, req));
 }
 async function createIncFragment(req, include, html) {
 	const $fr = Tpl_doc.createDocumentFragment(),
 		$div = Tpl_doc.createElement("div");
 	$div.innerHTML = html;
 	for (let $i = $div.firstChild; $i !== null; $i = $div.firstChild) {
-//	let $i;
-//	while ($i = $div.firstChild) {
 		$fr.appendChild($i);
 	}
 	if (self.getLineNo) {
@@ -193,12 +178,12 @@ function createIncScripts(req, include, $scripts) {
 function createIncScript(req, include, $e) {
 	$e.parentNode.removeChild($e);
 	const origUrl = $e.getAttribute("src"),
-		url = origUrl ? getUrl(origUrl, include.url) : "";
+		url = origUrl !== null ? getUrl(origUrl, include.url) : null;
 	if (url !== origUrl) {
 		$e.setAttribute("src", url);
 	}
 	if ($e.type === "module") {
-		if (url !== "") {
+		if (url !== null) {
 			try {
 //				return pimport(url);
 				return import(url)
@@ -227,20 +212,26 @@ function createIncScript(req, include, $e) {
 		}
 		return;
 	}
-	if (url === "") {
+	if (url === null) {
 		runIncScript(req, $e.textContent, $e, url);
 		return;
 	}
-	return fetch(url, defFetchReq)
-		.then(res => res.ok ? res.text() : check(new Error(`>>>Tpl inc:createIncScript: Request stat ${res.status}`), req.$src, req))
-		.then(text => runIncScript(req, text, $e, url));
-/*--
-	const res = await fetch(url, defFetchReq);
-	if (res.ok) {
-		runIncScript(req, await res.text(), $e, url);
+	const s = incScriptCache.get(url);
+	if (s !== undefined)  {
+		runIncScript(req, s, $e, url);
 		return;
 	}
-	check(new Error(`>>>Tpl inc:createIncScripts: Request stat ${res.status}`), req.$src, req);*/
+	return fetch(url, defRequestInit)
+		.then(res => {
+			if (res.ok) {
+				return res.text();
+			}
+			throw check(new Error(`>>>Tpl inc:createIncScript: Request stat ${res.status}`), req.$src, req);
+		})
+		.then(text => {
+			incScriptCache.set(url, text);
+			runIncScript(req, text, $e, url);
+		});
 }
 function incToScope(include, m) {
 	include.scope = {};
@@ -270,12 +261,6 @@ function checkScript(err, $e, req, url) {
 }
 //new
 function getNewInc(req, include, oldVal, $els, $elsLen, loading) {
-	if (!req.$src.parentNode) {
-//todo
-		console.warn("skip", req, req.$src);
-alert(1);
-	}
-//todo parentLocId - ? parentSrcId - --
 	const $new = cloneIncFragment(req, include, oldVal, loading),
 		$src = $new.firstChild,
 		$last = $new.lastChild;
@@ -296,21 +281,22 @@ function getNewIncInsert(req, oldVal, $els, $elsLen, $new, $src) {
 		}
 	}
 	const $parent = $els[0].parentNode,
-		$lastNext = $els[$elsLen - 1].nextSibling;
+		$lastNext = $els[$elsLen - 1].nextSibling,
+		src = srcBy$src.get(req.$src);
 	for (let i = 0; i < $elsLen; i++) {
-		if ($els[i].parentNode !== $parent) {
-//todo
-console.warn("$parent", $els[i], $els, req);
-alert(1);
-			continue;
-		}
+/*
+//todo--
+if ($els[i].parentNode !== $parent) {
+	console.warn("$parent", $els[i], $els, req);
+	alert(1);
+	continue;
+}*/
 		const iSrc = srcBy$src.get($els[i]);
 		removeChild($els[i]);
 		if (iSrc !== undefined) {
 			const l = req.local.get(iSrc.id);
 			l.animationsCount = -1;
 			l.newSrcId = newSrcId;
-//console.log(55555, iSrc.id, newSrcId);
 			if (iSrc.id !== req.sync.p.sId) {// && $els[i][p_srcId] !== req.$src[p_srcId]) {
 				continue;
 			}
@@ -327,36 +313,46 @@ alert(1);
 				break;
 			}
 		}
-/*<-
-		let $i = $src;
-		do {
-			if ($i[p_srcId]) {
-				req.sync.p.sId = $i[p_srcId];
-				//!!переписывать req.$src в данном случаи не имет смысла
-				break;
-			}
-			$i = $i.nextSibling;
-		} while ($i !== null);*/
 		for (i++; i < $elsLen; i++) {
 			removeChild($els[i]);
 		}
 		break;
 	}
-	if (oldVal !== undefined) {
-		const oldInc = incCache.get(oldVal);
-		if (oldInc.$tags !== null) {
-			for (let i = oldInc.$tags.length - 1; i > -1; i--) {
-				const $i = oldInc.$tags[i];
-				$i.parentNode.removeChild($i);
-//or				Tpl_doc.head.removeChild($i);
-			}
-		}
-		if (oldInc.url === "") {
-			incCache.delete(getIncKey(oldInc));
-		}
-	}
+//todo	if (oldVal !== undefined) {
+//		incClear(req.str, src, oldVal);
+//	}
 	$parent.insertBefore($new, $lastNext);
 }
+/*
+function incClear(str, src, incKey) {
+	incClearByKey(incKey);
+	for (const n of getAttrItAfter(src.descr.attr.keys(), str, false)) {
+		if (reqCmd[n].cmdName !== incCmdName) {
+			break;
+		}
+		incKey = getIdx(src, n);
+		if (incKey === undefined) {
+			break;
+		}
+		incClearByKey(incKey);
+	}
+}
+export function incClearByKey(key) {
+	const inc = incCache.get(key);
+console.error(1, key, inc?.counter);
+	if (--inc.counter !== 0) {
+		return;
+	}
+	incCache.delete(key);
+	if (inc.$tags === null) {
+		return;
+	}
+	for (let i = inc.$tags.length - 1; i > -1; i--) {
+		const $i = inc.$tags[i];
+		$i.parentNode.removeChild($i);
+//or		Tpl_doc.head.removeChild($i);
+	}
+}*/
 function getNewIncRender(req, include, $src, $last) {
 	if (include.scope !== null) {
 		for (const n in include.scope) {
@@ -389,26 +385,17 @@ async function renderNewInc(req, $e) {
 }
 //current
 function getInc(req, include, $els, $elsLen) {
-//console.error(8888, req, include, $els, $elsLen)
 	return renderI(req, $els[0], $els[$elsLen - 1], renderInc)
 		.then($last => readyInc(req, include, $last));
 }
 function renderInc(req, $e) {
-//console.log(81111, req, $e, getAttrAfter(descrById.get($e[p_descrId]).attr, req.str))
 	return renderTag($e, req.scope, getAttrAfter(srcBy$src.get($e).descr.attr, req.str), req.sync, req.local);
 }
 async function renderI(req, $e, $last, h) {
-//const r = Math.random();
-//console.log(1, r, req, $e, $last, h);
 	do {
 		const iSrc = srcBy$src.get($e);
 		if (iSrc !== undefined && iSrc.isCmd) {//это когда template и в нем скрыта тектовая нода
-//console.log(112, r, $e[p_srcId], $e, $e.parentNode, h, req, req.$src[p_srcId]);
 			$e = await h(req, $e);
-//console.log(113, $e[p_srcId], $e, $e.parentNode);
-//alert(1);
-
-			
 			if (req.sync.stat !== 0) {
 //todo
 //				console.error(7878787, iSrc.id, $e, $last, req);
@@ -429,13 +416,7 @@ async function renderI(req, $e, $last, h) {
 
 				return $last;
 			}
-
-
 		}
-//if (!$e.nextSibling) {
-//	console.log(2, $e, $last, req);
-//	alert(1);
-//}
 		if ($e === $last) {
 			return $last;
 		}
@@ -447,7 +428,6 @@ async function renderI(req, $e, $last, h) {
 }
 //todo replace inline
 function readyInc(req, include, $last) {
-//console.log(66666, req.str, include.url, $last, $last.previousElementSibling)
 	return type_renderRes(true, null, $last);
 }
 function cloneIncFragment(req, include, oldVal, loading) {
@@ -459,7 +439,7 @@ function cloneIncFragment(req, include, oldVal, loading) {
 		curAttr = new Map(),
 		isR = oldVal !== undefined;
 	const [asOneIdx, idx, save] = isR ? [type_asOneIdx(src.asOneIdx), src.idx, src.save] : [type_asOneIdx(src.asOneIdx), type_idx(src.idx), type_save()];//todo понаблюдать
-	for (const n of getAttrItAfter(descr.attr.keys(), req.str)) {
+	for (const n of getAttrItAfter(descr.attr.keys(), req.str, false)) {
 		asOneIdx.delete(n);
 		idx.delete(n);
 	}
@@ -479,7 +459,7 @@ function cloneIncFragment(req, include, oldVal, loading) {
 		if (l.get("") === 1) {
 			for (let i = 0; i < attrsLen; i++) {
 				const a = attrs[i];
-				if (a.name.idexOf(isFillingName) === 0) {
+				if (a.name.indexOf(isFillingName) === 0) {
 					continue;
 				}
 				curAttr.set(a.name, a.value);
@@ -593,8 +573,7 @@ function cloneIncFragment(req, include, oldVal, loading) {
 				$i.setAttribute(idxName + n, v);
 			}
 		}
-//--		setAsOneIdx(iSrc, req.str, getNewId());
-		setIdx(iSrc, req.str, include.url);
+		setIdx(iSrc, req.str, include.key);
 	}
 	if (!$fr.firstElementChild) {
 		return $fr;
@@ -665,7 +644,6 @@ function incGet$els($src, str, expr, pos) {
 			$els.push($i);
 			const iSrc = srcBy$src.get($i);
 			if (iSrc !== undefined && iSrc.isCmd || $i.nodeType !== 8) {
-//--			if ($i[p_isCmd] || $i.nodeType !== 8) {
 				continue;
 			}
 			const t = $i.textContent;
@@ -695,7 +673,6 @@ function incGet$first($src, str, expr, pos) {
 			continue;
 		}
 		count = getIncCount($i, str, expr, pos);
-//console.log(33333333333, str, count, $src, $i);
 		for ($i = $i.previousSibling; $i !== null; $i = $i.previousSibling) {
 			const iSrc = srcBy$src.get($i);
 			if (iSrc !== undefined && iSrc.isCmd || $i.nodeType !== 8) {
@@ -718,14 +695,15 @@ function incGet$first($src, str, expr, pos) {
 function getIncCount($i, str, expr, pos) {
 //todo , expr, pos
 	let count = 0;
-	const attrIt = getAttrItAfter(srcBy$src.get($i).descr.attr.keys(), str);
+	const attrIt = getAttrItAfter(srcBy$src.get($i).descr.attr.keys(), str, false);
 	for (let i = attrIt.next(); !i.done; i = attrIt.next()) {
-		if (reqCmd[i.value].cmdName === incCmdName) {
-			if (!isRenderdInc($i, i.value)) {
-				return count;
-			}
-			count++;
+		if (reqCmd[i.value].cmdName !== incCmdName) {
+			continue;
 		}
+		if (!isRenderdInc($i, i.value)) {
+			return count;
+		}
+		count++;
 	}
 	return count;
 }

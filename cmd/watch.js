@@ -7,20 +7,11 @@ import {kebabToCamelStyle} from "../util.js";
 export default {
 	render,
 	q_render(req, arr, isLast) {
-		const arrLen = arr.length;
 		return q_eval2(req, arr, isLast)
 			.then(vals => {
-				const pArr = new Array(arrLen);
+				const arrLen = arr.length;
 				for (let i = 0; i < arrLen; i++) {
-					if (!isLast[i]) {
-						pArr[i] = vals[i];
-					}
-				}
-				return Promise.all(pArr);
-			})
-			.then(vals => {
-				for (let i = 0; i < arrLen; i++) {
-					if (!isLast[i]) {
+					if (!isLast.has(i)) {
 						setValue(req, arr[i].scope, vals[i]);
 					}
 				}
@@ -34,14 +25,17 @@ function render(req) {
 }
 function setValue(req, scope, val) {
 //	const c = getCacheBySrcId(req.$src[p_srcId]),
-	const c = srcBy$src.get(req.$src).cache,
-		cur = c.current[req.str] || (c.current[req.str] = type_watchCur());
+	const c = srcBy$src.get(req.$src).cache;
+	if (!c.current.has(req.str)) {
+		c.current.set(req.str, type_watchCur());
+	}
+	const cur = c.current.get(req.str);
 	if (req.sync.p.renderParam.isLinking) {
-		c.isInit[req.str] = true;
+		c.isInit.add(req.str);
 		cur.watch = val;
 		return type_renderRes(true);
 	}
-	if (c.isInit[req.str]) {
+	if (c.isInit.has(req.str)) {
 		if (val === cur.watch) {
 			return type_renderRes(true);
 		}
@@ -50,7 +44,7 @@ function setValue(req, scope, val) {
 		});
 	} else {
 		req.sync.onready.add(() => {
-			c.isInit[req.str] = true;
+			c.isInit.add(eq.str);
 			cur.watch = val;
 		});
 	}

@@ -521,9 +521,9 @@ for (const sId of toClear) {
 		const deletedVarId = new Set();
 		for (const sId of toClear) {
 			const c = srcById.get(sId).cache;
-			if (c === null) {
-				continue;
-			}
+//			if (c === null) {
+//				continue;
+//			}
 			c.value = type_cacheValue();
 /*todo
 			if (!t[_isUnshift]) {
@@ -551,9 +551,9 @@ console.log(11111111, sId);
 //console.log(1111, n, oldV);
 		for (const sId of toClear) {
 			const c = srcById.get(sId).cache;
-			if (c === null) {
-				continue;
-			}
+//			if (c === null) {
+//				continue;
+//			}
 			c.value = type_cacheValue();//<-если это новый элемент массива
 //todo c.current нужен для храниения текущего значения команды, удаляя его мы нарушаем идею его использования
 //			c.current = type_cacheCurrent();
@@ -566,10 +566,8 @@ console.log(11111111, sId);
 function setInnerSrcIdSetBy$src(toClear, $i) {
 	const $parent = $i.parentNode;
 	do {
-//		if ($i[p_isCmd]) {
-//			toClear.add($i[p_srcId]);
 		const iSrc = srcBy$src.get($i);
-		if (iSrc !== undefined) {
+		if (iSrc !== undefined && iSrc.isCmd) {
 			toClear.add(iSrc.id);
 		}
 //////////////////////

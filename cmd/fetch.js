@@ -1,6 +1,6 @@
 import {type_animation, type_renderRes} from "../render/render.js";
 import {type_cacheValue, type_cacheCurrent} from "../cache.js";
-import {defFetchReq, loadEventName, okEventName, errorEventName, resultDetailName, errorDetailName} from "../config.js";
+import {defRequestInit, loadEventName, okEventName, errorEventName, resultDetailName, errorDetailName} from "../config.js";
 import {srcBy$src} from "../descr.js";
 import {eval2} from "../eval2.js";
 import {getRequest, dispatchEvt, check} from "../util.js";
@@ -40,17 +40,17 @@ function fetchGetFetch(req, r) {
 		fetchClear(req);
 		return;
 	}
-	for (const n in defFetchReq) {
+	for (const n in defRequestInit) {
 		if (n === "headers") {
-			for (const n in defFetchReq.headers) {
+			for (const n in defRequestInit.headers) {
 				if (r.headers[n] === undefined) {
-					r.headers[n] = defFetchReq.headers[n];
+					r.headers[n] = defRequestInit.headers[n];
 				}
 			}
 			continue;
 		}
 		if (r[n] === undefined) {
-			r[n] = defFetchReq[n];
+			r[n] = defRequestInit[n];
 		}
 	}
 	return fetch(r)

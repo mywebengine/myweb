@@ -18,21 +18,12 @@ export default {
 			.then(val => setValue(req, req.$src, getName(req), val));
 	},
 	q_render(req, arr, isLast) {
-		const arrLen = arr.length;
 		return q_eval2(req, arr, isLast)
 			.then(vals => {
-				const pArr = new Array(arrLen);
+				const arrLen = arr.length,
+					n = getName(req);
 				for (let i = 0; i < arrLen; i++) {
-					if (!isLast[i]) {
-						pArr[i] = vals[i];
-					}
-				}
-				return Promise.all(pArr);
-			})
-			.then(vals => {
-				const n = getName(req);
-				for (let i = 0; i < arrLen; i++) {
-					if (!isLast[i]) {
+					if (!isLast.has(i)) {
 						setValue(req, arr[i].$src, n, vals[i]);
 					}
 				}
@@ -51,62 +42,65 @@ function setValue(req, $src, n, v) {
 	const toggleVal = req.reqCmd.args[1],
 //		c = getCacheBySrcId($src[p_srcId]),
 		c = srcBy$src.get($src).cache,
-		isInit = c.isInit[req.str];
+		isInit = c.isInit.has(req.str);
 	if (!isInit) {
-		c.isInit[req.str] = true;
+		c.isInit.add(req.str);
 		setClick(req, $src, n);
 	}
 	if (req.sync.p.renderParam.isLinking) {
-		c.current[req.str] = $src.getAttribute(n);
+		c.current.set(req.str, $src.getAttribute(n));
 		return null;
 	}
-	const aCache = c.attrSyncCur[n],
-		curVal = aCache && aCache.syncId === req.sync.syncId ? aCache.value : (req.str in c.current ? c.current[req.str] : $src.getAttribute(n));
+	const curVal = c.current.has(req.str) ? c.current.get(req.str) : $src.getAttribute(n),
+//todo сейчас это, наверное, уже не нужно
+		aCache = c.attrSyncCur.get(n),
+		aCurVal = aCache !== undefined && aCache.syncId === req.sync.syncId ? aCache.value : curVal;
+//--		curVal = aCache && aCache.syncId === req.sync.syncId ? aCache.value : (req.str in c.current ? c.current[req.str] : $src.getAttribute(n));
 	if (toggleVal && toggleVal !== pushModName && toggleVal !== replaceModName) {
-		if (curVal) {
-//console.log(2, req.str, curVal, n, v);
-			const i = curVal.indexOf(toggleVal),
+		if (aCurVal) {
+//console.log(2, req.str, aCurVal, n, v);
+			const i = aCurVal.indexOf(toggleVal),
 				l = toggleVal.length;
-			if (i !== -1 && (curVal[i - 1] === " " || i === 0) && (curVal[i + l] === " " || i + l === curVal.length)) {
-				v = v ? curVal : curVal.substr(0, i) + curVal.substr(i + l + 1);
+			if (i !== -1 && (aCurVal[i - 1] === " " || i === 0) && (aCurVal[i + l] === " " || i + l === aCurVal.length)) {
+				v = v ? aCurVal : aCurVal.substr(0, i) + aCurVal.substr(i + l + 1);
 			} else if (v) {
-				v = curVal[curVal.length - 1] === " " ? curVal + toggleVal : curVal + " " + toggleVal;
-//				v = curVal + " " + toggleVal;
+				v = aCurVal[aCurVal.length - 1] === " " ? aCurVal + toggleVal : aCurVal + " " + toggleVal;
+//				v = aCurVal + " " + toggleVal;
 			} else {
-				v = curVal;
+				v = aCurVal;
 			}
 		} else if (v){
 			v = toggleVal;
 		} else {
 //			v = false;
-			v = curVal;
+			v = aCurVal;
 		}
 	}
 	if (v === true) {
 		v = n;
 	}
-	if (aCache) {
+	if (aCache !== undefined) {
 		aCache.syncId = req.sync.syncId;
 		aCache.value = v;
 	} else {
-		c.attrSyncCur[n] = type_cacheAttrSyncCurI(req.sync.syncId, v);
+		c.attrSyncCur.set(n, type_cacheAttrSyncCurI(req.sync.syncId, v));
 	}
-	if (isInit && c.current[req.str] === v) {
+	if (isInit && curVal === v) {
 		setAttributeValue($src, n, v);
 		return null;
 	}
 	if (v || v === "") {
 //todo <body _attr.class.home="[``].indexOf(loc.name) !== -1" _attr.class.main="[`myloc`, `mysnt`, `services`].indexOf(loc.name) !== -1"
 		req.sync.animation.add(type_animation(() => {
-			c.current[req.str] = v;
+			c.current.set(req.str, v);
 			setAttribute($src, n, v);
 		}, req.local, srcBy$src.get($src).id));
 		return null;
 	}
 //!!be clone => has attribute => not removing
-//	if (curVal !== null) {
+//	if (aCurVal !== null) {
 		req.sync.animation.add(type_animation(() => {
-			c.current[req.str] = v;
+			c.current.set(req.str, v);
 			removeAttribute($src, n);
 		}, req.local, srcBy$src.get($src).id));
 //	}
@@ -123,17 +117,14 @@ function setClick(req, $src, n) {
 //todo isCtrl, mouse2, touch
 		evt.preventDefault();
 //!!придумать		switch (await getVal($src, null, pushModName, false) ? pushModName : (await getVal($src, null, replaceModName, false) ? replaceModName : req.reqCmd.args[1])) {
-		switch (req.reqCmd.args[1]) {
-			case pushModName:
-				history.pushState(undefined, undefined, $src.href);
-			break;
-			case replaceModName:
-				history.replaceState(undefined, undefined, $src.href);
-			break;
-			default:
-				location.href = $src.href;
-				return;
-			break;
+		const mode = req.reqCmd.args[1];
+		if (mode === pushModName) {
+			history.pushState(undefined, undefined, $src.href);
+		} else if (mode === replaceModName) {
+			history.replaceState(undefined, undefined, $src.href);
+		} else {
+			location.href = $src.href;
+			return;
 		}
 		setLoc(location.href);
 	});

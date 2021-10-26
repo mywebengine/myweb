@@ -1,9 +1,9 @@
-import {q_renderTag, type_isLast, type_q_arr, type_animation, type_animation2, type_renderRes} from "../render/render.js";
+import {q_renderTag, type_req, type_isLast, type_q_arr, type_animation, type_animation2, type_renderRes} from "../render/render.js";
 import {Tpl_doc, p_target, visibleScreenSize, foreachCmdName,
 	reqCmd, qPackLength} from "../config.js";
 import {getNewId, type_asOneIdx, getAttrAfter, get$els, get$first, getNextStr} from "../descr.js";
 import {show, hide, is$visible, removeChild, q_cloneNode, setAsOneIdx, getIdx, setIdx} from "../dom.js";
-import {eval2} from "../eval2.js";
+import {eval2, q_eval2} from "../eval2.js";
 import {varIdByVar, varIdByVarIdByProp, setCur$src} from "../proxy.js";
 import {ocopy, kebabToCamelStyle, check} from "../util.js";
 
@@ -29,28 +29,40 @@ export default {
 //		return forGet$first($src, str, expr, pos);
 //	},
 	render(req) {
-//console.error("_for", req.sync.syncId, req, req.$src);
-//alert(1);
-		const src = srcBy$src.get(req.$src);
-		if (src.asOneIdx === null) {
-			src.asOneIdx = type_asOneIdx();
-		}
-		if (!src.asOneIdx.has(req.str)) {
-			setAsOneIdx(src, req.str, getNewId());
-			setIdx(src, req.str, 0);
-		}
 		return eval2(req, req.$src, true)
-			.then(val => forGetCtx(req, val))
-			.then(ctx => render(req, ctx));
+			.then(val => foreachRender(req, val));
+	},
+	q_render(req, arr, isLast) {
+		return q_eval2(req, arr, isLast)
+			.then(vals => {
+				const arrLen = arr.length,
+					res = new Array(arrLen);
+				for (let i = 0; i < arrLen; i++) {
+					if (!isLast.has(i)) {
+						res[i] = foreachRender(type_req(arr[i].$src, req.str, req.expr, arr[i].scope, req.sync, req.local), vals[i]);
+					}
+				}
+				return res;
+			});
 	}
 };
-function render(req, ctx) {
-	const $elsLen = ctx.$els.length,
+function foreachRender(req, val) {
+//console.error("_for", req.sync.syncId, req, req.$src);
+//alert(1);
+	const src = srcBy$src.get(req.$src);
+	if (src.asOneIdx === null) {
+		src.asOneIdx = type_asOneIdx();
+	}
+	if (!src.asOneIdx.has(req.str)) {
+		setAsOneIdx(src, req.str, getNewId());
+		setIdx(src, req.str, 0);
+	}
+	const ctx = forGetCtx(req, val),
+		$elsLen = ctx.$els.length,
 		keysLen = ctx.keys.length,
 		l = ctx.$els[$elsLen - 1],
 		$last = l[l.length - 1];
 	if (keysLen === 0) {
-//		c.current[req.str] = null;
 		show$first(req, ctx, hide);
 		req.sync.animation.add(type_animation(() => {
 			for (let j, i = $elsLen - 1; i > 0; i--) {
@@ -220,121 +232,6 @@ function forGet$els($e, str, expr, pos) {
 	}
 	return [[$e]];
 }
-/*
-function forGet$first($e, str, expr, pos) {
-	if (!str) {
-//todo
-console.warn(111);
-	}
-	const forStrs = getForStrs($e, str),
-		forStrsLen = forStrs.length;
-	for (let $i = $e; $i !== null; $i = $i.previousSibling) {
-		const iSrc = srcBy$src.get($i);
-		if (iSrc === undefined || !iSrc.isCmd) {
-			continue;
-		}
-		const idx = getIdx(iSrc, str);
-		if (idx === undefined) {
-			return $e;
-		}
-		$e = $i;
-		if (idx !== "0") {
-			continue;
-		}
-		for ($i = $i.previousSibling; $i !== null; $i = $i.previousSibling) {
-			const iSrc = srcBy$src.get($i);
-			if (iSrc === undefined || !iSrc.isCmd) {
-				continue;
-			}
-			const prevIdx = getIdx(iSrc, str);
-			if (prevIdx === undefined || prevIdx !== 0) {
-				return $e;
-			}
-			if (forStrsLen) {
-				for (let i = forStrsLen - 1; i > -1; i--) {
-					const a = forStrs[i];
-					if (getIdx(iSrc, a.str) !== a.val) {
-						return $e;
-					}
-				}
-			}
-			$e = $i;
-		}
-		return $e;
-	}
-	return $e;
-}*/
-/*
-function forGet$els($first, str, expr, pos) {
-	const $els = [],
-		forStrs = getForStrs($first, str),
-		forStrsLen = forStrs.length,
-		nStr = getNextStr($first, str);
-	let $i = $first;
-	do {
-		const iSrc = srcBy$src.get($i);
-		if (nStr !== "") {
-			$els.push(get$els($i, iSrc.descr.get$elsByStr, nStr));
-		} else {
-			$els.push([$i]);
-		}
-//		const d = descrById.get($i[p_descrId]),
-//			$e = d.get$elsByStr && get$els($i, d.get$elsByStr, nStr) || [$i],
-//			idx = getIdx($i, str);
-//		$els.push($e);
-		const idx = getIdx(iSrc, str);
-		if (idx === undefined) {
-			return $els;
-		}
-		const $e = $els[$els.length - 1];
-		for ($i = $e[$e.length - 1].nextSibling; $i !== null; $i = $i.nextSibling) {
-			const iSrc = srcBy$src.get($i);
-			if (iSrc === undefined || !iSrc.isCmd) {
-				continue;
-			}
-			const jdx = getIdx(iSrc, str);
-			if (jdx === undefined) {
-				return $els;
-			}
-			if (forStrsLen !== 0) {
-				for (let i = forStrsLen - 1; i > -1; i--) {
-					const a = forStrs[i];
-					if (getIdx(iSrc, a.str) !== a.val) {
-						return $els;
-					}
-				}
-			}
-			if (idx > jdx) {
-				return $els;
-			}
-			if (idx !== jdx) {
-				break;
-			}
-			$e.push($i);
-		}
-	} while ($i !== null);
-	return $els;
-}*/
-/*
-function getForStrs($e, str) {
-	const forStrs = [],
-		src = srcBy$src.get($e);
-	for (const n of src.descr.attr.keys()) {
-		if (n === str) {
-			break;
-		}
-		if (reqCmd[n].cmdName === foreachCmdName) {
-			forStrs.push(type_forStr(n, getIdx(src, n)));
-		}
-	}
-	return forStrs;
-}
-function type_forStr(str, val) {
-	return {
-		str,
-		val
-	};
-}*/
 function q_add(req, ctx, $elsLen, keysLen) {
 	const $from = ctx.$els[$elsLen - 1];
 	for (let $i = $from[$from.length - 1]; $i !== null; $i = $i.previousSibling) {
@@ -348,6 +245,7 @@ function q_add(req, ctx, $elsLen, keysLen) {
 }
 function q_addWaitingRender(req, ctx, $elsLen, keysLen, sId) {
 	let l = req.local.get(sId);
+alert(sId)
 	if (l === undefined) {
 		req.sync.afterAnimation.add(type_animation2(() => q_addWaitingRender(req, ctx, $elsLen, keysLen, sId), req.local, 0));
 		return;

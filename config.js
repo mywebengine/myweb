@@ -17,18 +17,10 @@ export const reqCmd = self.Tpl_reqCmd || {};
 export const Tpl_doc = document;
 export const Tpl_$src = Tpl_doc.documentElement;
 
-//--export const p_srcId = self.Tpl_p_srcId || Symbol();
-//--export const p_descrId = Symbol();
-//--export const p_isCmd = Symbol();
 export const p_target = Symbol();
-//--export const p_localId = Symbol();
 export const p_topUrl = Symbol();
 
-//--self.p_srcId = p_srcId;
-//--self.p_descrId = p_descrId;
-//--self.p_isCmd = p_isCmd;
 self.p_target = p_target;
-//--self.p_localId = p_localId;
 self.p_topUrl = p_topUrl;
 
 export const defTaskOpt = {
@@ -43,7 +35,6 @@ export const locVarName = "loc";
 //export const renderStartEventName = "renderstart";
 export const mountEventName = "mount";
 export const renderEventName = "render";
-//export const incMountEventName = "incmount";
 export const removeEventName = "remove";
 
 export const loadEventName = "load";
@@ -61,12 +52,9 @@ export const isWhenVisibleName = "whenvisible";
 export const cmdPref = "";
 export const cmdArgsDiv = ".";
 export const cmdArgsDivLen = cmdArgsDiv.length;
-//export const orderName = "_order";
 export const descrIdName = "_did" + cmdArgsDiv;
 export const asOneIdxName = "_aidx" + cmdArgsDiv;
 export const idxName = "_idx" + cmdArgsDiv;
-//export const saveName = "_save" + cmdArgsDiv;
-//--export const localIdName = cmdPref + "lid";
 export const isFillingName = "is_filling";
 export const isFillingDiv = "-";
 
@@ -79,7 +67,7 @@ export const fillingCmdName = cmdPref + "filling";
 
 export const foreachCmdName = cmdPref + "foreach";
 export const fetchCmdName = cmdPref + "fetch";
-	export const defFetchReq = {
+	export const defRequestInit = {
 		headers: {
 			"x-requested-with": "XMLHttpRequest"
 		}

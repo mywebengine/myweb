@@ -8,21 +8,11 @@ export default {
 			.then(val => setValue(req, req.scope, val));
 	},
 	q_render(req, arr, isLast) {
-		const arrLen = arr.length;
 		return q_eval2(req, arr, isLast)
-//todo ???????????
 			.then(vals => {
-				const pArr = new Array(arrLen);
+				const arrLen = arr.length;
 				for (let i = 0; i < arrLen; i++) {
-					if (!isLast[i]) {
-						pArr[i] = vals[i];
-					}
-				}
-				return Promise.all(pArr);
-			})
-			.then(vals => {
-				for (let i = 0; i < arrLen; i++) {
-					if (!isLast[i]) {
+					if (!isLast.has(i)) {
 						setValue(req, arr[i].scope, vals[i]);
 					}
 				}

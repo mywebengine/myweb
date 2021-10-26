@@ -1,5 +1,5 @@
 import {type_req} from "./render/render.js";
-import {getSrcId} from "./cache.js";
+import {getCacheSrcId} from "./cache.js";
 import {cmdPref} from "./config.js";
 import {srcById, srcBy$src} from "./descr.js";
 import {cur$src, setCur$src, proxyStat} from "./proxy.js";
@@ -13,7 +13,7 @@ const _func = self.Tpl_func || {};
 export function eval2(req, $src, isReactive) {
 	//1) isReactive ложь только в _getVal(): _fetch data-_ok, _on
 	//2) $src не равно req.$src только в случаи с loading - сейчас там это исправленено - но только там есть смысл
-	const cacheSrcId = getSrcId(req.$src, req.str),
+	const cacheSrcId = getCacheSrcId(req.$src, req.str),
 		c = srcById.get(cacheSrcId).cache;
 //todo c !== null - почему может быть так что кэша нет?
 if (c === null) {
@@ -22,9 +22,9 @@ if (c === null) {
 }
 
 //	if (c !== null && req.str in c.value) {
-	if (req.str in c.value) {
+	if (c.value.has(req.str)) {
 //console.log(7777, req.str, req.expr, req.$src, c.value);
-		return c.value[req.str];
+		return c.value.get(req.str);
 	}
 	const func = getEval2Func(req, req.expr);
 	proxyStat.value = 0;
@@ -37,7 +37,7 @@ if (c === null) {
 			});
 		if (proxyStat.value !== 0) {
 //--			setCacheValue(cacheSrcId, req.str, val);
-			c.value[req.str] = val;
+			c.value.set(req.str, val);
 //			proxyStat.value = 0;
 		}
 		setCur$src();
@@ -50,7 +50,7 @@ if (c === null) {
 		});
 	if (proxyStat.value !== 0) {
 //--		setCacheValue(cacheSrcId, req.str, val);
-		c.value[req.str] = val;
+		c.value.set(req.str, val);
 //		proxyStat.value = 0;
 	}
 	return val;
@@ -58,7 +58,7 @@ if (c === null) {
 export function q_eval2(req, arr, isLast) {
 //console.log("q_eval2", req, arr, isLast);
 	return q_getEval2Func(req, req.expr)
-		.apply(null, [req, arr, isLast, req.str, setCur$src, proxyStat, srcBy$src])//--cache, setCacheValue, p_srcId])
+		.apply(null, [req, arr, isLast, req.str, setCur$src, proxyStat, srcBy$src])
 		.catch(err => {
 			throw check(err, req.$src, req);
 		});
@@ -123,15 +123,15 @@ export function q_getEval2Func(req, expr) {
 	const fBody = `const _tpl_len = _tpl_arr.length,
 	_tpl_val = new Array(_tpl_len);
 for (let i = 0; i < _tpl_len; i++) {
-	if (_tpl_isLast[i]) {
+	if (_tpl_isLast.has(i)) {
 		continue;
 	}
 	const $i = _tpl_arr[i].$src,
 		src = _tpl_srcBy$src.get($i),
 		c = src.cache;
-	if (_tpl_str in c.value) {
-//console.log(888, _tpl_str, src.id, c.value[_tpl_str]);
-		_tpl_val[i] = c.value[_tpl_str];
+	if (c.value.has(_tpl_str)) {
+//console.log(888, _tpl_str, src.id, c.value.get(_tpl_str));
+		_tpl_val[i] = c.value.get(_tpl_str);
 		continue;
 	}
 
@@ -145,7 +145,7 @@ req.scope = _tpl_arr[i].scope;
 	}).apply($i);
 	if (_tpl_proxyStat.value !== 0) {
 //--		_tpl_setCacheValue(cacheSrcId, _tpl_str, v);
-		c.value[_tpl_str] = v;
+		c.value.set(_tpl_str, v);
 	}
 }
 _tpl_setCur$src();
@@ -153,7 +153,6 @@ _tpl_setCur$src();
 return _tpl_val;`;
 //console.log(fBody);
 	try {
-//--		return _func[cacheKey] = new func("req", "_tpl_arr", "_tpl_isLast", "_tpl_str", "_tpl_setCur$src", "_tpl_proxyStat", "_tpl_cache", "_tpl_setCacheValue", "_tpl_p_srcId", fBody);//, "_tpl_isReactive"
 		return _func[cacheKey] = new func("req", "_tpl_arr", "_tpl_isLast", "_tpl_str", "_tpl_setCur$src", "_tpl_proxyStat", "_tpl_srcBy$src", fBody);//, "_tpl_isReactive"
 	} catch (err) {
 		throw check(err, req.$src, req);

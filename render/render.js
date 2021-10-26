@@ -68,7 +68,6 @@ if (srcBy$src.get($src).id !== sId) {
 async function attrRender($src, scope, attr, sync, local) {
 	let $last = null;
 	for (const [n, v] of attr) {
-//		const res = await execRender($src, n, v, scope, sync, local);
 		const req = type_req($src, n, v, scope, sync, local),
 			res = await req.reqCmd.cmd.render(req);
 		if (sync.stat !== 0) {
@@ -78,7 +77,6 @@ async function attrRender($src, scope, attr, sync, local) {
 		if (!res) {
 			continue;
 		}
-//console.log(2, res);
 		if (res.attr !== null) {
 //todo res.$attr в этой схеме линий - хватит .$src
 			const $attr = res.$attr || res.$src || $src,
@@ -104,11 +102,6 @@ async function attrRender($src, scope, attr, sync, local) {
 	}
 	return type_renderRes(false, $src, $last);
 }
-
-//function execRender($src, str, expr, scope, sync, local) {
-//	const req = type_req($src, str, expr, scope, sync, local);
-//	return req.reqCmd.cmd.render(req);
-//}
 async function renderChildren($src, scope, sync, local, sId, $ret) {
 	if (sync.stat !== 0 || srcBy$src.get($src).descr.isCustomHtml) {
 		return $src;
@@ -221,7 +214,7 @@ async function q_attrRender(arr, attr, isLast, ctx, sync, local) {
 			continue;
 		}
 		for (let i = 0; i < arrLen; i++) {
-			if (isLast[i]) {
+			if (isLast.has(i)) {
 				continue;
 			}
 			const resI = await res[i];
@@ -232,7 +225,7 @@ async function q_attrRender(arr, attr, isLast, ctx, sync, local) {
 				const arrI = arr[i];
 				q_addAfterAttr(resI.$attr || resI.$src || arrI.$src, arrI.scope, resI.attr, ctx);
 				arrI.$src = resI.$last || resI.$src || resI.$attr || arrI.$src;
-				isLast[i] = true;
+				isLast.add(i);
 				ctx.lastCount++;
 				continue;
 			}
@@ -240,7 +233,7 @@ async function q_attrRender(arr, attr, isLast, ctx, sync, local) {
 				arr[i].$src = resI.$last;
 			}
 			if (resI.isLast) {
-				isLast[i] = true;
+				isLast.add(i);
 				ctx.lastCount++;
 			}
 		}
@@ -250,7 +243,7 @@ async function q_attrRender(arr, attr, isLast, ctx, sync, local) {
 	for (const [dId, byAttr] of ctx.afterByDescrByAttr) {
 		for (const [attrKey, arr] of byAttr) {
 //			pArr.push(q_renderTag(arr, ctx.afterAttrKey[attrKey], type_isLast(), sync, local));
-			await q_renderTag(arr, ctx.afterAttrKey[attrKey], type_isLast(), sync, local);
+			await q_renderTag(arr, ctx.afterAttrKey.get(attrKey), type_isLast(), sync, local);
 		}
 	}
 //	if (pArr.length) {
@@ -263,8 +256,8 @@ function q_addAfterAttr($src, scope, attr, ctx) {
 		dId = srcBy$src.get($src).descr.id,
 		byD = ctx.afterByDescrByAttr.get(dId),
 		arrI = type_q_arr($src, scope);
-	if (!ctx.afterAttrKey[attrKey]) {
-		ctx.afterAttrKey[attrKey] = attr;
+	if (!ctx.afterAttrKey.has(attrKey)) {
+		ctx.afterAttrKey.set(attrKey, attr);
 	}
 	if (byD) {
 		const arr = byD.get(attrKey);
@@ -286,7 +279,7 @@ function q_renderChildren(arr, isLast, sync, local) {
 		arrLen = arr.length;
 	for (let i = 0; i < arrLen; i++) {
 //		if (!isLast[i] && arr[i].$src.nodeType === 1) {//?? бывает ли в арр не элемент? - проверил, может. --- бывает <!-inc_end
-		if (!isLast[i]) {//?? бывает ли в арр не элемент? - проверил, может. --- бывает <!-inc_end ---- Должен быть ЛАСТ
+		if (!isLast.has(i)) {//?? бывает ли в арр не элемент? - проверил, может. --- бывает <!-inc_end ---- Должен быть ЛАСТ
 //todo проанализировать еще раз
 //			iArr.push(ocopy(arr[i]));
 			const aI = arr[i];
@@ -364,7 +357,7 @@ function q_execRender(arr, str, expr, isLast, sync, local) {
 	const arrLen = arr.length,
 		res = new Array(arrLen);
 	for (let i = 0; i < arrLen; i++) {
-		if (!isLast[i]) {
+		if (!isLast.has(i)) {
 //			res[i] = await req.reqCmd.cmd.render(type_req(arr[i].$src, str, expr, arr[i].scope, sync, local));
 			res[i] = req.reqCmd.cmd.render(type_req(arr[i].$src, str, expr, arr[i].scope, sync, local));
 		}
@@ -459,11 +452,11 @@ function type_q_renderCtx() {
 	return {
 		lastCount: 0,
 		afterByDescrByAttr: new Map(),
-		afterAttrKey: {}
+		afterAttrKey:new Map()
 	};
 }
 export function type_isLast() {
-	return {};
+	return new Set();
 }
 export function type_q_arr($src, scope) {
 	return {

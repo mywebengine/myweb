@@ -29,7 +29,7 @@ export const ifCmd = {
 	},
 	q_render(req, arr, isLast) {
 		let i = 0;
-		while (isLast[i]) {
+		while (isLast.has(i)) {
 			i++;
 		}
 		const arrLen = arr.length;
@@ -43,7 +43,7 @@ export const ifCmd = {
 					const reqI = type_req(arr[i].$src, req.str, req.expr, arr[i].scope, req.sync, req.local);
 					make$first(reqI, ifCmdName, elseifCmdName, elseCmdName);
 					res[i] = ifGet(reqI, val[i], ifCmdName, elseifCmdName, elseCmdName);
-					while (isLast[++i]);
+					while (isLast.has(++i));
 					if (i === arrLen) {
 						break;
 					}
@@ -207,14 +207,8 @@ function make$first(req, ifCmdName, elseifCmdName, elseCmdName) {
 }
 function ifGet$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos, firstStr) {
 	const isStrIf = str !== "" && reqCmd[str].cmdName === ifCmdName;
-//	let $i = $src
-//	while (!$i[p_isCmd]) {
-//		$i = $i.nextSibling;
-//	}
-//console.log($src, str, expr);
 	for (let $i = $src; $i !== null; $i = $i.previousSibling) {
 //		if ($i.nodeType !== 1) {
-//--		if (!$i[p_descrId]) {//это коммент, текст или когда template и в нем скрыта тектовая нода
 		const iSrc = srcBy$src.get($i);
 		if (iSrc === undefined) {//это коммент, текст или когда template и в нем скрыта тектовая нода
 			continue;
@@ -338,7 +332,6 @@ function ifGet$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos) 
 	};
 	let $i = ifGet$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos, firstStr);
 	for (let iSrc = srcBy$src.get($i); iSrc !== undefined && !iSrc.isCmd && $i !== null; $i = $i.nextSibling, iSrc = srcBy$src.get($i)) {
-//--	while (!$i[p_isCmd] && $i !== null) {//так как функция для общего интерфейса, то в неё может придти коммент со вставки
 		$i = $i.nextSibling;
 	}
 //	if (!$i) {
@@ -580,40 +573,6 @@ function makeShow(req, $i, str, isShow) {
 	}
 	return [$els[$elsLen - 1], $attr, f];*/
 }
-/*
-async function makeShow(req, $i, str, isShow) {
-	const nStr = ifGetNextStr($i, str),
-		d = descrById.get($i[p_descrId]),
-		$els = nStr && get$els($i, d.get$elsByStr, nStr) || [$i],
-		$elsLen = $els.length;
-//console.log("makeShow", nStr, $els, req.str);
-	if (isShow ? !$i.content : $i.content) {
-		for (let i = 0; i < $elsLen; i++) {
-			if ($els[i][p_descrId]) {
-				return type_makeShow($els, i, $elsLen - 1);
-			}
-		}
-	}
-	const showFunc = isShow && show || hide;
-	let firstTagIdx = -1;
-	for (let i = 0; i < $elsLen; i++) {
-		if ($els[i].nodeType === 8) {
-			continue;
-		}
-		if (firstTagIdx === -1 && $els[i][p_descrId]) {
-			firstTagIdx = i;
-		}
-		$els[i] = await showFunc(req, $els[i]);
-//todo
-//if ($els[i].nodeType) {
-//	alert(111);
-//}
-	}
-	return type_makeShow(await Promise.all($els), firstTagIdx, $elsLen - 1);
-}
-function type_makeShow($els, firstTagIdx, lastIdx) {
-	return [$els[lastIdx], $els[firstTagIdx]];
-}*/
 function ifGetNextStr(src, str) {
 	return str !== switchCmdName ? getNextStr(src, str) : getNextStr(src, getNextStr(src, str));
 }

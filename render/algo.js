@@ -1,5 +1,5 @@
 import {renderTag, q_renderTag, dispatchLocalEvents, type_isLast, type_q_arr} from "./render.js";
-import {Tpl_$src, isWhenVisibleName, qPackLength} from "../config.js";
+import {Tpl_$src/*, isWhenVisibleName*/, qPackLength} from "../config.js";
 import {$srcById, srcById, srcBy$src, descrById, createAttr, get$els} from "../descr.js";
 import {preRender, is$hide, isAnimationVisible} from "../dom.js";
 import {loadingCount} from "../util.js";
@@ -210,7 +210,8 @@ function _render(byD, toCancleSync) {
 		if (sync.stat !== 0) {
 			continue;
 		}*/
-//		sync.isWhenVisible = true;
+
+		sync.isWhenVisible = true;
 
 		const arrLen = p.srcIdSet.size;
 		if (arrLen === 1) {
@@ -310,8 +311,8 @@ function renderLoop(syncInThisRender, renderResolve) {
 		sync.animation.clear();
 		const p = addAnimation(sync, animation, syncInThisRender, renderResolve);
 		if (p !== null) {
-			pArr.push(p
-				.then(() => animationsReady(animation)));
+			pArr.push(p);
+//				.then(() => animationsReady(animation)));
 //		} else {
 //todo
 //console.log(11111111111111111);
@@ -353,7 +354,6 @@ function renderLoop(syncInThisRender, renderResolve) {
 		if (sync.stat !== 0) {
 			continue;
 		}
-
 		if (sync.onready.size !== 0) {
 			for (const h of sync.onready) {
 				h();
@@ -371,13 +371,13 @@ function renderLoop(syncInThisRender, renderResolve) {
 }
 export function addAnimation(sync, animation, syncInThisRender, renderResolve) {
 //todo
-	if (sync.stat !== 0) {
+if (sync.stat !== 0) {
 console.warn(111111111111111111);
-		return null;
-	}
+	return null;
+}
 	const toNow = syncInThisRender !== null ? new Set() : animation,
 		toDefered = new Set();//,
-//		isScroll = document.scrollingElement.scrollHeight > document.scrollingElement.clientHeight;
+//		isScroll = document.scrollingElement.scrollHeight > document.scrollingElement.clientHeight;//todo width
 	if (toNow.size === 0) {
 		for (const a of animation) {
 			if (isAnimationVisible(a)) {
@@ -391,17 +391,21 @@ console.warn(111111111111111111);
 			if (a.promise !== null) {
 				continue;
 			}
+//console.log(a)
+//alert(1)
 			sync.scrollAnimation.add(a);
 			a.promise = new Promise(resolve => {
 				a.resolve = resolve;
 			})
 				.then(() => {
 					sync.scrollAnimation.delete(a);
-					for (const i of syncInThisRender) {
-						if (i.scrollAnimation.size !== 0) {
-							return;
-						}
-					}
+//					for (const i of syncInThisRender) {
+//						if (i.scrollAnimation.size !== 0 && i.stat === 0) {
+//							return;
+//						}
+//					}
+//console.log(syncInThisRender, sync);
+//alert(1)
 					renderLoop(syncInThisRender, renderResolve);
 				});
 		}
@@ -416,12 +420,19 @@ console.warn(111111111111111111);
 					rafResolve();
 					return;
 				}
+//				const pArr = [];
 				for (const a of toNow) {
 					a.handler();
 					if (a.promise !== null) {
 						a.resolve();
+//						pArr.push(a);
+//						sync.scrollAnimation.delete(a);
 					}
 				}
+				animationsReady(toNow);
+//				if (pArr.length) {
+//					renderLoop(syncInThisRender, renderResolve);
+//				}
 				if (toDefered.size === 0) {
 					rafResolve();
 					return;
@@ -440,30 +451,32 @@ console.warn(111111111111111111);
 			sync.animationFrame.set(rafId, rafResolve);
 		});
 	}
-	if (toDefered.size !== 0) {
-		return new Promise(ricResolve => {
-			const ricId = requestIdleCallback(() => {
-				sync.idleCallback.delete(ricId);
-				requestAnimationFrame(() => {
-					if (sync.stat !== 0) {
-						ricResolve();
-						return;
-					}
-					for (const a of toDefered) {
-						a.handler();
-						if (a.promise !== null) {
-							a.resolve();
-						}
-					}
-					ricResolve();
-				});
-			}, {
-				timeout: 1000
-			});
-			sync.idleCallback.set(ricId, ricResolve);
-		});
+	if (toDefered.size === 0) {
+		return null;
 	}
-	return null;
+	return new Promise(ricResolve => {
+		const ricId = requestIdleCallback(() => {
+			sync.idleCallback.delete(ricId);
+			requestAnimationFrame(() => {
+				if (sync.stat !== 0) {
+					ricResolve();
+					return;
+				}
+				for (const a of toDefered) {
+					a.handler();
+//					if (a.promise !== null) {
+//						a.resolve();
+//						sync.scrollAnimation.delete(a);
+//					}
+				}
+				animationsReady(toDefered);
+				ricResolve();
+			});
+		}, {
+			timeout: 1000
+		});
+		sync.idleCallback.set(ricId, ricResolve);
+	});
 }
 export function animationsReady(animation) {
 	const lSet = new Set();
