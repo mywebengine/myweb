@@ -3,7 +3,7 @@ import {type_req, type_animation} from "./render/render.js";
 import {type_cacheValue, type_cacheCurrent} from "./cache.js";
 import {Tpl_doc, Tpl_$src, p_topUrl, visibleScreenSize, incCmdName, onCmdName, textCmdName, descrIdName, asOneIdxName, idxName, removeEventName, defEventInit,
 	reqCmd} from "./config.js";
-import {$srcById, srcById, srcBy$src, descrById, getNewId, createSrc, type_asOneIdx, type_idx, get$els} from "./descr.js";
+import {$srcById, srcById, srcBy$src, descrById, getNewId, createSrc, type_asOneIdx, type_idx, get$els, getNextStr} from "./descr.js";
 import {varIdByVar, varById, srcIdSetByVarId, varIdByVarIdByProp} from "./proxy.js";
 import {loadingCount, check} from "./util.js";
 
@@ -493,20 +493,98 @@ export function cloneNode(req, $e) {//во время клонирования �
 	}
 	return $n;
 }
-export function q_cloneNode(req, $els, beginIdx, len) {//во время клонирования будут созданы описания
-	const $arr = new Array(len),
-		on = [],
-		$elsLen = $els.length;
-	let fSrc = null;
+export function q_cloneNode(req, sId, beginIdx, len) {//во время клонирования будут созданы описания
+	for (let l = req.local.get(sId); l.newSrcId !== 0; l = req.local.get(sId)) {
+		sId = l.newSrcId;
+	}
+	const $src = $srcById.get(sId),
+		src = srcById.get(sId),
+		nStr = getNextStr(src, req.str),
+		$els = nStr !== "" ? get$els($src, src.descr.get$elsByStr, nStr) : [$src],
+		$elsLen = $els.length,
+		$arr = new Array(len),
+		on = [];
+	let fSrc;
 	for (let i = 0, f; i < $elsLen; i++) {
 		const $i = $els[i];
 		fSrc = srcBy$src.get($i);
 		if (fSrc === undefined || !fSrc.isCmd) {
+console.warn($i)
 			continue;
 		}
 		break;
 	}
-	if (fSrc === null) {
+	if (fSrc === undefined) {
+		console.warn(">>>Tpl dom:q_cloneNode:", req, $els, beginIdx, len);
+		throw check(new Error(`>>>Tpl dom:q_cloneNode: среди элементов для клонирования нет элемента с командой, такого не должно быть`), req.$src, req);
+	}
+	const fDescr = fSrc.descr;
+	for (const [n, v] of fDescr.attr) {
+		if (n === req.str) {
+			break;
+		}
+		const rc = reqCmd[n];
+		if (rc.cmdName === onCmdName) {
+			on.push(type_q_cloneNodeOn(rc.cmd, n, v));
+		}
+	}
+	const onLen = on.length,
+		l = loadingCount.get(fSrc.id),
+		baseAsOne = new Set(),
+		asOneVal = new Array(len),
+		aIt = fDescr.asOneSet.keys();
+	for (let i = aIt.next(); !i.done; i = aIt.next()) {
+		if (i.value !== req.str) {
+			continue;
+		}
+		for (i = aIt.next(); !i.done; i = aIt.next()) {
+			baseAsOne.add(i.value);
+		}
+	}
+	for (let i = 0; i < len; i++) {
+		$arr[i] = new Array($elsLen);
+		asOneVal[i] = new Map();
+	}
+	for (let i, idx, j = 0; j < $elsLen; j++) {
+		const $jArr = new Array(len),
+			$j = $els[j];
+		q_cloneNodeCreate($j, $jArr, len, asOneVal, 0, baseAsOne);
+		q_cloneNodeCreateChildren($j, $jArr, len, asOneVal);
+		for (i = 0, idx = beginIdx; i < len; i++, idx++) {
+			const $i = $arr[i][j] = $jArr[i],
+				iSrc = srcBy$src.get($i);
+			if (iSrc === undefined) {
+				continue;
+			}
+			setIdx(iSrc, req.str, idx);
+			if (onLen !== 0) {
+				for (k = 0; k < onLen; k += 3) {
+					const o = on[k];
+					o.cmd.render(type_req($i, o.str, o.expr, req.scope, req.sync, req.local));
+				}
+			}
+			if (l !== undefined) {
+				loadingCount.set($i, l);
+			}
+		}
+	}
+	return $arr;
+}
+export function ___q_cloneNode(req, $els, beginIdx, len) {//во время клонирования будут созданы описания
+	const $arr = new Array(len),
+		on = [],
+		$elsLen = $els.length;
+	let fSrc;
+	for (let i = 0, f; i < $elsLen; i++) {
+		const $i = $els[i];
+		fSrc = srcBy$src.get($i);
+		if (fSrc === undefined || !fSrc.isCmd) {
+console.log($i)
+			continue;
+		}
+		break;
+	}
+	if (fSrc === undefined) {
 		console.warn(">>>Tpl dom:q_cloneNode:", req, $els, beginIdx, len);
 		throw check(new Error(`>>>Tpl dom:q_cloneNode: среди элементов для клонирования нет элемента с командой, такого не должно быть`), req.$src, req);
 	}

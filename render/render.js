@@ -474,6 +474,15 @@ export function type_animation(handler, local, viewedSrcId) {
 	for (const p of local.values()) {
 		p.animationsCount++;
 	}
+	return type_animation2(() => {
+		for (const p of local.values()) {
+			if (p.animationsCount > 0) {
+				p.animationsCount--;
+			}
+		}
+		return handler();
+	}, local, viewedSrcId);
+/*
 	return {
 		handler: () => {
 			for (const p of local.values()) {
@@ -488,7 +497,7 @@ export function type_animation(handler, local, viewedSrcId) {
 
 		promise: null,
 		resolve: null
-	};
+	};*/
 }
 export function type_animation2(handler, local, viewedSrcId) {
 	return {

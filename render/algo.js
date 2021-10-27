@@ -60,6 +60,9 @@ function tryRender(delay = Tpl_delay) {
 				.then(resolve)
 				.catch(err => {
 //todo нужно подумать что еще надо почистить
+					for (const s of syncInRender) {
+						s.resolve();
+					}
 					syncInRender.clear();
 					curRender = Promise.resolve();
 					loadingCount.clear();
@@ -74,8 +77,14 @@ function _tryRender() {
 		toCancleSync = new Set();
 //console.log(11, new Set(syncInRender));
 	if (syncInRender.size !== 0) {
-		const toRemByD = new Set();
-		for (const sync of syncInRender) {
+		const toRemByD = new Set(),
+			s = new Set();
+		for (const sync of s) {
+			if (sync.stat !== 0) {
+				s.set(sync);
+			}
+		}
+		for (const sync of s) {
 //console.log("111", sync, new Map(byD));
 			for (const [dId, p] of byD) {
 				const curStat = sync.stat,
@@ -83,7 +92,7 @@ function _tryRender() {
 				if (stat === 0) {
 					continue;
 				}
-//console.log("1repeat", stat, curStat, sync, p, dId);
+console.log("1repeat", stat, curStat, sync, p, dId);
 				toCancleSync.add(sync);
 //				toRemByD.add(dId);//!!1024 перенес ниже - когда то так было верно, а сейчас из-за toRemByD - нет
 				if (curStat !== 0) {
@@ -234,14 +243,22 @@ function _render(byD, toCancleSync) {
 //self.syncInThisRender = syncInThisRender;
 //alert(1);
 	return Promise.all(pArr)
-		.then(() => new Promise(resolve => renderLoop(syncInThisRender, resolve)))
+		.then(() => {
+			renderLoop(syncInThisRender);
+			const pArr = [];
+			for (const s of syncInThisRender) {
+				pArr.push(s.promise);
+			}
+			return Promise.all(pArr);
+		})
+//		.then(() => new Promise(resolve => renderLoop(syncInThisRender, resolve)))
 		.then(() => {
 			if (self.Tpl_debugLevel === 0) {
 				return;
 			}
 			const s = new Set();
 			for (const sync of syncInThisRender) {
-				if (sync.stat === 0) {
+				if (sync.stat === 0 || sync.stat === 4) {
 					s.add(sync.p.sId);
 				}
 			}
@@ -277,7 +294,7 @@ function _q_renderPack(p, sync, arr, arrLen, beginIdx) {
 	}
 	return q_renderTag(arr.slice(beginIdx, arrLen), p.renderParam.attr, type_isLast(), sync);
 }
-function renderLoop(syncInThisRender, renderResolve) {
+function renderLoop(syncInThisRender) {
 //for (const sync of syncInThisRender) {
 //	console.warn(111111111, sync.syncId, sync.beforeAnimation.size, sync.animation.size, new Set(sync.afterAnimation));
 //}
@@ -299,7 +316,7 @@ function renderLoop(syncInThisRender, renderResolve) {
 	}
 	if (pArr.length !== 0) {
 		Promise.all(pArr)
-			.then(() => renderLoop(syncInThisRender, renderResolve));
+			.then(() => renderLoop(syncInThisRender));
 		return;
 	}
 //amination
@@ -309,10 +326,9 @@ function renderLoop(syncInThisRender, renderResolve) {
 		}
 		const animation = new Set(sync.animation);
 		sync.animation.clear();
-		const p = addAnimation(sync, animation, syncInThisRender, renderResolve);
+		const p = addAnimation(sync, animation, syncInThisRender);
 		if (p !== null) {
 			pArr.push(p);
-//				.then(() => animationsReady(animation)));
 //		} else {
 //todo
 //console.log(11111111111111111);
@@ -320,7 +336,7 @@ function renderLoop(syncInThisRender, renderResolve) {
 	}
 	if (pArr.length !== 0) {
 		Promise.all(pArr)
-			.then(() => renderLoop(syncInThisRender, renderResolve));
+			.then(() => renderLoop(syncInThisRender));
 		return;
 	}
 //after
@@ -340,7 +356,7 @@ function renderLoop(syncInThisRender, renderResolve) {
 	}
 	if (pArr.length !== 0) {
 		Promise.all(pArr)
-			.then(() => renderLoop(syncInThisRender, renderResolve));
+			.then(() => renderLoop(syncInThisRender));
 		return;
 	}
 //scroll
@@ -354,11 +370,14 @@ function renderLoop(syncInThisRender, renderResolve) {
 		if (sync.stat !== 0) {
 			continue;
 		}
+		//todo подумать - наверное есть другой способ - слишком жирно для одного вотч-а
 		if (sync.onready.size !== 0) {
 			for (const h of sync.onready) {
 				h();
 			}
 		}
+		sync.stat = 4;
+		sync.resolve();
 		syncInRender.delete(sync);
 /*
 		for (const [iId, p] of sync.local) {
@@ -367,9 +386,8 @@ function renderLoop(syncInThisRender, renderResolve) {
 			}
 		}*/
 	}
-	renderResolve();
 }
-export function addAnimation(sync, animation, syncInThisRender, renderResolve) {
+export function addAnimation(sync, animation, syncInThisRender) {
 //todo
 if (sync.stat !== 0) {
 console.warn(111111111111111111);
@@ -391,8 +409,6 @@ console.warn(111111111111111111);
 			if (a.promise !== null) {
 				continue;
 			}
-//console.log(a)
-//alert(1)
 			sync.scrollAnimation.add(a);
 			a.promise = new Promise(resolve => {
 				a.resolve = resolve;
@@ -406,7 +422,7 @@ console.warn(111111111111111111);
 //					}
 //console.log(syncInThisRender, sync);
 //alert(1)
-					renderLoop(syncInThisRender, renderResolve);
+					renderLoop(syncInThisRender);
 				});
 		}
 	}
@@ -431,7 +447,7 @@ console.warn(111111111111111111);
 				}
 				animationsReady(toNow);
 //				if (pArr.length) {
-//					renderLoop(syncInThisRender, renderResolve);
+//					renderLoop(syncInThisRender);
 //				}
 				if (toDefered.size === 0) {
 					rafResolve();
@@ -707,7 +723,7 @@ alert(222);
 	}
 //console.timeEnd("p4")
 	renderParam.clear();
-//console.log(2, byD);
+console.log(2, new Map(byD));
 //alert(1);
 	return byD;
 }
@@ -716,6 +732,7 @@ function checkSync(sync, prepareByD) {
 //1 - new above
 //2 - new eq
 //3 - new below
+//4 - ready
 //console.log("cancel", sync.stat, sync, p);
 	if (sync.stat !== 0) {
 		return getPosStat(sync.p.sId, prepareByD);
@@ -728,7 +745,7 @@ function checkSync(sync, prepareByD) {
 		return stat;
 	}
 	sync.stat = stat;
-
+	sync.resolve();
 //--	syncInRender.delete(sync);
 
 //	dispatchLocalEvents(local);
@@ -785,54 +802,6 @@ if (!$src) {
 	}
 	return 0;
 }
-/*
-function _cancelSync(sync, stat) {
-	if (sync.stat !== 0) {
-		return;
-	}
-	sync.stat = stat;
-//todo--
-console.log("cancelSync", sync);
-	syncInRender.delete(sync);
-//	dispatchLocalEvents(local);
-
-//after
-//	if (sync.afterAnimation.size !== 0) {
-//		const pArr = [];
-//		for (const i of sync.afterAnimation) {
-//			pArr.push(i.handler());
-//		}
-//		if (pArr.length !== 0) {
-//			await Promise.all(pArr);
-//		}
-//	}
-//	if (sync.beforeAnimation.size !== 0) {
-//		const pArr = [];
-//		for (const i of sync.beforeAnimation) {
-//			pArr.push(i.handler());
-//		}
-//		if (pArr.length !== 0) {
-//			await Promise.all(pArr);
-//		}
-//	}
-	sync.beforeAnimation.clear();
-	sync.animation.clear();
-	sync.afterAnimation.clear();
-	sync.scrollAnimation.clear();
-	for (const a of sync.scrollAnimation) {
-		a.resolve();
-	}
-	sync.scrollAnimation.clear();
-
-	for (const [id, r] of sync.idleCallback) {
-		cancelIdleCallback(id);
-		r();
-	}
-	for (const [id, r] of sync.animationFrame) {
-		cancelAnimationFrame(id);
-		r();
-	}
-}*/
 //todo удалить - я пока не вижу смысла в эих параметрах
 function type_renderParam(scope, attr, isLinking) {
 	return {
@@ -858,6 +827,8 @@ function type_prepareByD(sId, srcIdSet, renderParam) {
 	};
 }
 function type_sync(syncId, sId, p) {
+	let resolve;
+	const promise = new Promise(res => resolve = res);
 	return {
 		syncId,
 //--		sId,
@@ -872,7 +843,9 @@ function type_sync(syncId, sId, p) {
 
 		idleCallback: new Map(),
 		animationFrame: new Map(),
-		stat: 0
+		stat: 0,
+		promise,
+		resolve
 	};
 }
 function debugInfo(byD, toCancleSync) {

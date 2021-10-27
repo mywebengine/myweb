@@ -26,7 +26,7 @@ self.p_topUrl = p_topUrl;
 export const defTaskOpt = {
 	timeout: 160
 };
-export const visibleScreenSize = 2;
+export const visibleScreenSize = 1;
 export const qPackLength = 100;
 
 export const globVarName = "glob";

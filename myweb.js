@@ -5,9 +5,10 @@
  * https://github.com/mywebengine/myweb
  */
 
-import {/*curRender, */syncInRender, render, addAnimation, animationsReady} from "./render/algo.js";
+import {/*curRender, */syncInRender, render, addAnimation} from "./render/algo.js";
 import "./addons.js";
 import {globVarName, locVarName} from "./config.js";
+import {$srcById} from "./descr.js";
 import {isAnimationVisible} from "./dom.js";
 import {getLoc, setLoc} from "./loc.js";
 import {getProxy} from "./proxy.js";
@@ -30,20 +31,26 @@ self[locVarName] = getProxy(getLoc(location.href));
 self.addEventListener("scroll", async () => {
 	for (const sync of syncInRender) {
 		if (sync.stat !== 0 || sync.scrollAnimation.size === 0) {
+//console.log(1);
 			continue;
 		}
 		const animation = new Set();
 		for (const a of sync.scrollAnimation) {
+//todo
+			if (!$srcById.has(a.viewedSrcId)) {
+				a.resolve();
+				continue;
+			}
 			if (isAnimationVisible(a)) {
 				animation.add(a);
 			}
 		}
 		if (animation.size === 0) {
-			return;
+//console.log(2);
+			continue;
 		}
-console.log(animation)
-		addAnimation(sync, animation, null, null);
-//			.then(() => animationsReady(animation));
+console.log("animation")
+		addAnimation(sync, animation, null);
 	}
 }, {
 	passive: true

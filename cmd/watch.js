@@ -44,7 +44,7 @@ function setValue(req, scope, val) {
 		});
 	} else {
 		req.sync.onready.add(() => {
-			c.isInit.add(eq.str);
+			c.isInit.add(req.str);
 			cur.watch = val;
 		});
 	}
