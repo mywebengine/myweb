@@ -509,6 +509,7 @@ export function q_cloneNode(req, sId, beginIdx, len) {//во время клон
 		const $i = $els[i];
 		fSrc = srcBy$src.get($i);
 		if (fSrc === undefined || !fSrc.isCmd) {
+//todo
 console.warn($i)
 			continue;
 		}
@@ -570,6 +571,7 @@ console.warn($i)
 	}
 	return $arr;
 }
+/*
 export function ___q_cloneNode(req, $els, beginIdx, len) {//во время клонирования будут созданы описания
 	const $arr = new Array(len),
 		on = [],
@@ -579,6 +581,7 @@ export function ___q_cloneNode(req, $els, beginIdx, len) {//во время кл
 		const $i = $els[i];
 		fSrc = srcBy$src.get($i);
 		if (fSrc === undefined || !fSrc.isCmd) {
+//todo
 console.log($i)
 			continue;
 		}
@@ -639,7 +642,7 @@ console.log($i)
 		}
 	}
 	return $arr;
-}
+}*/
 function q_cloneNodeCreate($e, $arr, $arrLen, asOneVal, type, baseAsOne) {
 	const src = srcBy$src.get($e);
 	if (src === undefined) {

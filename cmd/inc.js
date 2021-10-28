@@ -1,4 +1,4 @@
-import {renderTag, type_req, setReqCmd, type_animation, type_renderRes} from "../render/render.js";
+import {renderTag, type_req, setReqCmd, type_localCounter, type_animation, type_renderRes} from "../render/render.js";
 //import pimport from "../_pimport.js";
 import createArrFragment from "../arrfr.js";
 import {Tpl_doc, Tpl_$src, p_target, cmdPref, cmdArgsDiv, cmdArgsDivLen, incCmdName, fetchCmdName, foreachCmdName, elseCmdName, defaultCmdName, onCmdName, isFillingName, isFillingDiv, asOneIdxName, idxName, defRequestInit,
@@ -52,6 +52,15 @@ function incRender(req, val) {
 		$els = incGet$els(req.$src, req.str, req.expr, pos),
 		$elsLen = $els.length,
 		oldVal = getIdx(srcBy$src.get(req.$src), req.str);
+//todo
+	for (let i = 0; i < $elsLen; i++) {
+		const iSrc = srcBy$src.get($els[i]);
+		if (iSrc !== undefined) {
+			if (!req.local.has(iSrc.id)) {
+				req.local.set(iSrc.id, type_localCounter());
+			}
+		}
+	}
 //console.log(111, req, $els, oldVal, srcBy$src.get(req.$src));
 //alert(1);
 	//если выражение вернуло Request или Response, то такой запрос будет всегда запрашиваться
@@ -292,18 +301,26 @@ if ($els[i].parentNode !== $parent) {
 	continue;
 }*/
 		const iSrc = srcBy$src.get($els[i]);
-		removeChild($els[i]);
 		if (iSrc !== undefined) {
 			const l = req.local.get(iSrc.id);
+//if (!l) {
+//	console.log(req, iSrc.id);
+//	alert(1)
+//}
 			l.animationsCount = -1;
 			l.newSrcId = newSrcId;
-			if (iSrc.id !== req.sync.p.sId) {// && $els[i][p_srcId] !== req.$src[p_srcId]) {
-				continue;
+			if (iSrc.id === req.sync.p.sId) {// && $els[i][p_srcId] !== req.$src[p_srcId]) {
+				req.sync.p.sId = newSrcId;
+//				continue;
 			}
 		}
+		removeChild($els[i]);
+/*
 		for (let $i = $src;;) {
 			const iSrc = srcBy$src.get($i);
 			if (iSrc !== undefined) {
+console.warn(req.sync.p.sId, iSrc.id);
+alert(1)
 				req.sync.p.sId = iSrc.id;
 				//!!переписывать req.$src в данном случаи не имет смысла
 				break;
@@ -316,7 +333,7 @@ if ($els[i].parentNode !== $parent) {
 		for (i++; i < $elsLen; i++) {
 			removeChild($els[i]);
 		}
-		break;
+		break;*/
 	}
 //todo	if (oldVal !== undefined) {
 //		incClear(req.str, src, oldVal);

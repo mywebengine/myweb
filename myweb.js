@@ -5,7 +5,7 @@
  * https://github.com/mywebengine/myweb
  */
 
-import {/*curRender, */syncInRender, render, addAnimation} from "./render/algo.js";
+import {/*curRender, */syncInRender, render, renderLoop, addAnimation} from "./render/algo.js";
 import "./addons.js";
 import {globVarName, locVarName} from "./config.js";
 import {$srcById} from "./descr.js";
@@ -29,6 +29,8 @@ self[locVarName] = getProxy(getLoc(location.href));
 //self.syncInRender = syncInRender;
 
 self.addEventListener("scroll", async () => {
+	const pSet = new Set(),
+		syncIsEmptyTest = new Set();
 	for (const sync of syncInRender) {
 		if (sync.stat !== 0 || sync.scrollAnimation.size === 0) {
 //console.log(1);
@@ -36,21 +38,30 @@ self.addEventListener("scroll", async () => {
 		}
 		const animation = new Set();
 		for (const a of sync.scrollAnimation) {
-//todo
 			if (!$srcById.has(a.viewedSrcId)) {
-				a.resolve();
+				sync.scrollAnimation.delete(a);
+				syncIsEmptyTest.add(sync);
 				continue;
 			}
 			if (isAnimationVisible(a)) {
+				sync.scrollAnimation.delete(a);
 				animation.add(a);
 			}
 		}
-		if (animation.size === 0) {
-//console.log(2);
-			continue;
-		}
+		if (animation.size !== 0) {
 console.log("animation")
-		addAnimation(sync, animation, null);
+			pSet.add(addAnimation(sync, animation, true, true));
+		}
+	}
+//todo
+	if (pSet.size !== 0) {
+		Promise.all(pSet)
+//			.then(() => renderLoop(syncInRender));
+			.then(syncArr => renderLoop(syncArr));
+	}
+	if (syncIsEmptyTest.size !== 0) {
+//		renderLoop(syncInRender);
+		renderLoop(syncIsEmptyTest);
 	}
 }, {
 	passive: true

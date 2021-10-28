@@ -15,9 +15,11 @@ export function renderTag($src, scope, attr, sync, local) {
 //alert(1)
 	const src = srcBy$src.get($src),
 		sId = src.id;
-	if (!local) {
-		local = new Map();
-	}
+//	if (!local) {
+//		local = new Map();
+//	}
+	local = sync.local;
+
 //	local = new Map(local);
 	if (!local.has(sId)) {
 //todo если тег изменится в процессе???? - так то это не страшно - события этого элемента не должны нас возлновать (надо их исключить) а новый будет жить свое жизнью
@@ -126,12 +128,15 @@ export function q_renderTag(arr, attr, isLast, sync, local) {
 //console.log("q_render", arr.map(i => [i.$src, i.scope]), attr);
 //alert(1);
 	if (sync.stat !== 0) {
-		return arr;
+//		return arr;
+		return Promise.resolve(arr);
 	}
 	const arrLen = arr.length;
-	if (!local) {
-		local = new Map();
-	}
+//	if (!local) {
+//		local = new Map();
+//	}
+	local = sync.local;
+
 //	local = new Map(local);
 //	for (let i = arrLen - 1; i > -1; i--) {
 	for (let i = 0; i < arrLen; i++) {
@@ -464,7 +469,7 @@ export function type_q_arr($src, scope) {
 		scope
 	};
 }
-function type_localCounter() {
+export function type_localCounter() {
 	return {
 		animationsCount: 0,
 		newSrcId: 0

@@ -390,12 +390,21 @@ function q_add(req, ctx) {
 				$new = q_addI(req, sId, $fr, keysLen, idx, viewSize || 100, iIdxSet),//!!перенесли в аницации, что бы дать возможнасть отрисовать всё перед клонированием
 				$newLen = $new.length,
 				nIdx = idx + $newLen;
+			let $i = $new[$newLen - 1];
+			$i = $i[$i.length - 1];
 			$last.parentNode.insertBefore($fr, get$fromLast(req, $last, $elsLen - 1).nextSibling);
 			if (nIdx < keysLen) {
-				req.sync.afterAnimation.add(type_animation(() => q_forRenderI(req, ctx, $new, iIdxSet)
-					.then(() => q_addDefered(req, ctx, sId, keysLen, nIdx, viewSize || 100)), req.local, 0));
-					//!!поидеи передать бы ид $new[$newLen - 1] вместо sId
-				return;
+				for (; $i !== null; $i = $i.previousSibling) {
+					const iSrc = srcBy$src.get($i);
+					if (iSrc === undefined) {
+						continue;
+					}
+					req.sync.afterAnimation.add(type_animation(() => q_forRenderI(req, ctx, $new, iIdxSet)
+						.then(() => q_addDefered(req, ctx, iSrc.id, keysLen, nIdx, viewSize || 100)), req.local, 0));
+						//!!поидеи передать бы ид $new[$newLen - 1] вместо sId
+					return;
+				}
+//				return;
 			}
 			req.sync.afterAnimation.add(type_animation(() => q_forRenderI(req, ctx, $new, iIdxSet), req.local, 0));
 		}, req.local, 0));//!! нельзя не вставить этот элементи двигасться дальше, так что если даже на момент отрисовки его не будет видно, его всё рано нужно вставить
@@ -406,6 +415,7 @@ function q_add(req, ctx) {
 	}
 }
 function q_addDefered(req, ctx, sId, keysLen, idx, step) {
+console.error(sId, is$visible($srcById.get(sId)));
 	return new Promise(ricResolve => {//обязательно нужден проимс
 		const ricId = requestIdleCallback(() => {
 			req.sync.idleCallback.delete(ricId);
@@ -418,17 +428,27 @@ function q_addDefered(req, ctx, sId, keysLen, idx, step) {
 					$new = q_addI(req, sId, $fr, keysLen, idx, step, iIdxSet),
 					$newLen = $new.length,
 					$last = get$fromLast(req, $srcById.get(sId), idx - 1);
+				let $i = $new[$newLen - 1];
+				$i = $i[$i.length - 1];
 				$last.parentNode.insertBefore($fr, $last.nextSibling);
 				req.sync.afterAnimation.add(type_animation(() => q_forRenderI(req, ctx, $new, iIdxSet)
 					.then(() => {
 						idx += $newLen;
 						if (idx < keysLen) {
-							req.sync.afterAnimation.add(type_animation(() => q_addDefered(req, ctx, sId, keysLen, idx, step), req.local, 0));
-							//!!поидеи передать бы ид $new[$newLen - 1] вместо sId
+							for (; $i !== null; $i = $i.previousSibling) {
+								const iSrc = srcBy$src.get($i);
+								if (iSrc === undefined) {
+									continue;
+								}
+								req.sync.afterAnimation.add(type_animation(() => q_addDefered(req, ctx, iSrc.id, keysLen, idx, step), req.local, 0));
+								//!!поидеи передать бы ид $new[$newLen - 1] вместо sId
+								return;
+							}
 						}
 					}), req.local, 0));
 //			}, req.local, $from[$fromLen - 1][p_srcId]));//!!если передаь элемент для скрола, то получается штука: если прокручиваем быстро то можем (вставилось много, но неотрендерелось еще, мы прокрутим на конеч вставки и получим что первые теги взтавки $from[$fromLen - 1][p_srcId] не видны - добавиться скролл анимация - а в ней дальнейшая вставка блоков - и на этом рендер оставнавливается, пока не докрутим до неё)// - да, и такая логика рендера неестественна - на сервере всё равно все будет отрендерено
-			}, req.local, 0));
+//			}, req.local, 0));
+			}, req.local, sId));
 			ricResolve();
 		}, {
 			timeout: 1000
