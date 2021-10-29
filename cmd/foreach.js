@@ -232,190 +232,63 @@ function forGet$els($e, str, expr, pos) {
 	}
 	return [[$e]];
 }
-/*
-function __q_add(req, ctx, $elsLen, keysLen) {
-	const $from = ctx.$els[$elsLen - 1];
-	for (let $i = $from[$from.length - 1]; $i !== null; $i = $i.previousSibling) {
-		const iSrc = srcBy$src.get($i);
-		if (iSrc === undefined || !iSrc.isCmd) {
-			continue;
-		}
-//не фапкт что они отренерелись сверху вниз - попорядку!
-
-		let sId = iSrc.id;
-
-		let l = req.local.get(sId);
-		if (l !== undefined && l.animationsCount === -1) {
-			const $src = $srcById.get(sId),
-				src = srcById.get(sId),
-				descr = src.descr,
-				$from = get$els($src, descr.get$elsByStr, getNextStr(src, req.str));
-//todo  нужно переносить на стр - атрибуты мешаю рендерить фор->инк (1)
-			ctx.attrsAfter = getAttrAfter(descr.attr, req.str);
-			q_addAdd(req, ctx, $elsLen, keysLen, $from);
-			return;
-		}
-
-
-
-		const $p = req.$src.parentNode;
-		const f = (evt) => {
-console.log(33, req.sync.stat, evt.target)
-			if (req.sync.stat !== 0) {
-				$p.removeEventListener("render", f);
-				return;
-			}
-//			if (evt.target !== req.$src) {
-//				return;
-//			}
-			let l = req.local.get(sId);
-//todo--
-			if (l === undefined) {
-console.warn(423432423423, evt.target);
-alert(1);
-//				req.sync.afterAnimation.add(type_animation2(() => q_addWaitingRender(req, ctx, $elsLen, keysLen, sId), req.local, 0));
-				return;
-			}
-			while (l.newSrcId !== 0) {
-				sId = l.newSrcId;
-				//todo
-				if (!$srcById.has(sId)) {
-					console.warn(23423423);
-					return;
-				}
-				l = req.local.get(sId);
-				if (l === undefined) {
-console.warn(423432423423, evt.target);
-alert(1);
-///					req.sync.afterAnimation.add(type_animation2(() => q_addWaitingRender(req, ctx, $elsLen, keysLen, sId), req.local, 0));
-					return;
-				}
-			}
-//todo--
-			if (l.animationsCount !== -1) {
-console.warn(423432423423, sId, l, evt.target);
-//alert(1);
-return;
-			}
-//todo--
-			if (!srcById.has(sId)) {
-console.warn(423432423423, evt.target);
-alert(1);
-				return;
-			}
-console.log(1112, evt.target);
-			req.sync.onready.delete(r);
-			$p.removeEventListener("render", f);
-
-			const $src = $srcById.get(sId),
-				src = srcById.get(sId),
-				descr = src.descr,
-				$from = get$els($src, descr.get$elsByStr, getNextStr(src, req.str));
-//todo  нужно переносить на стр - атрибуты мешаю рендерить фор->инк (1)
-			ctx.attrsAfter = getAttrAfter(descr.attr, req.str);
-			q_addAdd(req, ctx, $elsLen, keysLen, $from);
-//			q_addWaitingRender(req, ctx, $elsLen, keysLen, iSrc.id);
-		}
-		const r = () => {
-			$p.removeEventListener("render", f);
-		}
-console.log(56555555555555555, req, $i, iSrc.id, req.local);
-		$p.addEventListener("render", f);
-		req.sync.onready.add(r);
-//		req.sync.afterAnimation.add(type_animation2(() => q_addWaitingRender(req, ctx, $elsLen, keysLen, iSrc.id), req.local, 0));
-		return;
-	}
-	throw check(new Error(`>>>Tpl foreach:q_add: элемент затёрт, такого не должно случаться - команда после ${req.str} затёрла его`), req.$src, req);
-}
-function q_addWaitingRender(req, ctx, $elsLen, keysLen, sId) {
-	let l = req.local.get(sId);
-console.warn(sId);
-//alert(sId)
-	if (l === undefined) {
-		req.sync.afterAnimation.add(type_animation2(() => q_addWaitingRender(req, ctx, $elsLen, keysLen, sId), req.local, 0));
-		return;
-	}
-	while (l.newSrcId !== 0) {
-		sId = l.newSrcId;
-//todo
-if (!$srcById.has(sId)) {
-	console.warn(23423423);
-	return;
-}
-		l = req.local.get(sId);
-		if (l === undefined) {
-			req.sync.afterAnimation.add(type_animation2(() => q_addWaitingRender(req, ctx, $elsLen, keysLen, sId), req.local, 0));
-			return;
-		}
-	}
-	if (l.animationsCount !== -1) {
-		req.sync.afterAnimation.add(type_animation2(() => q_addWaitingRender(req, ctx, $elsLen, keysLen, sId), req.local, 0));
-		return;
-	}
-	if (!srcById.has(sId)) {
-		return;
-	}
-	const $src = $srcById.get(sId),
-		src = srcById.get(sId),
-		descr = src.descr,
-		$from = get$els($src, descr.get$elsByStr, getNextStr(src, req.str));
-//todo  нужно переносить на стр - атрибуты мешаю рендерить фор->инк (1)
-	ctx.attrsAfter = getAttrAfter(descr.attr, req.str);
-	q_addAdd(req, ctx, $elsLen, keysLen, $from);
-}*/
 function q_add(req, ctx) {
 	const $elsLen = ctx.$els.length,
 		keysLen = ctx.keys.length,
 		$from = ctx.$els[$elsLen - 1],
 		$fromLen = $from.length,
-		$last = $from[$fromLen - 1],
-		idx = $elsLen,
-		sId = srcBy$src.get(req.$src).id;
-//	q_addAdd(req, ctx);
-//}
-//function q_addAdd(req, ctx, $elsLen, keysLen, $from, sId) {
-//	const $fromLen = $from.length,
-//		$last = $from[$fromLen - 1],
-//		idx = $elsLen;
-	let viewSize = 0;
+		$fromLast = $from[$fromLen - 1],
+		idx = $elsLen;
+	let viewSize = 0,
+		sId = 0;
 	for (let j = 0; j < $fromLen; j++) {
 		viewSize += $from[j].offsetHeight;
+		const iSrc = srcBy$src.get($from[j]);
+		if (sId === 0 && iSrc !== undefined) {
+			sId = iSrc.id;
+		}
 	}
-	viewSize = Math.ceil(document.scrollingElement.clientHeight * visibleScreenSize / viewSize);//todo расположение можжет быть и горизонтальным, тогда будем рендерить по одной* штуке
-	if (is$visible($last)) {
-		req.sync.animation.add(type_animation(() => {
-			const $fr = Tpl_doc.createDocumentFragment(),
-				iIdxSet = new Set(),
-//				$new = q_addI(req, $from, $fr, keysLen, idx, viewSize || 100, iIdxSet),//!!перенесли в аницации, что бы дать возможнасть отрисовать всё перед клонированием
-				$new = q_addI(req, sId, $fr, keysLen, idx, viewSize || 100, iIdxSet),//!!перенесли в аницации, что бы дать возможнасть отрисовать всё перед клонированием
-				$newLen = $new.length,
-				nIdx = idx + $newLen;
-			let $i = $new[$newLen - 1];
-			$i = $i[$i.length - 1];
-			$last.parentNode.insertBefore($fr, get$fromLast(req, $last, $elsLen - 1).nextSibling);
-			if (nIdx < keysLen) {
-				for (; $i !== null; $i = $i.previousSibling) {
-					const iSrc = srcBy$src.get($i);
-					if (iSrc === undefined) {
-						continue;
-					}
-					req.sync.afterAnimation.add(type_animation(() => q_forRenderI(req, ctx, $new, iIdxSet)
-						.then(() => q_addDefered(req, ctx, iSrc.id, keysLen, nIdx, viewSize || 100)), req.local, 0));
-						//!!поидеи передать бы ид $new[$newLen - 1] вместо sId
-					return;
-				}
-//				return;
-			}
-			req.sync.afterAnimation.add(type_animation(() => q_forRenderI(req, ctx, $new, iIdxSet), req.local, 0));
-		}, req.local, 0));//!! нельзя не вставить этот элементи двигасться дальше, так что если даже на момент отрисовки его не будет видно, его всё рано нужно вставить
+//	if (sId === 0) {
+//		throw new Error("foreach.js");
+//	}
+	const step = Math.ceil(document.scrollingElement.clientHeight * visibleScreenSize / viewSize) || 100;//todo расположение можжет быть и горизонтальным, тогда будем рендерить по одной* штуке
+	if (is$visible($fromLast)) {
+		req.sync.animation.add(type_animation(() => q_addInsert(req, ctx, sId, keysLen, idx, step, $fromLast), req.local, 0));//!! нельзя не вставить этот элементи двигасться дальше, так что если даже на момент отрисовки его не будет видно, его всё рано нужно вставить
 		return;
 	}
-	if (idx < keysLen) {
-		req.sync.afterAnimation.add(type_animation(() => q_addDefered(req, ctx, sId, keysLen, idx, viewSize || 100), req.local, 0));
-	}
+	req.sync.afterAnimation.add(type_animation(() => q_addDefered(req, ctx, sId, keysLen, idx, step), req.local, 0));
+/*
+	req.sync.animation.add(type_animation(() => {
+		q_addInsert(req, ctx, sId, keysLen, idx, step, $fromLast);
+		const $fr = Tpl_doc.createDocumentFragment(),
+			iIdxSet = new Set(),
+			$new = q_addI(req, sId, $fr, keysLen, idx, step, iIdxSet),//!!перенесли в аницации, что бы дать возможнасть отрисовать всё перед клонированием
+			$last = get$fromLast(req, $fromLast, $elsLen - 1),
+			nIdx = idx + $newLen;
+		if (nIdx >= keysLen) {
+			$last.parentNode.insertBefore($fr, $last.nextSibling);
+			req.sync.afterAnimation.add(type_animation(() => q_forRenderI(req, ctx, $new, iIdxSet), req.local, 0));
+			return;
+		}
+		const $newLen = $new.length,
+			$newLast = $new[$newLen - 1];
+		for (let $i = $newLast[$newLast.length - 1]; $i !== null; $i = $i.previousSibling) {
+			const iSrc = srcBy$src.get($i);
+			if (iSrc === undefined) {
+				continue;
+			}
+			sId = iSrc.id;
+			$last.parentNode.insertBefore($fr, $last.nextSibling);
+			req.sync.afterAnimation.add(type_animation(() => q_forRenderI(req, ctx, $new, iIdxSet)
+				.then(() => q_addDefered(req, ctx, sId, keysLen, nIdx, step)), req.local, 0));
+			return;
+		}
+		throw new Error("foreach.js");
+	}, req.local, 0));//!! нельзя не вставить этот элементи двигасться дальше, так что если даже на момент отрисовки его не будет видно, его всё рано нужно вставить
+        */
 }
 function q_addDefered(req, ctx, sId, keysLen, idx, step) {
-console.error(sId, is$visible($srcById.get(sId)));
+//console.error(sId, is$visible($srcById.get(sId)));
 	return new Promise(ricResolve => {//обязательно нужден проимс
 		const ricId = requestIdleCallback(() => {
 			req.sync.idleCallback.delete(ricId);
@@ -423,17 +296,40 @@ console.error(sId, is$visible($srcById.get(sId)));
 				for (let l = req.local.get(sId); l.newSrcId !== 0; l = req.local.get(sId)) {
 					sId = l.newSrcId;
 				}
+				q_addInsert(req, ctx, sId, keysLen, idx, step, $srcById.get(sId));
+/*
 				const $fr = Tpl_doc.createDocumentFragment(),//этот блоек не в анимации, что бы не тормозить в raf-е
 					iIdxSet = new Set(),
 					$new = q_addI(req, sId, $fr, keysLen, idx, step, iIdxSet),
-					$newLen = $new.length,
-					$last = get$fromLast(req, $srcById.get(sId), idx - 1);
+					$last = get$fromLast(req, $srcById.get(sId), idx - 1);//!!
+				//!!
+				idx += $newLen;
+				if (idx >= keysLen) {
+					$last.parentNode.insertBefore($fr, $last.nextSibling);
+					req.sync.afterAnimation.add(type_animation(() => q_forRenderI(req, ctx, $new, iIdxSet), req.local, 0));
+					return;
+				}
+				const $newLen = $new.length,
+					$newLast = $new[$newLen - 1];
+				for (let $i = $newLast[$newLast.length - 1]; $i !== null; $i = $i.previousSibling) {
+					const iSrc = srcBy$src.get($i);
+					if (iSrc === undefined) {
+						continue;
+					}
+					sId = iSrc.id;
+					$last.parentNode.insertBefore($fr, $last.nextSibling);
+					req.sync.afterAnimation.add(type_animation(() => q_forRenderI(req, ctx, $new, iIdxSet)
+						.then(() => q_addDefered(req, ctx, sId, keysLen, idx, step)), req.local, 0));
+					return;
+				}
+				throw new Error("foreach.js");
+
+
 				let $i = $new[$newLen - 1];
 				$i = $i[$i.length - 1];
 				$last.parentNode.insertBefore($fr, $last.nextSibling);
 				req.sync.afterAnimation.add(type_animation(() => q_forRenderI(req, ctx, $new, iIdxSet)
 					.then(() => {
-						idx += $newLen;
 						if (idx < keysLen) {
 							for (; $i !== null; $i = $i.previousSibling) {
 								const iSrc = srcBy$src.get($i);
@@ -445,7 +341,7 @@ console.error(sId, is$visible($srcById.get(sId)));
 								return;
 							}
 						}
-					}), req.local, 0));
+					}), req.local, 0));*/
 //			}, req.local, $from[$fromLen - 1][p_srcId]));//!!если передаь элемент для скрола, то получается штука: если прокручиваем быстро то можем (вставилось много, но неотрендерелось еще, мы прокрутим на конеч вставки и получим что первые теги взтавки $from[$fromLen - 1][p_srcId] не видны - добавиться скролл анимация - а в ней дальнейшая вставка блоков - и на этом рендер оставнавливается, пока не докрутим до неё)// - да, и такая логика рендера неестественна - на сервере всё равно все будет отрендерено
 //			}, req.local, 0));
 			}, req.local, sId));
@@ -455,6 +351,32 @@ console.error(sId, is$visible($srcById.get(sId)));
 		});
 		req.sync.idleCallback.set(ricId, ricResolve);
 	});
+}
+function q_addInsert(req, ctx, sId, keysLen, idx, step, $fromLast) {
+	const $fr = Tpl_doc.createDocumentFragment(),
+		iIdxSet = new Set(),
+		$new = q_addI(req, sId, $fr, keysLen, idx, step, iIdxSet),//!!перенесли в аницации, что бы дать возможнасть отрисовать всё перед клонированием
+		$newLen = $new.length,
+		$last = get$fromLast(req, $fromLast, idx - 1);
+	idx += $newLen;
+	if (idx >= keysLen) {
+		$last.parentNode.insertBefore($fr, $last.nextSibling);
+		req.sync.afterAnimation.add(type_animation(() => q_forRenderI(req, ctx, $new, iIdxSet), req.local, 0));
+		return;
+	}
+	const $newLast = $new[$newLen - 1];
+	for (let $i = $newLast[$newLast.length - 1]; $i !== null; $i = $i.previousSibling) {
+		const iSrc = srcBy$src.get($i);
+		if (iSrc === undefined) {
+			continue;
+		}
+		sId = iSrc.id;
+		$last.parentNode.insertBefore($fr, $last.nextSibling);
+		req.sync.afterAnimation.add(type_animation(() => q_forRenderI(req, ctx, $new, iIdxSet)
+			.then(() => q_addDefered(req, ctx, sId, keysLen, idx, step)), req.local, 0));
+		return;
+	}
+	throw new Error("foreach.js");
 }
 function get$fromLast(req, $from, $fromIdx) {
 //	const asOneIdx = srcBy$src.get($from).asOneIdx.get(req.str);
@@ -471,43 +393,6 @@ function get$fromLast(req, $from, $fromIdx) {
 	}
 	return $from;
 }
-/*
-function prepare$from($from, $fromLen) {
-	for (let i = $fromLen - 1; i > -1; i--) {
-		if ($from[i].parentNode === null) {//если на предыдущей команде был удалён
-			continue;
-		}
-		const j = i + 1;
-		if (j !== $fromLen) {
-			$from.splice(j, $fromLen - i);
-			return j;
-		}
-		return $fromLen;
-	}
-	return $fromLen;
-}
-function get$fromLast(req, $fromLast, $fromIdx) {
-	for (let $i = $fromLast; $i !== null; $i = $i.previousSibling) {
-		const iSrc = srcBy$src.get($i);
-		if (iSrc === undefined || !iSrc.isCmd) {
-			continue;
-		}
-		const asOneIdx = iSrc.asOneIdx.get(req.str);
-		for ($i = $fromLast.nextSibling; $i !== null; $i = $i.nextSibling) {
-			const iSrc = srcBy$src.get($i);
-			if (iSrc === undefined || !iSrc.isCmd) {
-				continue;
-			}
-			if (iSrc.asOneIdx === null || iSrc.asOneIdx.get(req.str) !== asOneIdx || getIdx(iSrc, req.str) !== $fromIdx) {
-				return $fromLast;
-			}
-			$fromLast = $i;
-		}
-		return $fromLast;
-	}
-	throw check(new Error(`>>>Tpl foreach:get$fromLast: элемент цикла стёрт, такого не должно случаться - команда поле ${req.str} затёрла его`), req.$src, req);
-}*/
-//function q_addI(req, $from, $fr, keysLen, idx, step, idxSet) {
 function q_addI(req, sId, $fr, keysLen, idx, step, idxSet) {
 	const len = idx + step > keysLen ? keysLen - idx : step,
 //		$new = q_cloneNode(req, $from, idx, len),

@@ -511,7 +511,7 @@ export function type_animation2(handler, local, viewedSrcId) {
 		viewedSrcId,
 
 		promise: null,
-		resolve: null
+//todo		resolve: null
 	};
 }
 export function type_renderRes(isLast, $src = null, $last = null, $attr = null, attr = null) {

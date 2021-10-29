@@ -76,8 +76,8 @@ function _tryRender() {
 		byD = prepareRenderParam(renderParam, toCancleSync),
 		repeatByD = new Map();
 	if (syncInRender.size !== 0) {
-		const toRemByD = new Set();/*,
-			s = new Set();
+		const toRemByD = new Set(),
+			s = new Set();//для того: если были уже отменены синки и мы их пустим на проверку то полдучится, что новые параметры будут удалены из-за условия curStat !== 0
 		for (const sync of syncInRender) {
 			if (sync.stat === 0) {// && srcById.has(sync.p.sId)) {
 				s.add(sync);
@@ -85,10 +85,8 @@ function _tryRender() {
 			} else {
 console.warn(1111111111111, sync)
 			}
-		}*/
-		for (const sync of syncInRender) {
-//console.log(11111111, sync.p.sId, srcById.has(sync.p.sId), sync)
-//console.log("111", sync, new Map(byD));
+		}
+		for (const sync of s) {
 			for (const [dId, p] of byD) {
 				const curStat = sync.stat,
 					stat = curStat === 0 ? checkSync(sync, p) : curStat;
@@ -104,8 +102,6 @@ console.warn(1111111111111, sync)
 				}
 				toCancleSync.add(sync);
 				toRemByD.add(dId);//чтобы для следующих синков иметь возможнасть отменить их - для случая если этот ниже
-//console.log("2repeat", stat, sync, sync.p.sId, p.srcIdSet, new Map(byD), dId);
-//				byD.delete(dId);
 				if (sync.p.renderParam.isLinking) {
 					sync.p.renderParam.isLinking = false;
 				}
@@ -115,9 +111,6 @@ console.warn(1111111111111, sync)
 					for (const sId of p.srcIdSet) {
 						renderParam.set(sId, type_renderParam(null, null, false));
 					}
-//нииже					for (const [dId, p] of prepareRenderParam(renderParam, toCancleSync)) {
-//						repeatByD.set(dId, p);
-//					}
 					continue;
 				}
 				if (stat === 3) {//below
@@ -375,13 +368,11 @@ export function renderLoop(syncInThisRender) {
 	}
 //scroll
 	for (const sync of syncInThisRender) {
-		if (sync.stat !== 0 && sync.scrollAnimation.size === 0 && sync.idleCallback.size === 0) {
+		if (sync.stat !== 0 || sync.scrollAnimation.size === 0 && sync.idleCallback.size === 0) {
 			continue;
 		}
 		return;
 	}
-console.log(syncInThisRender);
-alert(1)
 	for (const sync of syncInThisRender) {
 		if (sync.stat !== 0) {
 console.warn(23423423423);
@@ -433,21 +424,6 @@ alert(1)
 			}
 			sync.scrollAnimation.add(a);
 			a.promise = 1;
-/*
-			a.promise = new Promise(resolve => {
-				a.resolve = resolve;
-			})
-				.then(() => {
-					sync.scrollAnimation.delete(a);
-//					for (const i of syncInThisRender) {
-//						if (i.scrollAnimation.size !== 0 && i.stat === 0) {
-//							return;
-//						}
-//					}
-//console.log(syncInThisRender, sync);
-//alert(1)
-					renderLoop(syncInThisRender);
-				});*/
 		}
 	}
 //console.error(toNow.size, toDefered.size, sync.scrollAnimation.size, isScroll, isSet);
