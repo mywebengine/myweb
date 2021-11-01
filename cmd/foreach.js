@@ -39,7 +39,7 @@ export default {
 					res = new Array(arrLen);
 				for (let i = 0; i < arrLen; i++) {
 					if (!isLast.has(i)) {
-						res[i] = foreachRender(type_req(arr[i].$src, req.str, req.expr, arr[i].scope, req.sync, req.local), vals[i]);
+						res[i] = foreachRender(type_req(arr[i].$src, req.str, req.expr, arr[i].scope, req.sync), vals[i]);
 					}
 				}
 				return res;
@@ -64,13 +64,13 @@ function foreachRender(req, val) {
 		$last = l[l.length - 1];
 	if (keysLen === 0) {
 		show$first(req, ctx, hide);
-		req.sync.animation.add(type_animation(() => {
+		req.sync.animations.add(type_animation(() => {
 			for (let j, i = $elsLen - 1; i > 0; i--) {
 				for (j = ctx.$els[i].length - 1; j > -1; j--) {
 					removeChild(ctx.$els[i][j]);
 				}
 			}
-		}, req.local, 0));
+		}, req.sync.local, 0));
 		return type_renderRes(true, null, $last);
 	}
 //console.error("for ctx", ctx.$els, ctx, req);
@@ -86,7 +86,7 @@ function foreachRender(req, val) {
 				for (let j = $ee.length - 1; j > -1; j--) {
 					$ee[j] = $ee[j].content.firstChild;
 				}
-				req.sync.afterAnimation.add(type_animation(() => q_forRender(req, ctx, $elsLen < keysLen ? () => q_add(req, ctx) : null, null), req.local, 0));
+				req.sync.afterAnimations.add(type_animation(() => q_forRender(req, ctx, $elsLen < keysLen ? () => q_add(req, ctx) : null, null), req.sync.local, 0));
 				return res;
 			}
 		}
@@ -107,22 +107,22 @@ function foreachRender(req, val) {
 		}
 	}
 	ctx.$els.splice(keysLen, $elsLen - keysLen);
-	req.sync.animation.add(type_animation(() => { 
+	req.sync.animations.add(type_animation(() => { 
 		for (const $i of toRem) {
 			removeChild($i);
 		}
-	}, req.local, 0));
-	req.sync.afterAnimation.add(type_animation(() => q_forRender(req, ctx, null, null), req.local, 0));
+	}, req.sync.local, 0));
+	req.sync.afterAnimations.add(type_animation(() => q_forRender(req, ctx, null, null), req.sync.local, 0));
 	return res;
 /*
 	const p = q_forRender(req, ctx);
 	return p === null ? res : p
 		.then(() => {
-			req.sync.animation.add(type_animation(() => { 
+			req.sync.animations.add(type_animation(() => { 
 				for (const $i of toRem) {
 					removeChild($i);
 				}
-			}, req.local, 0));
+			}, req.sync.local, 0));
 			return res;
 		});*/
 }
@@ -253,21 +253,21 @@ function q_add(req, ctx) {
 //	}
 	const step = Math.ceil(document.scrollingElement.clientHeight * visibleScreenSize / viewSize) || 100;//todo расположение можжет быть и горизонтальным, тогда будем рендерить по одной* штуке
 	if (is$visible($fromLast)) {
-		req.sync.animation.add(type_animation(() => q_addInsert(req, ctx, sId, keysLen, idx, step, $fromLast), req.local, 0));//!! нельзя не вставить этот элементи двигасться дальше, так что если даже на момент отрисовки его не будет видно, его всё рано нужно вставить
+		req.sync.animations.add(type_animation(() => q_addInsert(req, ctx, sId, keysLen, idx, step, $fromLast), req.sync.local, 0));//!! нельзя не вставить этот элементи двигасться дальше, так что если даже на момент отрисовки его не будет видно, его всё рано нужно вставить
 		return;
 	}
-	req.sync.afterAnimation.add(type_animation(() => q_addDefered(req, ctx, sId, keysLen, idx, step), req.local, 0));
+	req.sync.afterAnimations.add(type_animation(() => q_addDeferred(req, ctx, sId, keysLen, idx, step), req.sync.local, 0));
 /*
-	req.sync.animation.add(type_animation(() => {
+	req.sync.animations.add(type_animation(() => {
 		q_addInsert(req, ctx, sId, keysLen, idx, step, $fromLast);
 		const $fr = Tpl_doc.createDocumentFragment(),
-			iIdxSet = new Set(),
-			$new = q_addI(req, sId, $fr, keysLen, idx, step, iIdxSet),//!!перенесли в аницации, что бы дать возможнасть отрисовать всё перед клонированием
+			idxs = new Set(),
+			$new = q_addI(req, sId, $fr, keysLen, idx, step, idxs),//!!перенесли в аницации, что бы дать возможнасть отрисовать всё перед клонированием
 			$last = get$fromLast(req, $fromLast, $elsLen - 1),
 			nIdx = idx + $newLen;
 		if (nIdx >= keysLen) {
 			$last.parentNode.insertBefore($fr, $last.nextSibling);
-			req.sync.afterAnimation.add(type_animation(() => q_forRenderI(req, ctx, $new, iIdxSet), req.local, 0));
+			req.sync.afterAnimations.add(type_animation(() => q_forRenderI(req, ctx, $new, idxs), req.sync.local, 0));
 			return;
 		}
 		const $newLen = $new.length,
@@ -279,34 +279,34 @@ function q_add(req, ctx) {
 			}
 			sId = iSrc.id;
 			$last.parentNode.insertBefore($fr, $last.nextSibling);
-			req.sync.afterAnimation.add(type_animation(() => q_forRenderI(req, ctx, $new, iIdxSet)
-				.then(() => q_addDefered(req, ctx, sId, keysLen, nIdx, step)), req.local, 0));
+			req.sync.afterAnimations.add(type_animation(() => q_forRenderI(req, ctx, $new, idxs)
+				.then(() => q_addDeferred(req, ctx, sId, keysLen, nIdx, step)), req.sync.local, 0));
 			return;
 		}
 		throw new Error("foreach.js");
-	}, req.local, 0));//!! нельзя не вставить этот элементи двигасться дальше, так что если даже на момент отрисовки его не будет видно, его всё рано нужно вставить
+	}, req.sync.local, 0));//!! нельзя не вставить этот элементи двигасться дальше, так что если даже на момент отрисовки его не будет видно, его всё рано нужно вставить
         */
 }
-function q_addDefered(req, ctx, sId, keysLen, idx, step) {
+function q_addDeferred(req, ctx, sId, keysLen, idx, step) {
 //console.error(sId, is$visible($srcById.get(sId)));
 	return new Promise(ricResolve => {//обязательно нужден проимс
 		const ricId = requestIdleCallback(() => {
 			req.sync.idleCallback.delete(ricId);
-			req.sync.animation.add(type_animation(() => {
-				for (let l = req.local.get(sId); l.newSrcId !== 0; l = req.local.get(sId)) {
+			req.sync.animations.add(type_animation(() => {
+				for (let l = req.sync.local.get(sId); l.newSrcId !== 0; l = req.sync.local.get(sId)) {
 					sId = l.newSrcId;
 				}
 				q_addInsert(req, ctx, sId, keysLen, idx, step, $srcById.get(sId));
 /*
 				const $fr = Tpl_doc.createDocumentFragment(),//этот блоек не в анимации, что бы не тормозить в raf-е
-					iIdxSet = new Set(),
-					$new = q_addI(req, sId, $fr, keysLen, idx, step, iIdxSet),
+					idxs = new Set(),
+					$new = q_addI(req, sId, $fr, keysLen, idx, step, idxs),
 					$last = get$fromLast(req, $srcById.get(sId), idx - 1);//!!
 				//!!
 				idx += $newLen;
 				if (idx >= keysLen) {
 					$last.parentNode.insertBefore($fr, $last.nextSibling);
-					req.sync.afterAnimation.add(type_animation(() => q_forRenderI(req, ctx, $new, iIdxSet), req.local, 0));
+					req.sync.afterAnimations.add(type_animation(() => q_forRenderI(req, ctx, $new, idxs), req.sync.local, 0));
 					return;
 				}
 				const $newLen = $new.length,
@@ -318,8 +318,8 @@ function q_addDefered(req, ctx, sId, keysLen, idx, step) {
 					}
 					sId = iSrc.id;
 					$last.parentNode.insertBefore($fr, $last.nextSibling);
-					req.sync.afterAnimation.add(type_animation(() => q_forRenderI(req, ctx, $new, iIdxSet)
-						.then(() => q_addDefered(req, ctx, sId, keysLen, idx, step)), req.local, 0));
+					req.sync.afterAnimations.add(type_animation(() => q_forRenderI(req, ctx, $new, idxs)
+						.then(() => q_addDeferred(req, ctx, sId, keysLen, idx, step)), req.sync.local, 0));
 					return;
 				}
 				throw new Error("foreach.js");
@@ -328,7 +328,7 @@ function q_addDefered(req, ctx, sId, keysLen, idx, step) {
 				let $i = $new[$newLen - 1];
 				$i = $i[$i.length - 1];
 				$last.parentNode.insertBefore($fr, $last.nextSibling);
-				req.sync.afterAnimation.add(type_animation(() => q_forRenderI(req, ctx, $new, iIdxSet)
+				req.sync.afterAnimations.add(type_animation(() => q_forRenderI(req, ctx, $new, idxs)
 					.then(() => {
 						if (idx < keysLen) {
 							for (; $i !== null; $i = $i.previousSibling) {
@@ -336,15 +336,15 @@ function q_addDefered(req, ctx, sId, keysLen, idx, step) {
 								if (iSrc === undefined) {
 									continue;
 								}
-								req.sync.afterAnimation.add(type_animation(() => q_addDefered(req, ctx, iSrc.id, keysLen, idx, step), req.local, 0));
+								req.sync.afterAnimations.add(type_animation(() => q_addDeferred(req, ctx, iSrc.id, keysLen, idx, step), req.sync.local, 0));
 								//!!поидеи передать бы ид $new[$newLen - 1] вместо sId
 								return;
 							}
 						}
-					}), req.local, 0));*/
-//			}, req.local, $from[$fromLen - 1][p_srcId]));//!!если передаь элемент для скрола, то получается штука: если прокручиваем быстро то можем (вставилось много, но неотрендерелось еще, мы прокрутим на конеч вставки и получим что первые теги взтавки $from[$fromLen - 1][p_srcId] не видны - добавиться скролл анимация - а в ней дальнейшая вставка блоков - и на этом рендер оставнавливается, пока не докрутим до неё)// - да, и такая логика рендера неестественна - на сервере всё равно все будет отрендерено
-//			}, req.local, 0));
-			}, req.local, sId));
+					}), req.sync.local, 0));*/
+//			}, req.sync.local, $from[$fromLen - 1][p_srcId]));//!!если передаь элемент для скрола, то получается штука: если прокручиваем быстро то можем (вставилось много, но неотрендерелось еще, мы прокрутим на конеч вставки и получим что первые теги взтавки $from[$fromLen - 1][p_srcId] не видны - добавиться скролл анимация - а в ней дальнейшая вставка блоков - и на этом рендер оставнавливается, пока не докрутим до неё)// - да, и такая логика рендера неестественна - на сервере всё равно все будет отрендерено
+//			}, req.sync.local, 0));
+			}, req.sync.local, sId));
 			ricResolve();
 		}, {
 			timeout: 1000
@@ -354,14 +354,14 @@ function q_addDefered(req, ctx, sId, keysLen, idx, step) {
 }
 function q_addInsert(req, ctx, sId, keysLen, idx, step, $fromLast) {
 	const $fr = Tpl_doc.createDocumentFragment(),
-		iIdxSet = new Set(),
-		$new = q_addI(req, sId, $fr, keysLen, idx, step, iIdxSet),//!!перенесли в аницации, что бы дать возможнасть отрисовать всё перед клонированием
+		idxs = new Set(),
+		$new = q_addI(req, sId, $fr, keysLen, idx, step, idxs),//!!перенесли в аницации, что бы дать возможнасть отрисовать всё перед клонированием
 		$newLen = $new.length,
 		$last = get$fromLast(req, $fromLast, idx - 1);
 	idx += $newLen;
 	if (idx >= keysLen) {
 		$last.parentNode.insertBefore($fr, $last.nextSibling);
-		req.sync.afterAnimation.add(type_animation(() => q_forRenderI(req, ctx, $new, iIdxSet), req.local, 0));
+		req.sync.afterAnimations.add(type_animation(() => q_forRenderI(req, ctx, $new, idxs), req.sync.local, 0));
 		return;
 	}
 	const $newLast = $new[$newLen - 1];
@@ -372,8 +372,8 @@ function q_addInsert(req, ctx, sId, keysLen, idx, step, $fromLast) {
 		}
 		sId = iSrc.id;
 		$last.parentNode.insertBefore($fr, $last.nextSibling);
-		req.sync.afterAnimation.add(type_animation(() => q_forRenderI(req, ctx, $new, iIdxSet)
-			.then(() => q_addDefered(req, ctx, sId, keysLen, idx, step)), req.local, 0));
+		req.sync.afterAnimations.add(type_animation(() => q_forRenderI(req, ctx, $new, idxs)
+			.then(() => q_addDeferred(req, ctx, sId, keysLen, idx, step)), req.sync.local, 0));
 		return;
 	}
 	throw new Error("foreach.js");
@@ -393,7 +393,7 @@ function get$fromLast(req, $from, $fromIdx) {
 	}
 	return $from;
 }
-function q_addI(req, sId, $fr, keysLen, idx, step, idxSet) {
+function q_addI(req, sId, $fr, keysLen, idx, step, idxs) {
 	const len = idx + step > keysLen ? keysLen - idx : step,
 //		$new = q_cloneNode(req, $from, idx, len),
 		$new = q_cloneNode(req, sId, idx, len),
@@ -402,17 +402,17 @@ function q_addI(req, sId, $fr, keysLen, idx, step, idxSet) {
 		for (j = 0; j < $iNewLen; j++) {
 			$fr.appendChild($new[i][j]);
 		}
-		idxSet.add(idx);
+		idxs.add(idx);
 	}
-//console.log(222, $from, $new, iIdxSet, req.str);
+//console.log(222, $from, $new, idxs, req.str);
 //alert(1);
 	return $new;
 }
 function q_forRender(req, ctx, addF, res) {
 	const $now = [],
 		$deferred = [],
-		nowIdxSet = new Set(),
-		deferredIdxSet = new Set(),
+		nowIdxs = new Set(),
+		deferredIdxs = new Set(),
 		$elsLen = ctx.$els.length;
 	if (req.sync.p.renderParam.isLinking === false) {
 		for (let i = 0; i < $elsLen; i++) {
@@ -427,26 +427,26 @@ function q_forRender(req, ctx, addF, res) {
 			}
 			if (f) {
 				$now.push(ctx.$els[i]);
-				nowIdxSet.add(i);
+				nowIdxs.add(i);
 			} else {
 				$deferred.push(ctx.$els[i]);
-				deferredIdxSet.add(i);
+				deferredIdxs.add(i);
 			}
 		}
 	} else {
 		for (let i = 0; i < $elsLen; i++) {
 			$now.push(ctx.$els[i]);
-			nowIdxSet.add(i);
+			nowIdxs.add(i);
 		}
 	}
-//console.error(nowIdxSet, deferredIdxSet);
+//console.error(nowIdxs, deferredIdxs);
 //alert(1);
-	if (deferredIdxSet.size !== 0) {
-		q_forRenderAddDeferedI(req, ctx, $deferred, deferredIdxSet, 0, addF);
-		return nowIdxSet.size !== 0 ? q_forRenderI(req, ctx, $now, nowIdxSet)
+	if (deferredIdxs.size !== 0) {
+		q_forRenderAddDeferredI(req, ctx, $deferred, deferredIdxs, 0, addF);
+		return nowIdxs.size !== 0 ? q_forRenderI(req, ctx, $now, nowIdxs)
 			.then(() => res) : res;
 	}
-	return nowIdxSet.size !== 0 ? q_forRenderI(req, ctx, $now, nowIdxSet)
+	return nowIdxs.size !== 0 ? q_forRenderI(req, ctx, $now, nowIdxs)
 		.then(() => {
 			if (addF !== null) {
 				addF();
@@ -454,17 +454,17 @@ function q_forRender(req, ctx, addF, res) {
 			return res;
 		}) : res;
 }
-function q_forRenderAddDeferedI(req, ctx, $deferred, deferredIdxSet, i, addF) {
-	req.sync.afterAnimation.add(type_animation(() => new Promise(ricResolve => {
+function q_forRenderAddDeferredI(req, ctx, $deferred, deferredIdxs, i, addF) {
+	req.sync.afterAnimations.add(type_animation(() => new Promise(ricResolve => {
 		const ricId = requestIdleCallback(() => {
 			req.sync.idleCallback.delete(ricId);
-			const idxSet = new Set(),
+			const idxs = new Set(),
 				s = i,
 				$defLen = $deferred.length;
 			let c = 0;
-			for (const idx of deferredIdxSet) {
-				idxSet.add(idx);
-				deferredIdxSet.delete(idx);
+			for (const idx of deferredIdxs) {
+				idxs.add(idx);
+				deferredIdxs.delete(idx);
 				i++;
 				c++;
 				if (c === qPackLength || i === $defLen) {
@@ -472,7 +472,7 @@ function q_forRenderAddDeferedI(req, ctx, $deferred, deferredIdxSet, i, addF) {
 				}
 			}
 			const isF = i < $defLen;
-			q_forRenderI(req, ctx, $deferred.slice(s, s + c), idxSet)
+			q_forRenderI(req, ctx, $deferred.slice(s, s + c), idxs)
 				.then(() => {
 					if (!isF && addF !== null) {
 						addF();
@@ -480,18 +480,18 @@ function q_forRenderAddDeferedI(req, ctx, $deferred, deferredIdxSet, i, addF) {
 					ricResolve();
 				});
 			if (isF) {
-				q_forRenderAddDeferedI(req, ctx, $deferred, deferredIdxSet, i, addF);
+				q_forRenderAddDeferredI(req, ctx, $deferred, deferredIdxs, i, addF);
 			}
 		}, {
 			timeout: 1000
 		});
 		req.sync.idleCallback.set(ricId, ricResolve);
-	}), req.local, 0));
+	}), req.sync.local, 0));
 }
-function q_forRenderI(req, ctx, $els, idxSet) {//!!idxSet необходим для разделение на текущие и отложенные рендеры
-	const arr = new Array(idxSet.size);
+function q_forRenderI(req, ctx, $els, idxs) {//!!idxs необходим для разделение на текущие и отложенные рендеры
+	const arr = new Array(idxs.size);
 	let $i, j, i = 0;
-	for (const idx of idxSet) {
+	for (const idx of idxs) {
 		const $elsI = $els[i],
 			$elsILen = $elsI.length;
 		$i = $elsI[0];
@@ -514,5 +514,5 @@ function q_forRenderI(req, ctx, $els, idxSet) {//!!idxSet необходим д�
 	}
 //console.log(555, arr, ctx.attrsAfter);
 //todo  нужно переносить на стр - атрибуты мешаю рендерить фор->инк (1)
-	return q_renderTag(arr, ctx.attrsAfter, type_isLast(), req.sync, req.local);
+	return q_renderTag(arr, ctx.attrsAfter, type_isLast(), req.sync);
 }

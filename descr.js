@@ -27,22 +27,22 @@ export function createSrc($e, descr, asOneIdx, idx) {//вызов этой фу�
 //(1)	if (1) {
 		descr = createDescr($e, sId);
 		const src = descr.attr !== null ? type_src(sId, descr, true, null, null, type_cache()) : type_src(sId, descr, false, null, null, null);
-//(1)if (descr.asOneSet !== null && asOneIdx !== undefined) {src.asOneIdx = asOneIdx;return src;}
+//(1)if (descr.asOnes !== null && asOneIdx !== undefined) {src.asOneIdx = asOneIdx;return src;}
 		$srcById.set(sId, $e);
 		srcById.set(sId, src);
 		srcBy$src.set($e, src);
 //!!если мы сделаем это, то в Инке в препаре будет вызыватьс яэто место и мы потеряем старые асОне
-//		if (descr.asOneSet !== null) {
+//		if (descr.asOnes !== null) {
 //			src.asOneIdx = type_asOneIdx();
 //			src.idx = type_idx();
-//			for (const str of descr.asOneSet) {
+//			for (const str of descr.asOnes) {
 //				setAsOneIdx(src, str, getNewId());
 //				setIdx(src, str, 0);
 //			}
 //		}
 		return src;
 	}
-	descr.srcIdSet.add(sId);//пока используется для получения .sId при удалении and prepareParam
+	descr.srcIds.add(sId);//пока используется для получения .sId при удалении and prepareParam
 	const src = descr.attr !== null ? type_src(sId, descr, true, asOneIdx, idx, type_cache()) : type_src(sId, descr, false, null, null, null);
 	$srcById.set(sId, $e);
 	srcById.set(sId, src);
@@ -87,10 +87,10 @@ export function createDescr($e, sId) {
 			descr.isCustomHtml = true;
 		}
 		if (rc.cmd.isAsOne) {
-			if (descr.asOneSet === null) {
-				descr.asOneSet = new Set();
+			if (descr.asOnes === null) {
+				descr.asOnes = new Set();
 			}
-			descr.asOneSet.add(str);
+			descr.asOnes.add(str);
 		}
 	}
 	descrById.set(id, descr);
@@ -127,15 +127,15 @@ export function type_idx(idx) {
 export function type_save() {
 	return new Map();
 }
-function type_descr(id, sId, attr, varIdSet) {
+function type_descr(id, sId, attr, varIds) {
 	return {
 		id,
 		sId,
 		attr,
-		varIdSet,
-		srcIdSet: new Set([sId]),
+		varIds,
+		srcIds: new Set([sId]),
 		isCustomHtml: false,
-		asOneSet: null,
+		asOnes: null,
 		get$elsByStr: null
 	};
 }

@@ -1,6 +1,6 @@
 import {renderTag, type_req, setReqCmd, type_localCounter, type_animation, type_renderRes} from "../render/render.js";
 //import pimport from "../_pimport.js";
-import createArrFragment from "../arrfr.js";
+//import createArrFragment from "../arrfr.js";
 import {Tpl_doc, Tpl_$src, p_target, cmdPref, cmdArgsDiv, cmdArgsDivLen, incCmdName, fetchCmdName, foreachCmdName, elseCmdName, defaultCmdName, onCmdName, isFillingName, isFillingDiv, asOneIdxName, idxName, defRequestInit,
 	reqCmd} from "../config.js";
 import {srcBy$src, getAttrAfter, getAttrItAfter, get$els, type_asOneIdx, type_idx, type_save} from "../descr.js";
@@ -34,7 +34,7 @@ export default {
 					res = new Array(arrLen);
 				for (let i = 0; i < arrLen; i++) {
 					if (!isLast.has(i)) {
-						res[i] = incRender(type_req(arr[i].$src, req.str, req.expr, arr[i].scope, req.sync, req.local), vals[i]);
+						res[i] = incRender(type_req(arr[i].$src, req.str, req.expr, arr[i].scope, req.sync), vals[i]);
 					}
 				}
 				return res;
@@ -56,8 +56,8 @@ function incRender(req, val) {
 	for (let i = 0; i < $elsLen; i++) {
 		const iSrc = srcBy$src.get($els[i]);
 		if (iSrc !== undefined) {
-			if (!req.local.has(iSrc.id)) {
-				req.local.set(iSrc.id, type_localCounter());
+			if (!req.sync.local.has(iSrc.id)) {
+				req.sync.local.set(iSrc.id, type_localCounter());
 			}
 		}
 	}
@@ -89,8 +89,8 @@ function incRender(req, val) {
 			}));
 	}
 	const w = waitingStack.get(include.key);
-	req.sync.afterAnimation.add(type_animation(() => w
-		.then(() => req.sync.stat === 0 && getNewInc(req, include, oldVal, $els, $elsLen, loading)), req.local, 0));
+	req.sync.afterAnimations.add(type_animation(() => w
+		.then(() => req.sync.stat === 0 && getNewInc(req, include, oldVal, $els, $elsLen, loading)), req.sync.local, 0));
 	return type_renderRes(true, null, $last);
 }
 function incGet(req, val) {
@@ -162,7 +162,7 @@ async function createIncFragment(req, include, html) {
 	}
 	if (include.$tags.length !== 0) {
 //todo может быть просто вставить?
-//--		req.sync.animation.add(type_animation(() => {//todo- если так сделать то онрендер на тегах не сработает - пусть так
+//--		req.sync.animations.add(type_animation(() => {//todo- если так сделать то онрендер на тегах не сработает - пусть так
 			if (include.$tags[0].parentNode === Tpl_doc.head) {
 //todo такого не долждно быть - можно удалять
 console.warn("applyIncFragment", include.$tags);
@@ -171,7 +171,7 @@ alert(1);
 			for (const $i of include.$tags) {
 				Tpl_doc.head.appendChild($i);
 			}
-//--		}, req.local, 0));
+//--		}, req.sync.local, 0));
 	}
 	include.$fr = $fr;
 	include.readyState = "complete";
@@ -273,12 +273,12 @@ function getNewInc(req, include, oldVal, $els, $elsLen, loading) {
 	const $new = cloneIncFragment(req, include, oldVal, loading),
 		$src = $new.firstChild,
 		$last = $new.lastChild;
-//	req.sync.animation.add(type_animation(() => {
+//	req.sync.animations.add(type_animation(() => {
 //		getNewIncInsert(req, oldVal, $els, $elsLen, $new, $src);
-//		req.sync.afterAnimation.add(type_animation(() => getNewIncRender(req, include, $src, $last), req.local, 0));
-//	}, req.local, 0));
-	req.sync.animation.add(type_animation(() => getNewIncInsert(req, oldVal, $els, $elsLen, $new, $src), req.local, 0));
-	req.sync.afterAnimation.add(type_animation(() => getNewIncRender(req, include, $src, $last), req.local, 0));
+//		req.sync.afterAnimations.add(type_animation(() => getNewIncRender(req, include, $src, $last), req.sync.local, 0));
+//	}, req.sync.local, 0));
+	req.sync.animations.add(type_animation(() => getNewIncInsert(req, oldVal, $els, $elsLen, $new, $src), req.sync.local, 0));
+	req.sync.afterAnimations.add(type_animation(() => getNewIncRender(req, include, $src, $last), req.sync.local, 0));
 }
 function getNewIncInsert(req, oldVal, $els, $elsLen, $new, $src) {
 	let newSrcId = 0;
@@ -302,7 +302,7 @@ if ($els[i].parentNode !== $parent) {
 }*/
 		const iSrc = srcBy$src.get($els[i]);
 		if (iSrc !== undefined) {
-			const l = req.local.get(iSrc.id);
+			const l = req.sync.local.get(iSrc.id);
 //if (!l) {
 //	console.log(req, iSrc.id);
 //	alert(1)
@@ -389,7 +389,7 @@ async function renderNewInc(req, $e) {
 //		if (v && ((cn !== incCmdName && cn !== fetchCmdName) || !reqCmd[n].args[0]) && cn !== elseCmdName && cn !== defaultCmdName && cn !== onCmdName) {
 //todo наверное всё же не так! для иквов фетчей это может стать проблемой
 		if (v && cn !== elseCmdName && cn !== defaultCmdName && cn !== onCmdName) {
-			await eval2(type_req($e, n, v, req.scope, req.sync, req.local), $e, true);//привязываем к новым тегам команды ДО
+			await eval2(type_req($e, n, v, req.scope, req.sync), $e, true);//привязываем к новым тегам команды ДО
 		}
 		if (n === req.str) {
 			break;
@@ -398,7 +398,7 @@ async function renderNewInc(req, $e) {
 	for (let i = attrIt.next(); !i.done; i = attrIt.next()) {
 		afterAttr.set(i.value[0], i.value[1]);
 	}
-	return renderTag($e, req.scope, afterAttr, req.sync, req.local);
+	return renderTag($e, req.scope, afterAttr, req.sync);
 }
 //current
 function getInc(req, include, $els, $elsLen) {
@@ -406,7 +406,7 @@ function getInc(req, include, $els, $elsLen) {
 		.then($last => readyInc(req, include, $last));
 }
 function renderInc(req, $e) {
-	return renderTag($e, req.scope, getAttrAfter(srcBy$src.get($e).descr.attr, req.str), req.sync, req.local);
+	return renderTag($e, req.scope, getAttrAfter(srcBy$src.get($e).descr.attr, req.str), req.sync);
 }
 async function renderI(req, $e, $last, h) {
 	do {
@@ -627,21 +627,21 @@ function makeSlots(req, $fr) {
 					for (let k = 0; k < $elsLen; k++) {
 //--						removeChild($els[k], true);
 						$s.appendChild($els[k]);
-//--						req.sync.animation.add(type_animation(() => $s.appendChild($els[k]), req.local, 0));
+//--						req.sync.animations.add(type_animation(() => $s.appendChild($els[k]), req.sync.local, 0));
 					}
 					continue;
 				}
 			}
 //--			removeChild($v[j], true);
 			$s.appendChild($v[j]);
-//--			req.sync.animation.add(type_animation(() => $s.appendChild($v[j]), req.local, 0));
+//--			req.sync.animations.add(type_animation(() => $s.appendChild($v[j]), req.sync.local, 0));
 		}
 	}
 	if ($freeSlot) {
 		for (let $i = req.$src.firstChild; $i !== null;) {
 //--			removeChild($i, true);
 			$freeSlot.appendChild($i);
-//--			req.sync.animation.add(type_animation(() => $freeSlot.appendChild($i), req.local, 0));
+//--			req.sync.animations.add(type_animation(() => $freeSlot.appendChild($i), req.sync.local, 0));
 		}
 	}
 }

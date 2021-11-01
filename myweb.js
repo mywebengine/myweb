@@ -5,7 +5,7 @@
  * https://github.com/mywebengine/myweb
  */
 
-import {/*curRender, */syncInRender, render, renderLoop, addAnimation} from "./render/algo.js";
+import {syncInRender, render, renderLoop, addAnimation} from "./render/algo.js";
 import "./addons.js";
 import {globVarName, locVarName} from "./config.js";
 import {$srcById} from "./descr.js";
@@ -25,40 +25,36 @@ self.Tpl_debugLevel = url.search.indexOf("debug=2") !== -1 ? 2 : (url.search.ind
 
 self[globVarName] = getProxy(self[globVarName] || {});
 self[locVarName] = getProxy(getLoc(location.href));
-//
-//self.syncInRender = syncInRender;
 
 self.addEventListener("scroll", async () => {
 	const pSet = new Set(),
 		emptyScrollSync = new Set();
 	for (const sync of syncInRender) {
-		if (sync.stat !== 0 || sync.scrollAnimation.size === 0) {
-//console.log(1);
+		if (sync.stat !== 0 || sync.scrollAnimations.size === 0) {
 			continue;
 		}
 		const animation = new Set();
-		for (const a of sync.scrollAnimation) {
+		for (const a of sync.scrollAnimations) {
 			if (!$srcById.has(a.viewedSrcId)) {
-				sync.scrollAnimation.delete(a);
-				if (sync.scrollAnimation.size === 0) {
+				sync.scrollAnimations.delete(a);
+				if (sync.scrollAnimations.size === 0) {
 					emptyScrollSync.add(sync);
 				}
 				continue;
 			}
 			if (isAnimationVisible(a)) {
-				sync.scrollAnimation.delete(a);
+				sync.scrollAnimations.delete(a);
 				animation.add(a);
 			}
 		}
 		if (animation.size !== 0) {
-console.log("animation")
-			pSet.add(addAnimation(sync, animation, true, true));
+//console.log("animation")
+			pSet.add(addAnimation(sync, animation, true));
 		}
 	}
 //todo
 	if (pSet.size !== 0) {
 		Promise.all(pSet)
-//			.then(() => renderLoop(syncInRender));
 			.then(syncArr => renderLoop(syncArr));
 	}
 	if (emptyScrollSync.size !== 0) {
@@ -68,7 +64,7 @@ console.log("animation")
 	passive: true
 });
 self.addEventListener("popstate", () => {
-//console.log('ps', location.href, curRender);
+//console.log('ps', location.href);
 	setLoc(location.href);
 }, {
 	passive: true

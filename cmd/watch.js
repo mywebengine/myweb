@@ -31,20 +31,20 @@ function setValue(req, scope, val) {
 	}
 	const cur = c.current.get(req.str);
 	if (req.sync.p.renderParam.isLinking) {
-		c.isInit.add(req.str);
+		c.isInits.add(req.str);
 		cur.watch = val;
 		return type_renderRes(true);
 	}
-	if (c.isInit.has(req.str)) {
+	if (c.isInits.has(req.str)) {
 		if (val === cur.watch) {
 			return type_renderRes(true);
 		}
-		req.sync.onready.add(() => {
+		req.sync.onreadies.add(() => {
 			cur.watch = val;
 		});
 	} else {
-		req.sync.onready.add(() => {
-			c.isInit.add(req.str);
+		req.sync.onreadies.add(() => {
+			c.isInits.add(req.str);
 			cur.watch = val;
 		});
 	}

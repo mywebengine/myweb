@@ -42,9 +42,9 @@ function setValue(req, $src, n, v) {
 	const toggleVal = req.reqCmd.args[1],
 //		c = getCacheBySrcId($src[p_srcId]),
 		c = srcBy$src.get($src).cache,
-		isInit = c.isInit.has(req.str);
+		isInit = c.isInits.has(req.str);
 	if (!isInit) {
-		c.isInit.add(req.str);
+		c.isInits.add(req.str);
 		setClick(req, $src, n);
 	}
 	if (req.sync.p.renderParam.isLinking) {
@@ -91,18 +91,18 @@ function setValue(req, $src, n, v) {
 	}
 	if (v || v === "") {
 //todo <body _attr.class.home="[``].indexOf(loc.name) !== -1" _attr.class.main="[`myloc`, `mysnt`, `services`].indexOf(loc.name) !== -1"
-		req.sync.animation.add(type_animation(() => {
+		req.sync.animations.add(type_animation(() => {
 			c.current.set(req.str, v);
 			setAttribute($src, n, v);
-		}, req.local, srcBy$src.get($src).id));
+		}, req.sync.local, srcBy$src.get($src).id));
 		return null;
 	}
 //!!be clone => has attribute => not removing
 //	if (aCurVal !== null) {
-		req.sync.animation.add(type_animation(() => {
+		req.sync.animations.add(type_animation(() => {
 			c.current.set(req.str, v);
 			removeAttribute($src, n);
-		}, req.local, srcBy$src.get($src).id));
+		}, req.sync.local, srcBy$src.get($src).id));
 //	}
 	return null;
 }

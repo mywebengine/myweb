@@ -40,7 +40,7 @@ export const ifCmd = {
 			.then(val => {
 				const res = new Array(arrLen);
 				do {
-					const reqI = type_req(arr[i].$src, req.str, req.expr, arr[i].scope, req.sync, req.local);
+					const reqI = type_req(arr[i].$src, req.str, req.expr, arr[i].scope, req.sync);
 					make$first(reqI, ifCmdName, elseifCmdName, elseCmdName);
 					res[i] = ifGet(reqI, val[i], ifCmdName, elseifCmdName, elseCmdName);
 					while (isLast.has(++i));
@@ -154,7 +154,7 @@ async function ifGet(req, val, ifCmdName, elseifCmdName, elseCmdName, testFunc =
 				break;
 			}
 			//это elsif
-			const reqI = type_req($i, n, v, req.scope, req.sync, req.local);
+			const reqI = type_req($i, n, v, req.scope, req.sync);
 			val = await eval2(reqI, $i, true);
 			if (isTrue = testFunc(val)) {
 				const valName = reqI.reqCmd.args[0];
@@ -551,7 +551,7 @@ function makeShow(req, $i, str, isShow) {
 //todo -20210918 точно?
 	if (req.sync.p.renderParam.isLinking === false) {
 		const sId = srcBy$src.get($attr).id;
-		req.sync.afterAnimation.add(type_animation(() => renderTag($srcById.get(sId), req.scope, attr, req.sync, req.local), req.local, 0));
+		req.sync.afterAnimations.add(type_animation(() => renderTag($srcById.get(sId), req.scope, attr, req.sync), req.sync.local, 0));
 	}
 	return [$last, null, null];
 /*

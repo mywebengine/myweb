@@ -2,7 +2,7 @@ import {srcBy$src, get$first, getNextStr} from "./descr.js";
 
 export function type_cache() {
 	return {
-		isInit: type_cacheInit(),
+		isInits: type_cacheInit(),
 		current: type_cacheCurrent(),
 		value: type_cacheValue(),
 		attrSyncCur: type_cacheAttrSyncCur()
@@ -36,7 +36,7 @@ export function getCacheSrcId($i, str) {
 		return 0;
 	}
 	const descr = src.descr;
-	if (descr.asOneSet === null || !descr.asOneSet.has(str)) {
+	if (descr.asOnes === null || !descr.asOnes.has(str)) {
 		return src.id;
 	}	
 	const nStr = getNextStr(src, str);

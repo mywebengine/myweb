@@ -277,7 +277,7 @@ function type_loading() {
 	return new Map([["", 0]]);
 }
 export async function showLoading($e, testFunc, type = "", waitTime = -1) {
-//--	req.sync.animation.add(type_animation(async () => {
+//--	req.sync.animations.add(type_animation(async () => {
 		if (await testFunc()) {
 console.log(1111);
 			decLoading($e, type);
@@ -303,7 +303,7 @@ console.log(222);
 				}
 			}, waitTime);
 		}
-//	}, req.local, 0));
+//	}, req.sync.local, 0));
 }
 function decLoading($e, type) {
 	const src = srcBy$src.get($e),

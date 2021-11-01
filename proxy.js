@@ -1,25 +1,25 @@
-import {renderBySrcIdSet} from "./render/algo.js";
+import {renderBySrcIds} from "./render/algo.js";
 import {type_cacheValue} from "./cache.js";
 import {Tpl_$src, p_target} from "./config.js";
 import {$srcById, srcById, srcBy$src, descrById, getNewId, get$els} from "./descr.js";
-import {getIdx/*--, getTopLocal*/} from "./dom.js";
+//--import {getIdx} from "./dom.js";
 import {oset} from "./util.js";
 
 export const varIdByVar = new Map();
 export const varById = {};
 export const varIdByVarIdByProp = {};
-export const srcIdSetByVarId = new Map();
+export const srcIdsByVarId = new Map();
 //!!!!!!!!!!!!
 self.varIdByVar = varIdByVar;
 self.varById = varById;
 self.varIdByVarIdByProp = varIdByVarIdByProp;
-self.srcIdSetByVarId = srcIdSetByVarId;
+self.srcIdsByVarId = srcIdsByVarId;
 
 
 //todo--
 self.aa = function() {
 	const v = new Set(Array.from(varIdByVar.values()));
-	for (const [vId, srcIdSet] of srcIdSetByVarId) {
+	for (const [vId, srcIds] of srcIdsByVarId) {
 		let fv;
 		if (!v.has(vId)) {
 			let f;
@@ -29,7 +29,7 @@ self.aa = function() {
 				}
 				for (const pId of varIdByVarIdByProp[vvId].values()) {
 					if (pId === vId) {
-						for (const sId of srcIdSet) {
+						for (const sId of srcIds) {
 							if (!$srcById.has(sId)) {
 								console.log(111222, vId, sId);
 							}
@@ -43,10 +43,10 @@ self.aa = function() {
 				}
 			}
 			if (!f) {
-				console.log(0, vId, srcIdSet);
+				console.log(0, vId, srcIds);
 			}
 		} else {
-			for (const sId of srcIdSet) {
+			for (const sId of srcIds) {
 				if (!$srcById.has(sId)) {
 					console.log(11111, vId, sId);
 				}
@@ -54,7 +54,7 @@ self.aa = function() {
 		}
 	}
 	for (const vId of varIdByVar.keys()) {
-		const s = srcIdSetByVarId.get(vId);
+		const s = srcIdsByVarId.get(vId);
 		if (!s) {// || !s.has(sId)) {
 			continue;
 		}
@@ -66,7 +66,7 @@ self.aa = function() {
 		const vIdByProp = varIdByVarIdByProp[vId];
 		if (vIdByProp) {
 			for (const pId of vIdByProp.values()) {
-				const propS = srcIdSetByVarId.get(pId);
+				const propS = srcIdsByVarId.get(pId);
 				if (propS) {// && propS.has(sId)) {
 //					_del(pId, propS, sId);//, d, dId);
 					for (const sId of propS) {
@@ -227,103 +227,103 @@ function addVar(t, n, v, $src) {
 			n = Number(n);
 		}
 		if (tId) {
-			const s = srcIdSetByVarId.get(tId);
+			const s = srcIdsByVarId.get(tId);
 			if (s) {
 				s.add(sId);
 			} else {
-				srcIdSetByVarId.set(tId, new Set([sId]));
+				srcIdsByVarId.set(tId, new Set([sId]));
 //console.log(1, tId);
 			}
 //1
-			descr.varIdSet.add(tId);
+			descr.varIds.add(tId);
 
 			const vIdByProp = varIdByVarIdByProp[tId];
 			if (vIdByProp) {
 				const propId = vIdByProp.get(n);
 				if (propId) {
 //1
-					descr.varIdSet.add(propId);//<--100%
+					descr.varIds.add(propId);//<--100%
 
-					const s = srcIdSetByVarId.get(propId);
+					const s = srcIdsByVarId.get(propId);
 					if (s) {
 						s.add(sId);
 						return;
 					}
-					srcIdSetByVarId.set(propId, new Set([sId]));
+					srcIdsByVarId.set(propId, new Set([sId]));
 //console.log(2, propId);
 					return;
 				}
 				const newPropId = getNewId();
 				vIdByProp.set(n, newPropId);
-				srcIdSetByVarId.set(newPropId, new Set([sId]));
+				srcIdsByVarId.set(newPropId, new Set([sId]));
 //console.log(3, newPropId);
 //1
-				descr.varIdSet.add(newPropId);
+				descr.varIds.add(newPropId);
 				return;
 			}
 			const newPropId = getNewId();
 			varIdByVarIdByProp[tId] = new Map([[n, newPropId]]);
-			srcIdSetByVarId.set(newPropId, new Set([sId]));
+			srcIdsByVarId.set(newPropId, new Set([sId]));
 //console.log(4, newPropId);
 //1
-			descr.varIdSet.add(newPropId);
+			descr.varIds.add(newPropId);
 			return;
 		}
 		const nId = getNewId();
 		varIdByVar.set(t, nId);
 		varById[nId] = t;
-		srcIdSetByVarId.set(nId, new Set([sId]));
+		srcIdsByVarId.set(nId, new Set([sId]));
 //console.log(5, nId);
 //1
-		descr.varIdSet.add(nId);
+		descr.varIds.add(nId);
 
 		const newPropId = getNewId();
 		varIdByVarIdByProp[nId] = new Map([[n, newPropId]]);
-		srcIdSetByVarId.set(newPropId, new Set([sId]));
+		srcIdsByVarId.set(newPropId, new Set([sId]));
 //console.log(6, newPropId, t, n, v, $src);
 //1
-		descr.varIdSet.add(newPropId);
+		descr.varIds.add(newPropId);
 		return;
 	}
 	if (tId) {
-		const s = srcIdSetByVarId.get(tId);
+		const s = srcIdsByVarId.get(tId);
 		if (s) {
 			s.add(sId);
 		} else {
-			srcIdSetByVarId.set(tId, new Set([sId]));
+			srcIdsByVarId.set(tId, new Set([sId]));
 //console.log(7, tId);
 		}
 //1
-		descr.varIdSet.add(tId);
+		descr.varIds.add(tId);
 	} else {
 		const nId = getNewId();
 		varIdByVar.set(t, nId);
 		varById[nId] = t;
-		srcIdSetByVarId.set(nId, new Set([sId]));
+		srcIdsByVarId.set(nId, new Set([sId]));
 //console.log(8, sId);
 //1
-		descr.varIdSet.add(nId);
+		descr.varIds.add(nId);
 	}
 	const vId = varIdByVar.get(v);
 	if (vId) {
-		const s = srcIdSetByVarId.get(vId);
+		const s = srcIdsByVarId.get(vId);
 		if (s) {
 			s.add(sId);
 		} else {
-			srcIdSetByVarId.set(vId, new Set([sId]));
+			srcIdsByVarId.set(vId, new Set([sId]));
 //console.log(9, sId);
 		}
 //1
-		descr.varIdSet.add(vId);
+		descr.varIds.add(vId);
 		return;
 	}
 	const newValId = getNewId();
 	varIdByVar.set(v, newValId);
 	varById[newValId] = v;
-	srcIdSetByVarId.set(newValId, new Set([sId]));
+	srcIdsByVarId.set(newValId, new Set([sId]));
 //console.log(10, sId);
 //1
-	descr.varIdSet.add(newValId);
+	descr.varIds.add(newValId);
 }
 function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); - если так сделалть, то после первого - будут удалены varIdByVar.get(oldId), что приведет к тому что все пойдет по ветке !oldId - непонятно нужно ли что-то с этим делать??
 	const tId = varIdByVar.get(t);
@@ -342,7 +342,7 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 	}
 	if (t[_isUnshift]) {
 		if (n === "length") {
-			_setVal(t, n, oldV, srcIdSetByVarId.get(tId), oId);
+			_setVal(t, n, oldV, srcIdsByVarId.get(tId), oId);
 			delete t[_isUnshift];
 		}
 		return;
@@ -369,14 +369,14 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 	}*/
 /*--
 	if (!oId) {
-		const s = srcIdSetByVarId.get(tId);//для push - нового элемента нет, а обновить надо - это актуально когда нет if .length
+		const s = srcIdsByVarId.get(tId);//для push - нового элемента нет, а обновить надо - это актуально когда нет if .length
 		if (s) {
 //			for (const sId of s) {//
 //console.log(sId, cache[sId]);
 //				delete cache[sId];
 ////				delete currentCache[sId];
 //			}
-			renderBySrcIdSet(s);
+			renderBySrcIds(s);
 		}
 		return;
 	}*/
@@ -387,7 +387,7 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 			delete varIdByVarIdByProp[tId];
 		}
 	}
-	_setVal(t, n, oldV, srcIdSetByVarId.get(oId || tId), oId);
+	_setVal(t, n, oldV, srcIdsByVarId.get(oId || tId), oId);
 }
 function _setVal(t, n, oldV, s, oId) {
 	if (!s) {
@@ -438,11 +438,11 @@ console.log(11, $j);
 			setInnerSrcIdSetBy$src(toClear, $i);
 			continue;
 		}
-console.log(1111, d.srcIdSet, n, t[n], s);
+console.log(1111, d.srcIds, n, t[n], s);
 //if (t[n] === undefined) {
 //	debugger;
 //}
-		for (const sId of d.srcIdSet) {
+		for (const sId of d.srcIds) {
 			if (!toClear.has(sId)) {
 				toClear.add(sId);
 console.log(1, sId, $srcById[sId]);
@@ -451,7 +451,7 @@ console.log(1, sId, $srcById[sId]);
 		}*/
 //2021-07-20 - data.arr[2] = 1111 - не очитит data.arr, но и не нужно - так как в кэше ссылка на arr
 		const iDescr = srcBy$src.get($i).descr;
-		if (iDescr.asOneSet === null) {
+		if (iDescr.asOnes === null) {
 			toClear.add(sId);
 			setInnerSrcIdSetBy$src(toClear, $i);
 			continue;
@@ -488,7 +488,7 @@ console.log(1, sId, $srcById[sId]);
 					}
 				}
 				if (isFirst) {
-					for (const iId of descr.srcIdSet) {//можно взять все на этом уровне по фыЩтуШвч
+					for (const iId of descr.srcIds) {//можно взять все на этом уровне по фыЩтуШвч
 						if (iId !== sId) {
 							toClear.add(iId);
 							setInnerSrcIdSetBy$src(toClear, $srcById[iId]);
@@ -536,12 +536,12 @@ console.log(11111111, sId);
 //todo
 			requestIdleCallback(() => {
 				for (const d of descrById.values()) {
-					if (d.varIdSet === null) {
+					if (d.varIds === null) {
 						continue;
 					}
 					for (const vId of deletedVarId) {
-//						if (d.varIdSet.has(vId)) {
-							d.varIdSet.delete(vId);
+//						if (d.varIds.has(vId)) {
+							d.varIds.delete(vId);
 //						}
 					}
 				}
@@ -560,8 +560,8 @@ console.log(11111111, sId);
 //--			decVar(t, n, oldV, sId, oId);
 		}
 	}
-//console.error("renderBySrcIdSet => ", t, n, t[n], oldV, toRender, cur$src);
-	renderBySrcIdSet(toRender);
+//console.error("renderBySrcIds => ", t, n, t[n], oldV, toRender, cur$src);
+	renderBySrcIds(toRender);
 }
 function setInnerSrcIdSetBy$src(toClear, $i) {
 	const $parent = $i.parentNode;
@@ -608,7 +608,7 @@ function decVar(t, n, v, sId, vId, deletedVarId) {
 		}
 	}
 	if (vId !== 0) {
-		const s = srcIdSetByVarId.get(vId);
+		const s = srcIdsByVarId.get(vId);
 		if (!s || !s.has(sId)) {
 			delVar(vId, v, t, n, deletedVarId);
 			return;
@@ -636,7 +636,7 @@ function decVar(t, n, v, sId, vId, deletedVarId) {
 function delVar(vId, v, t, n, deletedVarId) {
 //console.log("DEL", vId);
 	deletedVarId.add(vId);
-	srcIdSetByVarId.delete(vId);
+	srcIdsByVarId.delete(vId);
 	if (isScalarType[typeof v] || v === null) {
 		const vIdByProp = varIdByVarIdByProp[vId = varIdByVar.get(t)];
 		if (vIdByProp) {
@@ -657,7 +657,7 @@ function delVar(vId, v, t, n, deletedVarId) {
 	if (vIdByProp) {
 		delete varIdByVarIdByProp[vId];
 		for (const pId of vIdByProp.values()) {
-			srcIdSetByVarId.delete(pId);
+			srcIdsByVarId.delete(pId);
 		}
 	}
 }

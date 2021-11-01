@@ -33,13 +33,13 @@ function setValue(req, $src, val) {
 		return null;
 	}
 	if (req.reqCmd.args[0]) {
-		req.sync.animation.add(type_animation(() => {
+		req.sync.animations.add(type_animation(() => {
 			c.current.set(req.str, $src.textContent = val);
-		}, req.local, srcBy$src.get($src).id));
+		}, req.sync.local, srcBy$src.get($src).id));
 		return null;
 	}
-	req.sync.animation.add(type_animation(() => {
+	req.sync.animations.add(type_animation(() => {
 		c.current.set(req.str, $src.innerHTML = val);
-	}, req.local, srcBy$src.get($src).id));
+	}, req.sync.local, srcBy$src.get($src).id));
 	return null;
 }

@@ -1,12 +1,12 @@
-import {/*, isWhenVisibleName*//*, renderStartEventName, */mountEventName, renderEventName, defEventInit,
+import {p_target/*, isWhenVisibleName*//*, renderStartEventName*/, mountEventName, renderEventName, defEventInit,
 	cmdArgsDiv, cmdArgsDivLen,
 		Tpl_cmd, reqCmd} from "../config.js";
-import {$srcById, srcBy$src} from "../descr.js";
+import {srcById, $srcById, srcBy$src} from "../descr.js";
 
 //export const Tpl_cmd = {};//self.Tpl_cmd || {};
 //export const reqCmd = self.Tpl_reqCmd || {};
 
-export function renderTag($src, scope, attr, sync, local) {
+export function renderTag($src, scope, attr, sync) {
 	if (sync.stat !== 0) {
 //console.log('isCancel', sync.stat, 1);
 		return $src;
@@ -15,15 +15,10 @@ export function renderTag($src, scope, attr, sync, local) {
 //alert(1)
 	const src = srcBy$src.get($src),
 		sId = src.id;
-//	if (!local) {
-//		local = new Map();
-//	}
-	local = sync.local;
-
-//	local = new Map(local);
-	if (!local.has(sId)) {
+//--	local = new Map(local);
+	if (!sync.local.has(sId)) {
 //todo если тег изменится в процессе???? - так то это не страшно - события этого элемента не должны нас возлновать (надо их исключить) а новый будет жить свое жизнью
-		local.set(sId, type_localCounter());
+		sync.local.set(sId, type_localCounter());
 //!! проблема в событии на старт в том, что при первом рендере еще ни один on неотрендерился
 //		$src.dispatchEvent(new CustomEvent(renderStartEventName, defEventInit));
 //console.log("rend - local create", $src);
@@ -41,17 +36,10 @@ export function renderTag($src, scope, attr, sync, local) {
 		}
 		scope = s;
 	}
-/*
-	if (attr !== null && attr.size !== 0) {
-		return attrRender($src, scope, attr, sync, local)
-			.then(res => renderChildren($src, scope, sync, local, sId, res));
-	}
-	return renderChildren($src, scope, sync, local, sId, null);*/
-
 	if (attr === null || attr.size === 0) {
-		return renderChildren($src, scope, sync, local, sId, $src);
+		return renderChildren($src, scope, sync, sId, $src);
 	}
-	return attrRender($src, scope, attr, sync, local)
+	return attrRender($src, scope, attr, sync)
 		.then(res => {
 			if ($src !== res.$src) {
 				$src = res.$src;
@@ -64,13 +52,13 @@ export function renderTag($src, scope, attr, sync, local) {
 if (srcBy$src.get($src).id !== sId) {
 	console.warn(2222222);
 }
-			return renderChildren($src, scope, sync, local, sId, $ret);
+			return renderChildren($src, scope, sync, sId, $ret);
 		});
 }
-async function attrRender($src, scope, attr, sync, local) {
+async function attrRender($src, scope, attr, sync) {
 	let $last = null;
 	for (const [n, v] of attr) {
-		const req = type_req($src, n, v, scope, sync, local),
+		const req = type_req($src, n, v, scope, sync),
 			res = await req.reqCmd.cmd.render(req);
 		if (sync.stat !== 0) {
 //console.log('isCancel attrRender', sync.stat, n, v);
@@ -83,7 +71,7 @@ async function attrRender($src, scope, attr, sync, local) {
 //todo res.$attr в этой схеме линий - хватит .$src
 			const $attr = res.$attr || res.$src || $src,
 				$ret = res.$last || res.$src || res.$attr || $src;//поидеи глупо не возвращать $last, так как attr бы не имела смысла
-			$src = await renderTag($attr, scope, res.attr, sync, local);
+			$src = await renderTag($attr, scope, res.attr, sync);
 			res.isLast = true;
 			res.$src = $attr === $ret && $src || $ret;
 			res.$last = null;
@@ -104,7 +92,7 @@ async function attrRender($src, scope, attr, sync, local) {
 	}
 	return type_renderRes(false, $src, $last);
 }
-async function renderChildren($src, scope, sync, local, sId, $ret) {
+async function renderChildren($src, scope, sync, sId, $ret) {
 	if (sync.stat !== 0 || srcBy$src.get($src).descr.isCustomHtml) {
 		return $src;
 	}
@@ -114,17 +102,17 @@ async function renderChildren($src, scope, sync, local, sId, $ret) {
 		if (iSrc === undefined) {
 			continue;
 		}
-		$i = await renderTag($i, scope, iSrc.descr.attr, sync, local);
+		$i = await renderTag($i, scope, iSrc.descr.attr, sync);
 		if (sync.stat !== 0) {
 			return;
 		}
 	}
 //	if (sync.stat === 0) {
-		testLocalEventsBySrcId(local, sId);
+		testLocalEventsBySrcId(sync.local, sId);
 //	}
 	return $ret;
 }
-export function q_renderTag(arr, attr, isLast, sync, local) {
+export function q_renderTag(arr, attr, isLast, sync) {
 //console.log("q_render", arr.map(i => [i.$src, i.scope]), attr);
 //alert(1);
 	if (sync.stat !== 0) {
@@ -132,20 +120,15 @@ export function q_renderTag(arr, attr, isLast, sync, local) {
 		return Promise.resolve(arr);
 	}
 	const arrLen = arr.length;
-//	if (!local) {
-//		local = new Map();
-//	}
-	local = sync.local;
-
-//	local = new Map(local);
+//--	local = new Map(local);
 //	for (let i = arrLen - 1; i > -1; i--) {
 	for (let i = 0; i < arrLen; i++) {
 		const aI = arr[i],
 			$i = aI.$src,
 			iSrc = srcBy$src.get($i),
 			iId = iSrc.id;
-		if (!local.has(iId)) {
-			local.set(iId, type_localCounter());
+		if (!sync.local.has(iId)) {
+			sync.local.set(iId, type_localCounter());
 //!!см выше		$i.dispatchEvent(new CustomEvent(renderStartEventName, defEventInit));
 //console.log("q_rend - local create", $i);
 		}
@@ -176,39 +159,39 @@ alert(1);
 
 /*
 	if (attr !== null && attr.size !== 0) {
-		const lastCount = await q_attrRender(arr, attr, isLast, type_q_renderCtx(), sync, local);
+		const lastCount = await q_attrRender(arr, attr, isLast, type_q_renderCtx(), sync);
 		if (lastCount === arrLen) {
 			return arr;
 		}
 	}
-	await q_renderChildren(arr, isLast, sync, local);
+	await q_renderChildren(arr, isLast, sync);
 	for (let i = 0; i < arrLen; i++) {
 		const $i = arr[i].$src,
 			iId = $i[p_srcId];
-		testLocalEventsBySrcId(local, iId);
+		testLocalEventsBySrcId(sync.local, iId);
 	}
 	return arr;*/
 	if (attr !== null && attr.size !== 0) {
-		return q_attrRender(arr, attr, isLast, type_q_renderCtx(), sync, local)
-			.then(lastCount => lastCount === arrLen ? arr : _q_renderTag(arr, isLast, sync, local, arrLen));
+		return q_attrRender(arr, attr, isLast, type_q_renderCtx(), sync)
+			.then(lastCount => lastCount === arrLen ? arr : _q_renderTag(arr, isLast, sync, arrLen));
 	}
-	return _q_renderTag(arr, isLast, sync, local);
+	return _q_renderTag(arr, isLast, sync);
 }
-function _q_renderTag(arr, isLast, sync, local, arrLen) {
-	return q_renderChildren(arr, isLast, sync, local)
+function _q_renderTag(arr, isLast, sync, arrLen) {
+	return q_renderChildren(arr, isLast, sync)
 		.then(() => {
 			for (let i = 0; i < arrLen; i++) {
-				testLocalEventsBySrcId(local, srcBy$src.get(arr[i].$src).id);
+				testLocalEventsBySrcId(sync.local, srcBy$src.get(arr[i].$src).id);
 			}
 			return arr;
 		});
 }
-async function q_attrRender(arr, attr, isLast, ctx, sync, local) {
+async function q_attrRender(arr, attr, isLast, ctx, sync) {
 	const arrLen = arr.length;
 	for (const [n, v] of attr) {
 //console.log(n + v);
 //console.time(n + v);
-		const res = await q_execRender(arr, n, v, isLast, sync, local);
+		const res = await q_execRender(arr, n, v, isLast, sync);
 //console.log(3333, res);
 //console.timeEnd(n + v);
 		if (sync.stat !== 0) {
@@ -245,10 +228,10 @@ async function q_attrRender(arr, attr, isLast, ctx, sync, local) {
 	}
 //todo
 //	const pArr = [];
-	for (const [dId, byAttr] of ctx.afterByDescrByAttr) {
+	for (const byAttr of ctx.afterByDescrByAttr.values()) {
 		for (const [attrKey, arr] of byAttr) {
-//			pArr.push(q_renderTag(arr, ctx.afterAttrKey[attrKey], type_isLast(), sync, local));
-			await q_renderTag(arr, ctx.afterAttrKey.get(attrKey), type_isLast(), sync, local);
+//			pArr.push(q_renderTag(arr, ctx.afterAttrKey[attrKey], type_isLast(), sync));
+			await q_renderTag(arr, ctx.afterAttrKey.get(attrKey), type_isLast(), sync);
 		}
 	}
 //	if (pArr.length) {
@@ -275,7 +258,7 @@ function q_addAfterAttr($src, scope, attr, ctx) {
 	}
 	ctx.afterByDescrByAttr.set(dId, new Map([[attrKey, [arrI]]]));
 }
-function q_renderChildren(arr, isLast, sync, local) {
+function q_renderChildren(arr, isLast, sync) {
 	if (sync.stat !== 0 || srcBy$src.get(arr[0].$src).descr.isCustomHtml) {
 //console.log(78979, sync.stat, arr[0].$src);
 		return Promise.resolve(arr);
@@ -294,10 +277,10 @@ function q_renderChildren(arr, isLast, sync, local) {
 	if (iArr.length === 0) {
 		return arr;
 	}
-	return q_renderFlow(iArr, true, sync, local)
+	return q_renderFlow(iArr, true, sync)
 		.then(() => arr);
 }
-function q_renderFlow(arr, isFirst, sync, local) {
+function q_renderFlow(arr, isFirst, sync) {
 	const byDescr = q_nextGroupByDescr(arr, isFirst);
 //	if (byDescr.size === 0) {
 //		return;
@@ -307,18 +290,18 @@ function q_renderFlow(arr, isFirst, sync, local) {
 	for (const dArr of byDescr.values()) {
 		const $i = dArr[0].$src,
 			iSrc = srcBy$src.get($i);
-		pArr.push(q_renderTag(dArr, iSrc !== undefined ? iSrc.descr.attr : null, type_isLast(), sync, local)
-			.then(() => sync.stat === 0 && q_renderFlow(dArr, false, sync, local)));
+		pArr.push(q_renderTag(dArr, iSrc !== undefined ? iSrc.descr.attr : null, type_isLast(), sync)
+			.then(() => sync.stat === 0 && q_renderFlow(dArr, false, sync)));
 //0922
-//		await q_renderTag(dArr, $i[p_isCmd] && descrById.get($i[p_descrId]).attr || null, type_isLast(), sync, local)
-//			.then(() => sync.stat === 0 && q_renderFlow(dArr, false, sync, local));
+//		await q_renderTag(dArr, $i[p_isCmd] && descrById.get($i[p_descrId]).attr || null, type_isLast(), sync)
+//			.then(() => sync.stat === 0 && q_renderFlow(dArr, false, sync));
 
 
 /*
 //		if ($i.nodeType === 1) {
 //!!!как бы так сделать, что бы не идти дальше если рендер говорит что не нужно
-			pArr.push(q_renderTag(dArr, $i[p_isCmd] && descrById.get($i[p_descrId]).attr || null, type_isLast(), sync, local)
-				.then(() => sync.stat === 0 && q_renderFlow(dArr, false, sync, local)
+			pArr.push(q_renderTag(dArr, $i[p_isCmd] && descrById.get($i[p_descrId]).attr || null, type_isLast(), sync)
+				.then(() => sync.stat === 0 && q_renderFlow(dArr, false, sync)
 //console.log('isCancel', sync.stat, 222);
 				));
 //		}*/
@@ -350,8 +333,8 @@ function q_nextGroupByDescr(arr, isFirst) {
 	}
 	return byDescr;
 }
-function q_execRender(arr, str, expr, isLast, sync, local) {
-	const req = type_req(arr[0].$src, str, expr, null, sync, local);
+function q_execRender(arr, str, expr, isLast, sync) {
+	const req = type_req(arr[0].$src, str, expr, null, sync);
 	if (req.reqCmd.cmd.q_render) {
 		return req.reqCmd.cmd.q_render(req, arr, isLast);
 	}
@@ -363,8 +346,8 @@ function q_execRender(arr, str, expr, isLast, sync, local) {
 		res = new Array(arrLen);
 	for (let i = 0; i < arrLen; i++) {
 		if (!isLast.has(i)) {
-//			res[i] = await req.reqCmd.cmd.render(type_req(arr[i].$src, str, expr, arr[i].scope, sync, local));
-			res[i] = req.reqCmd.cmd.render(type_req(arr[i].$src, str, expr, arr[i].scope, sync, local));
+//			res[i] = await req.reqCmd.cmd.render(type_req(arr[i].$src, str, expr, arr[i].scope, sync));
+			res[i] = req.reqCmd.cmd.render(type_req(arr[i].$src, str, expr, arr[i].scope, sync));
 		}
 	}
 //	return res;
@@ -394,21 +377,11 @@ export function setReqCmd(str) {
 	return true;
 }
 export function dispatchLocalEvents(local) {
-//	const r = [];
 	for (const [sId, l] of local) {
-		if (l.animationsCount === 0) {// && $srcById.has(sId)) {
+		if (l.animationsCount === 0) {
 			dispatchLocalEventsBySrcId(sId, l);
-//			r.push(sId, l);
 		}
 	}
-/*
-	const rLen = r.length;
-	if (rLen === 0) {
-		return;
-	}
-	for (let i = rLen - 1; i > -1; i -= 2) {
-		dispatchLocalEventsBySrcId(r[i - 1], r[i]);
-	}*/
 }
 function testLocalEventsBySrcId(local, sId) {
 	const l = local.get(sId);
@@ -435,15 +408,14 @@ function dispatchLocalEventsBySrcId(sId, l) {
 	}
 	$src.dispatchEvent(new CustomEvent(renderEventName, defEventInit));
 }
-export function type_req($src, str, expr, scope, sync, local) {
+export function type_req($src, str, expr, scope, sync) {
 	return {
 		reqCmd: reqCmd[str],// || null,//<- in createAttr
 		$src,
 		str,
 		expr,
 		scope,
-		sync,
-		local
+		sync
 	};
 }
 function type_reqCmd(cmdName, cmd, args) {
@@ -508,10 +480,7 @@ export function type_animation2(handler, local, viewedSrcId) {
 	return {
 		handler,
 		local,
-		viewedSrcId,
-
-		promise: null,
-//todo		resolve: null
+		viewedSrcId
 	};
 }
 export function type_renderRes(isLast, $src = null, $last = null, $attr = null, attr = null) {

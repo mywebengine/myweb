@@ -26,16 +26,15 @@ function onRender(req, $src = req.$src) {
 	if (src !== undefined) {
 //	const c = getCacheBySrcId($src[p_srcId]);
 		const c = src.cache;
-		if (c.isInit.has(req.str)) {// || ($src._isInit !== undefined && $src._isInit.has(req.str))) {
+		if (c.isInits.has(req.str)) {// || ($src._isInit !== undefined && $src._isInit.has(req.str))) {
 			return null;
 		}
+		c.isInits.add(req.str);
 		const ii = onIsInit.get($src);
 		if (ii !== undefined && ii.has(req.str)) {
-			c.isInit.add(req.str);
 			ii.delete(req.str);
 			return null;
 		}
-		c.isInit.add(req.str);
 	} else {
 		const ii = onIsInit.get($src);
 		if (ii !== undefined && ii.has(req.str)) {
@@ -64,7 +63,7 @@ function onRender(req, $src = req.$src) {
 			s = src.scopeCache;
 		s[p_target][eventScopeName] = evt;
 		src.cache.value = type_cacheValue();
-		eval2(type_req($src, req.str, req.expr, s, null, null), $src, false);
+		eval2(type_req($src, req.str, req.expr, s, null), $src, false);
 	});
 	return null;
 }

@@ -216,13 +216,13 @@ export function getVal($src, scope, name, isReactive) {
 	const str = cmdPref + name,
 		expr = $src.dataset[str];
 	if (expr) {
-		return eval2(type_req($src, str, expr, scope || srcBt$src.get($src).scopeCache, null, null), $src, isReactive);
+		return eval2(type_req($src, str, expr, scope || srcBt$src.get($src).scopeCache, null), $src, isReactive);
 	}
 }
 export function _getVal($src, scope, name, isReactive) {
 	const str = cmdPref + name,
 		expr = $src.dataset[str];
 	if (expr) {
-		return eval2(type_req($src, str, expr, scope || srcBy$src.get($src).scopeCache, null, null), $src, isReactive);
+		return eval2(type_req($src, str, expr, scope || srcBy$src.get($src).scopeCache, null), $src, isReactive);
 	}
 }*/

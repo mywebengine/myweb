@@ -30,7 +30,7 @@ export default {
 					return type_renderRes(true);
 				}
 				const f = r instanceof Response ? fetchGetRes(req, r, null) : fetchGetFetch(req, r);
-				req.sync.afterAnimation.add(type_animation(() => f, req.local, 0));
+				req.sync.afterAnimations.add(type_animation(() => f, req.sync.local, 0));
 				return null;
 			});
 	}
@@ -62,7 +62,7 @@ function fetchGetRes(req, res, err) {
 		fetchClear(req);
 		return;
 	}
-	req.sync.afterAnimation.add(type_animation(() => req.sync.beforeAnimation.add(type_animation(() => {//это нужно для того что бы избежать ситуации, когда ранее уже был загружен и был сет (который вызывает отмену рендера и очистку текущего)
+	req.sync.afterAnimations.add(type_animation(() => req.sync.beforeAnimations.add(type_animation(() => {//это нужно для того что бы избежать ситуации, когда ранее уже был загружен и был сет (который вызывает отмену рендера и очистку текущего)
 		const det = type_fetchDetailEvent(res, err);
 		if (err !== null) {
 			dispatchEvt(req.$src, errorEventName, det);
@@ -75,7 +75,7 @@ function fetchGetRes(req, res, err) {
 		if (res.ok) {
 			dispatchEvt(req.$src, okEventName, det);
 		}
-	}, req.local, 0)), req.local, 0));
+	}, req.sync.local, 0)), req.sync.local, 0));
 }
 function fetchClear(req) {
 	if (self.Tpl_debugLevel !== 0) {

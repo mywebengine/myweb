@@ -4,7 +4,7 @@ import {type_cacheValue, type_cacheCurrent} from "./cache.js";
 import {Tpl_doc, Tpl_$src, p_topUrl, visibleScreenSize, incCmdName, onCmdName, textCmdName, descrIdName, asOneIdxName, idxName, removeEventName, defEventInit,
 	reqCmd} from "./config.js";
 import {$srcById, srcById, srcBy$src, descrById, getNewId, createSrc, type_asOneIdx, type_idx, get$els, getNextStr} from "./descr.js";
-import {varIdByVar, varById, srcIdSetByVarId, varIdByVarIdByProp} from "./proxy.js";
+import {varIdByVar, varById, srcIdsByVarId, varIdByVarIdByProp} from "./proxy.js";
 import {loadingCount, check} from "./util.js";
 
 export function preRender($i, isLinking) {// = Tpl_$src) {//todo это не будет работать если после фора идет вставка на много тегов
@@ -332,8 +332,8 @@ function clearTag($e, src, rem) {
 //console.error("DEL", src.id, $e, src.isCmd, descr);
 	if (!src.isCmd) {
 //простые теги тоже могут быть с одним описанием
-		descr.srcIdSet.delete(sId);
-		if (descr.srcIdSet.size === 0) {
+		descr.srcIds.delete(sId);
+		if (descr.srcIds.size === 0) {
 			descrById.delete(dId);
 		}
 		return;
@@ -350,9 +350,9 @@ function clearTag($e, src, rem) {
 		}
 */
 	loadingCount.delete(sId);
-	descr.srcIdSet.delete(sId);
+	descr.srcIds.delete(sId);
 	if (descr.sId === sId) {
-		descr.sId = descr.srcIdSet.values().next().value;//todo REM! тут может быть undef - это при условии что все элемены цикла пошли на удаление (это при замене через inc) - и раз undef то в rem есть все элементы и первый изних очистит всё, а остальные нужно пропустить
+		descr.sId = descr.srcIds.values().next().value;//todo REM! тут может быть undef - это при условии что все элемены цикла пошли на удаление (это при замене через inc) - и раз undef то в rem есть все элементы и первый изних очистит всё, а остальные нужно пропустить
 	}
 	const r = rem.get(dId);
 	if (r) {
@@ -362,8 +362,8 @@ function clearTag($e, src, rem) {
 	rem.set(dId, new Set([sId]));
 }
 function clearVars(rem) {
-	const vIdSet = new Set(),
-		sIdSet = new Set(),
+	const vIds = new Set(),
+		sIds = new Set(),
 		deletedVarId = new Set();//,
 //		skipDelBySrcId = {};
 	for (const [dId, s] of rem) {
@@ -371,12 +371,12 @@ function clearVars(rem) {
 		if (!d) {//todo REM!
 			continue;
 		}
-		for (const vId of d.varIdSet) {
-			vIdSet.add(vId);
+		for (const vId of d.varIds) {
+			vIds.add(vId);
 		}
 //}
 		for (const sId of s) {
-			sIdSet.add(sId);
+			sIds.add(sId);
 //			if (d.isAsOne && sId != d.sId) {
 //todo
 //console.error(123);
@@ -385,14 +385,14 @@ function clearVars(rem) {
 //			}
 		}
 	}
-	for (const vId of vIdSet) {
-		const s = srcIdSetByVarId.get(vId);
+	for (const vId of vIds) {
+		const s = srcIdsByVarId.get(vId);
 		if (!s) {
 			continue;
 		}
 		const vIdByProp = varIdByVarIdByProp[vId];
 //		let f = false;
-		for (const sId of sIdSet) {
+		for (const sId of sIds) {
 //			if (skipDelBySrcId[sId]) {
 //				f = true;
 //			}
@@ -405,14 +405,14 @@ function clearVars(rem) {
 				continue;
 			}
 			for (const [pName, pId] of vIdByProp) {
-				const propS = srcIdSetByVarId.get(pId);
+				const propS = srcIdsByVarId.get(pId);
 				if (propS && propS.has(sId)) {
 //console.log(vIdByProp, sId, pId);
 					s.delete(sId);
 					propS.delete(sId);
 					if (propS.size === 0) {
 						deletedVarId.add(pId);
-						srcIdSetByVarId.delete(pId);
+						srcIdsByVarId.delete(pId);
 						vIdByProp.delete(pName);
 					}
 				}
@@ -424,7 +424,7 @@ function clearVars(rem) {
 //console.log(2, vId, s);
 		if (s.size === 0) {
 			deletedVarId.add(vId);
-			srcIdSetByVarId.delete(vId);
+			srcIdsByVarId.delete(vId);
 			const v = varById[vId];
 			delete varById[vId];
 			varIdByVar.delete(v);
@@ -435,7 +435,7 @@ function clearVars(rem) {
 					console.warn("должно быть пусто", vId, vIdByProp);
 				}
 //--				for (const pId of vIdByProp.values()) {
-//					srcIdSetByVarId.delete(pId);
+//					srcIdsByVarId.delete(pId);
 //				}
 			}
 		} else if (vIdByProp && vIdByProp.size === 0) {
@@ -449,16 +449,16 @@ function clearVars(rem) {
 			continue;
 		}
 		for (const vId of deletedVarId) {
-			d.varIdSet.delete(vId);
+			d.varIds.delete(vId);
 		}
 		for (const sId of s) {
-			d.srcIdSet.delete(sId);
+			d.srcIds.delete(sId);
 //todo--
 			if (d.sId === sId) {
 				console.warn(22222222);
 			}
 		}
-		if (d.srcIdSet.size === 0) {
+		if (d.srcIds.size === 0) {
 			descrById.delete(dId);
 		}
 	}
@@ -484,7 +484,7 @@ export function cloneNode(req, $e) {//во время клонирования �
 		const rc = reqCmd[n];
 		if (rc.cmdName === onCmdName) {
 //console.log(111111, n, v, $on);
-			rc.cmd.render(type_req($on, n, v, req.scope, req.sync, req.local));
+			rc.cmd.render(type_req($on, n, v, req.scope, req.sync));
 		}
 	}
 	const l = loadingCount.get(src.id);
@@ -494,7 +494,7 @@ export function cloneNode(req, $e) {//во время клонирования �
 	return $n;
 }
 export function q_cloneNode(req, sId, beginIdx, len) {//во время клонирования будут созданы описания
-	for (let l = req.local.get(sId); l.newSrcId !== 0; l = req.local.get(sId)) {
+	for (let l = req.sync.local.get(sId); l.newSrcId !== 0; l = req.sync.local.get(sId)) {
 		sId = l.newSrcId;
 	}
 	const $src = $srcById.get(sId),
@@ -533,7 +533,7 @@ console.warn($i)
 		l = loadingCount.get(fSrc.id),
 		baseAsOne = new Set(),
 		asOneVal = new Array(len),
-		aIt = fDescr.asOneSet.keys();
+		aIt = fDescr.asOnes.keys();
 	for (let i = aIt.next(); !i.done; i = aIt.next()) {
 		if (i.value !== req.str) {
 			continue;
@@ -561,7 +561,7 @@ console.warn($i)
 			if (onLen !== 0) {
 				for (k = 0; k < onLen; k += 3) {
 					const o = on[k];
-					o.cmd.render(type_req($i, o.str, o.expr, req.scope, req.sync, req.local));
+					o.cmd.render(type_req($i, o.str, o.expr, req.scope, req.sync));
 				}
 			}
 			if (l !== undefined) {
@@ -605,7 +605,7 @@ console.log($i)
 		l = loadingCount.get(fSrc.id),
 		baseAsOne = new Set(),
 		asOneVal = new Array(len),
-		aIt = fDescr.asOneSet.keys();
+		aIt = fDescr.asOnes.keys();
 	for (let i = aIt.next(); !i.done; i = aIt.next()) {
 		if (i.value !== req.str) {
 			continue;
@@ -633,7 +633,7 @@ console.log($i)
 			if (onLen !== 0) {
 				for (k = 0; k < onLen; k += 3) {
 					const o = on[k];
-					o.cmd.render(type_req($i, o.str, o.expr, req.scope, req.sync, req.local));
+					o.cmd.render(type_req($i, o.str, o.expr, req.scope, req.sync));
 				}
 			}
 			if (l !== undefined) {
@@ -666,7 +666,7 @@ function q_cloneNodeCreate($e, $arr, $arrLen, asOneVal, type, baseAsOne) {
 	const descr = src.descr,
 		idx = src.idx,
 		save = src.save;
-	if (descr.asOneSet === null) {
+	if (descr.asOnes === null) {
 		if (type === 2) {
 			for (let i = 0; i < $arrLen; i++) {
 				createSrc($arr[i] = $arr[i].parentNode.appendChild($e.cloneNode()), descr, null, idx === null ? null : type_idx(idx)).save = save;
@@ -849,7 +849,7 @@ export function show(req, $e) {
 	if ($e.nodeName !== "TEMPLATE") {
 		return;
 	}
-	req.sync.animation.add(type_animation(() => _show(req, $e), req.local, 0));//srcBy$src.get($e).id]));
+	req.sync.animations.add(type_animation(() => _show(req, $e), req.sync.local, 0));//srcBy$src.get($e).id]));
 }
 function _show(req, $e) {
 	const $new = $e.content.firstChild;
@@ -869,7 +869,7 @@ export function hide(req, $e) {
 	if ($e.nodeName === "TEMPLATE") {
 		return;// $e;
 	}
-	req.sync.animation.add(type_animation(() => _hide($e), req.local, srcBy$src.get($e).id));
+	req.sync.animations.add(type_animation(() => _hide($e), req.sync.local, srcBy$src.get($e).id));
 }
 function _hide($e) {
 	let $i = $e;
