@@ -28,7 +28,7 @@ self[locVarName] = getProxy(getLoc(location.href));
 
 self.addEventListener("scroll", async () => {
 	const pSet = new Set(),
-		emptyScrollSync = new Set();
+		scrollSync = new Set();
 	for (const sync of syncInRender) {
 		if (sync.stat !== 0 || sync.scrollAnimations.size === 0) {
 			continue;
@@ -38,7 +38,7 @@ self.addEventListener("scroll", async () => {
 			if (!$srcById.has(a.viewedSrcId)) {
 				sync.scrollAnimations.delete(a);
 				if (sync.scrollAnimations.size === 0) {
-					emptyScrollSync.add(sync);
+					scrollSync.add(sync);
 				}
 				continue;
 			}
@@ -50,16 +50,16 @@ self.addEventListener("scroll", async () => {
 		if (animation.size !== 0) {
 //console.log("animation")
 			pSet.add(addAnimation(sync, animation, true));
+			scrollSync.add(sync);
 		}
 	}
 //todo
-	if (pSet.size !== 0) {
-		Promise.all(pSet)
-			.then(syncArr => renderLoop(syncArr));
+	if (pSet.size === 0) {
+		renderLoop(scrollSync);
+		return;
 	}
-	if (emptyScrollSync.size !== 0) {
-		renderLoop(emptyScrollSync);
-	}
+	Promise.all(pSet)
+		.then(() => renderLoop(scrollSync));
 }, {
 	passive: true
 });

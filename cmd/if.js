@@ -527,7 +527,11 @@ function makeShow(req, $i, str, isShow) {
 //		if ($attr === null && $i[p_descrId]) {
 		if ($attr === null) {
 			const iSrc = srcBy$src.get($i);
-			if (iSrc.isCmd) {
+//todo
+if (!iSrc) {
+	console.warn(iSrc, $i);
+}
+			if (iSrc !== undefined && iSrc.isCmd) {
 				$attr = $i;
 				attr = getAttrAfter(iSrc.descr.attr, str);
 			}

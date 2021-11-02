@@ -61,7 +61,7 @@ function incRender(req, val) {
 			}
 		}
 	}
-//console.log(111, req, $els, oldVal, srcBy$src.get(req.$src));
+//console.log(111, req, $els, oldVal, srcBy$src.get(req.$src), include);
 //alert(1);
 	//если выражение вернуло Request или Response, то такой запрос будет всегда запрашиваться
 	if ($elsLen !== 1 && oldVal === include.key) {//уже в доме
@@ -81,8 +81,8 @@ function incRender(req, val) {
 		showLoading(req.$src, () => false, loading.type, loading.waitTime);
 	}
 	if (!waitingStack.has(include.key)) {
-		waitingStack.set(include.url, (include.res === null ? fetch(include.req) : include.res)
-			.then(res => res.text())
+		waitingStack.set(include.url, (include.res === null ? fetch(include.req)
+			.then(res => res.text()) : include.res.text())
 			.then(html => {
 				waitingStack.delete(include.key);
 				return createIncFragment(req, include, html);
@@ -389,6 +389,8 @@ async function renderNewInc(req, $e) {
 //		if (v && ((cn !== incCmdName && cn !== fetchCmdName) || !reqCmd[n].args[0]) && cn !== elseCmdName && cn !== defaultCmdName && cn !== onCmdName) {
 //todo наверное всё же не так! для иквов фетчей это может стать проблемой
 		if (v && cn !== elseCmdName && cn !== defaultCmdName && cn !== onCmdName) {
+//todo
+//console.log($e, n, v);
 			await eval2(type_req($e, n, v, req.scope, req.sync), $e, true);//привязываем к новым тегам команды ДО
 		}
 		if (n === req.str) {
@@ -596,6 +598,7 @@ function cloneIncFragment(req, include, oldVal, loading) {
 		return $fr;
 	}
 //тут что бы не создовать sId => preRender
+//todo
 	if (!isR) {//со слотами такая штука: если уже была вставка - это не делаем, так как путаница получиться
 		makeSlots(req, $fr);
 	}

@@ -286,11 +286,11 @@ function q_renderFlow(arr, isFirst, sync) {
 //		return;
 //	}
 //todo	
-	const pArr = [];
+	const pSet = new Set();
 	for (const dArr of byDescr.values()) {
 		const $i = dArr[0].$src,
 			iSrc = srcBy$src.get($i);
-		pArr.push(q_renderTag(dArr, iSrc !== undefined ? iSrc.descr.attr : null, type_isLast(), sync)
+		pSet.add(q_renderTag(dArr, iSrc !== undefined ? iSrc.descr.attr : null, type_isLast(), sync)
 			.then(() => sync.stat === 0 && q_renderFlow(dArr, false, sync)));
 //0922
 //		await q_renderTag(dArr, $i[p_isCmd] && descrById.get($i[p_descrId]).attr || null, type_isLast(), sync)
@@ -300,13 +300,13 @@ function q_renderFlow(arr, isFirst, sync) {
 /*
 //		if ($i.nodeType === 1) {
 //!!!как бы так сделать, что бы не идти дальше если рендер говорит что не нужно
-			pArr.push(q_renderTag(dArr, $i[p_isCmd] && descrById.get($i[p_descrId]).attr || null, type_isLast(), sync)
+			pSet.add(q_renderTag(dArr, $i[p_isCmd] && descrById.get($i[p_descrId]).attr || null, type_isLast(), sync)
 				.then(() => sync.stat === 0 && q_renderFlow(dArr, false, sync)
 //console.log('isCancel', sync.stat, 222);
 				));
 //		}*/
 	}
-	return Promise.all(pArr);
+	return Promise.all(pSet);
 }
 function q_nextGroupByDescr(arr, isFirst) {
 	const byDescr = new Map(),
