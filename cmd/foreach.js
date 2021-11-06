@@ -1,4 +1,4 @@
-import {q_renderTag, type_req, type_isLast, type_q_arr, type_animation, type_animation2, type_renderRes} from "../render/render.js";
+import {q_renderTag, type_req, type_isLast, type_q_arr, type_animation, type_renderRes} from "../render/render.js";
 import {Tpl_doc, p_target, visibleScreenSize, foreachCmdName,
 	reqCmd, qPackLength} from "../config.js";
 import {getNewId, type_asOneIdx, getAttrAfter, get$els, get$first, getNextStr} from "../descr.js";
@@ -13,7 +13,7 @@ export default {
 	isAsOne: true,
 	get$els($src, str, expr, pos) {
 //todo , expr, pos
-		const $els = forGet$els(forGet$first($src, str, expr, pos), str, expr, pos),
+		const $els = foreach_get$els(foreach_get$first($src, str, expr, pos), str, expr, pos),
 			$elsLen = $els.length,
 			$ret = [];
 		for (let i = 0; i < $elsLen; i++) {
@@ -24,13 +24,13 @@ export default {
 		}
 		return $ret;
 	},
-	get$first: forGet$first,
+	get$first: foreach_get$first,
 //	get$first($src, str, expr, pos) {
-//		return forGet$first($src, str, expr, pos);
+//		return foreach_get$first($src, str, expr, pos);
 //	},
 	render(req) {
 		return eval2(req, req.$src, true)
-			.then(val => foreachRender(req, val));
+			.then(val => foreach_render(req, val));
 	},
 	q_render(req, arr, isLast) {
 		return q_eval2(req, arr, isLast)
@@ -39,14 +39,14 @@ export default {
 					res = new Array(arrLen);
 				for (let i = 0; i < arrLen; i++) {
 					if (!isLast.has(i)) {
-						res[i] = foreachRender(type_req(arr[i].$src, req.str, req.expr, arr[i].scope, req.sync), vals[i]);
+						res[i] = foreach_render(type_req(arr[i].$src, req.str, req.expr, arr[i].scope, req.sync), vals[i]);
 					}
 				}
 				return res;
 			});
 	}
 };
-function foreachRender(req, val) {
+function foreach_render(req, val) {
 //console.error("_for", req.sync.syncId, req, req.$src);
 //alert(1);
 	const src = srcBy$src.get(req.$src);
@@ -57,7 +57,7 @@ function foreachRender(req, val) {
 		setAsOneIdx(src, req.str, getNewId());
 		setIdx(src, req.str, 0);
 	}
-	const ctx = forGetCtx(req, val),
+	const ctx = getCtx(req, val),
 		$elsLen = ctx.$els.length,
 		keysLen = ctx.keys.length,
 		l = ctx.$els[$elsLen - 1],
@@ -126,12 +126,13 @@ function foreachRender(req, val) {
 			return res;
 		});*/
 }
-function forGetCtx(req, val) {
+function getCtx(req, val) {
 	const pos = -1,//нужно было бы запускать с нулевого элемента для получения кэша - эта задача режается в функции получения кэша
-		$first = forGet$first(req.$src, req.str, req.expr, pos),
-		$els = forGet$els($first, req.str, req.expr, pos);
+		$first = foreach_get$first(req.$src, req.str, req.expr, pos),
+		$els = foreach_get$els($first, req.str, req.expr, pos);
 	if (!val) {
-		return getEmptyCtx($first, $els);
+//		return getEmptyCtx($first, $els);
+		return type_ctx(null, null, $els, [], "", "");
 	}
 	const keys = [];
 	if (Array.isArray(val)) {
@@ -146,14 +147,15 @@ function forGetCtx(req, val) {
 		}
 	}
 	if (keys.length === 0) {
-		return getEmptyCtx($first, $els);
+//		return getEmptyCtx($first, $els);
+		return type_ctx(null, null, $els, [], "", "");
 	}
-	return type_forCtx(val, getAttrAfter(srcBy$src.get(req.$src).descr.attr, req.str), $els, keys, kebabToCamelStyle(req.reqCmd.args[0]), kebabToCamelStyle(req.reqCmd.args[1]));
+	return type_ctx(val, getAttrAfter(srcBy$src.get(req.$src).descr.attr, req.str), $els, keys, kebabToCamelStyle(req.reqCmd.args[0]), kebabToCamelStyle(req.reqCmd.args[1]));
 }
-function getEmptyCtx($first, $els) {
-	return type_forCtx(null, null, $els, [], "", "");
-}
-function type_forCtx(value, attrsAfter, $els, keys, valName, keyName) {
+//function getEmptyCtx($first, $els) {
+//	return type_ctx(null, null, $els, [], "", "");
+//}
+function type_ctx(value, attrsAfter, $els, keys, valName, keyName) {
 	return {
 		value,
 		attrsAfter,
@@ -171,7 +173,7 @@ function show$first(req, ctx, showFunc) {
 		showFunc(req, ctx.$els[0][j]);
 	}
 }
-function forGet$first($first, str, expr, pos) {
+function foreach_get$first($first, str, expr, pos) {
 	for (let $i = $first; $i !== null; $i = $i.previousSibling) {
 		const iSrc = srcBy$src.get($i);
 		if (iSrc === undefined || !iSrc.isCmd) {
@@ -201,7 +203,7 @@ function forGet$first($first, str, expr, pos) {
 	}
 	return $first;
 }
-function forGet$els($e, str, expr, pos) {
+function foreach_get$els($e, str, expr, pos) {
 	for (let $i = $e; $i !== null; $i = $i.nextSibling) {
 		const iSrc = srcBy$src.get($i);
 		if (iSrc === undefined || !iSrc.isCmd) {
@@ -414,7 +416,7 @@ function q_forRender(req, ctx, addF, res) {
 		nowIdxs = new Set(),
 		deferredIdxs = new Set(),
 		$elsLen = ctx.$els.length;
-	if (req.sync.p.renderParam.isLinking === false) {
+	if (!req.sync.renderParam.isLinking) {
 		for (let i = 0; i < $elsLen; i++) {
 			const l = ctx.$els[i].length;
 			let f = false;

@@ -50,8 +50,8 @@ class Modal {
 		if (text) {
 			this.$cnt.innerHTML = text;
 			if (self.tpl) {
-				if (self.getLineNo) {
-					self.getLineNo.mark(self.getLineNo.type_markCtx(props.url, text), {
+				if (self.createLineNo !== undefined) {
+					self.createLineNo(props.url, text, {
 						children: this.$cnt.children
 					});
 				}

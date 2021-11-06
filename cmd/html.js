@@ -6,7 +6,7 @@ export default {
 	isCustomHtml: true,
 	render(req) {
 		return eval2(req, req.$src, true)
-			.then(val => setValue(req, req.$src, val));
+			.then(val => html_render(req, req.$src, val));
 	},
 	q_render(req, arr, isLast) {
 		return q_eval2(req, arr, isLast)
@@ -14,18 +14,18 @@ export default {
 				const arrLen = arr.length;
 				for (let i = 0; i < arrLen; i++) {
 					if (!isLast.has(i)) {
-						setValue(req, arr[i].$src, vals[i]);
+						html_render(req, arr[i].$src, vals[i]);
 					}
 				}
 				return null;
 			});
 	}
 };
-function setValue(req, $src, val) {
+function html_render(req, $src, val) {
 //	descrById.get($src[p_descrId]).isCustomHtml = true;
 //	const c = getCacheBySrcId($src[p_srcId]),
 	const c = srcBy$src.get($src).cache;
-	if (req.sync.p.renderParam.isLinking) {
+	if (req.sync.renderParam.isLinking) {
 		c.current.set(req.str, val);
 		return null;
 	}

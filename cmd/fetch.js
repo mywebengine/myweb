@@ -4,21 +4,8 @@ import {defRequestInit, loadEventName, okEventName, errorEventName, resultDetail
 import {srcBy$src} from "../descr.js";
 import {eval2} from "../eval2.js";
 import {getRequest, dispatchEvt, check} from "../util.js";
-/*
-    return fetch(url, {
-        method: 'POST', // *GET, POST, PUT, DELETE, etc.
-        mode: 'cors', // no-cors, cors, *same-origin
-        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-        credentials: 'same-origin', // include, *same-origin, omit
-        headers: {
-            'Content-Type': 'application/json',
-            // 'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        redirect: 'follow', // manual, *follow, error
-        referrer: 'no-referrer', // no-referrer, *client
-        body: JSON.stringify(data), // тип данных в body должен соответвовать значению заголовка "Content-Type"
-    })*/
-self.Tpl_fetchDefGetError = undefined;//default error handler
+
+//self.Tpl_fetchDefGetError = undefined;//default error handler
 
 export default {
 	render(req) {
@@ -29,15 +16,15 @@ export default {
 				if (r === null) {
 					return type_renderRes(true);
 				}
-				const f = r instanceof Response ? fetchGetRes(req, r, null) : fetchGetFetch(req, r);
+				const f = r instanceof Response ? getRes(req, r, null) : getFetch(req, r);
 				req.sync.afterAnimations.add(type_animation(() => f, req.sync.local, 0));
 				return null;
 			});
 	}
 };
-function fetchGetFetch(req, r) {
+function getFetch(req, r) {
 	if (req.sync.stat !== 0) {
-		fetchClear(req);
+		clearFetch(req);
 		return;
 	}
 	for (const n in defRequestInit) {
@@ -54,21 +41,21 @@ function fetchGetFetch(req, r) {
 		}
 	}
 	return fetch(r)
-		.then(res => fetchGetRes(req, res, null))
-		.catch(err => fetchGetRes(req, null, err));
+		.then(res => getRes(req, res, null))
+		.catch(err => getRes(req, null, err));
 }
-function fetchGetRes(req, res, err) {
+function getRes(req, res, err) {
 	if (req.sync.stat !== 0) {
-		fetchClear(req);
+		clearFetch(req);
 		return;
 	}
 	req.sync.afterAnimations.add(type_animation(() => req.sync.beforeAnimations.add(type_animation(() => {//это нужно для того что бы избежать ситуации, когда ранее уже был загружен и был сет (который вызывает отмену рендера и очистку текущего)
 		const det = type_fetchDetailEvent(res, err);
 		if (err !== null) {
 			dispatchEvt(req.$src, errorEventName, det);
-			if (self.Tpl_fetchDefGetError) {
-				return self.Tpl_fetchDefGetError(det);
-			}
+//			if (self.Tpl_fetchDefGetError) {
+//				return self.Tpl_fetchDefGetError(det);
+//			}
 			return;
 		}
 		dispatchEvt(req.$src, loadEventName, det);
@@ -77,7 +64,7 @@ function fetchGetRes(req, res, err) {
 		}
 	}, req.sync.local, 0)), req.sync.local, 0));
 }
-function fetchClear(req) {
+function clearFetch(req) {
 	if (self.Tpl_debugLevel !== 0) {
 		console.info("clear fetch => ", req);
 	}

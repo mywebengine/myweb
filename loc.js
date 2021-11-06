@@ -19,9 +19,6 @@ export function getLoc(url, defPageName = "") {
 export function setLoc(url) {
 	oset(self, "loc", getLoc(url));
 }
-self.getLoc = getLoc;
-self.setLoc = setLoc;
-
 function parsePath(href, path, defPageName) {
 	const args = path.replace(trimSlashRe, "").split("/"),
 		loc = type_loc(href, path, args[0] || defPageName, args);
@@ -40,9 +37,9 @@ function type_loc(href, path, name, args) {
 		query: {}
 	};
 }
-export function getUrl(url, topUrl) {
+export function getUrl(url, topUrl = location.href) {
 	if (isUri(url)) {
-		if (topUrl !== undefined) {
+//		if (topUrl !== undefined) {
 			if (isUri(topUrl)) {
 				topUrl = normalizeUrl(topUrl);
 			}
@@ -55,22 +52,16 @@ export function getUrl(url, topUrl) {
 				}
 			}
 			url = topUrl.endsWith(u) ? topUrl : normalizeUrl(topUrl.substr(0, topUrl.lastIndexOf("/") + 1) + url);
-		} else {
-			url = normalizeUrl(url);
-		}
+//		} else {
+//			url = normalizeUrl(url);
+//		}
 	}
-	if (url.search(reHost) === -1) {
-		url = location.origin + url;
-	}
-	return normalizeUrl(url);
+	return url.search(reHost) === -1 ? location.origin + url : url;
 }
-//todo
-self.getUrl = getUrl;
 export function isUri(url) {
 	url = url.trimLeft();
 	return url.search(reHost) !== 0 && url[0] !== "/";
 }
-self.isUri = isUri;
 function normalizeUrl(url) {
 	url = url.trim();
 //	if (url.search(reHost) === 0) {
@@ -88,7 +79,6 @@ function normalizeUrl(url) {
 	}
 	return normalizeUrl_get(url);
 }
-//self.normalizeUrl = normalizeUrl;
 function normalizeUrl_get(url) {
 	for (let re = [reUp, reThis], i = re.length - 1; i > -1; i--) {
 		while (url.search(re[i]) !== -1) {
@@ -102,3 +92,9 @@ function normalizeUrl_get(url) {
 	return url.substr(0, i + 1) + url.substr(i + 1).replace(reSlash, "/");
 	//.trim();
 }
+//API
+self.getLoc = getLoc;
+self.setLoc = setLoc;
+self.getUrl = getUrl;
+self.isUri = isUri;
+self.normalizeUrl = normalizeUrl;

@@ -3,14 +3,14 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
-		<script src="../myweb.js?debug" type="module" async="async"></script>
+		<script src="../myweb.js?debug=1" type="module" async="async"></script>
 		<link href="../myweb.css" type="text/css" rel="stylesheet" />
 		<script>
-			if (!self.data) {
-				data = {};
+			if (!self.glob) {
+				glob = {};
 			}
 			const h1 = "loc object, routing";
-			data.text = "abcdefg";
+			glob.text = "abcdefg";
 		</script>
 		<title>${h1} - myweb</title>
 	</head>
@@ -47,19 +47,11 @@
 			<h2>Content</h2>
 			<div style="padding: 20px; background: #eee">
 				<link if="loc.name === `myweb`"
-					inc="`/myweb/examples/loc/main.html`" />
+					inc="`./loc/main.html`" />
 				<link else=""
-					inc="`/myweb/examples/loc/${loc.name}.html`"
-					data-error-url="`/myweb/examples/loc/404.html`"
-
-
-					inc="fetch(`/myweb/examples/loc/${loc.name}.html`)
-						.then(res => res.ok ? res : fetch(`/myweb/examples/loc${res.status}.html`))"
-					
-					inc="`/myweb/examples/loc/${loc.name}.html`"
-					exec.is-show404="false"
-					on.error="isShow404 = evt.detail.inc.status === 404"
-					inc...404="isShow404 && `/myweb/examples/loc/404.html`" />
+					inc="fetch(getUrl(`./loc/${loc.name}.html`, `/myweb/examples/`))
+						.then(res => res.ok ? res : fetch(getUrl(`./loc/${res.status}.html`, `/myweb/examples/`)))"
+					if="true" />
 			</div>
 		</section>
 	</body>

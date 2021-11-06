@@ -1,8 +1,9 @@
 //import {incCache} from "./cmd/inc.js";
 import {setReqCmd} from "./render/render.js";
 import {type_cache} from "./cache.js";
-import {/*cmdPref, isWhenVisibleName, */reqCmd, incCmdName} from "./config.js";
+import {reqCmd, incCmdName} from "./config.js";
 import {setAsOneIdx, getIdx, setIdx} from "./dom.js";
+import {getProxy} from "./proxy.js";
 import {loadingCount} from "./util.js";
 
 export const $srcById = new Map();
@@ -65,8 +66,7 @@ export function createSrc($e, descr, asOneIdx, idx) {//вызов этой фу�
 }
 export function createDescr($e, sId) {
 	const id = getNewId(),
-		attr = createAttr($e);//,
-//		isWhenVisible = !!($e.dataset[isWhenVisibleName] || $e.dataset[cmdPref + isWhenVisibleName]);
+		attr = createAttr($e);
 	if (attr.size === 0) {
 		const descr = type_descr(id, sId, null, null);
 		descrById.set(id, descr);

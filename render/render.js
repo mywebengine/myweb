@@ -1,4 +1,4 @@
-import {p_target/*, isWhenVisibleName*//*, renderStartEventName*/, mountEventName, renderEventName, defEventInit,
+import {p_target, lazyRenderName, mountEventName, renderEventName, defEventInit,
 	cmdArgsDiv, cmdArgsDivLen,
 		Tpl_cmd, reqCmd} from "../config.js";
 import {srcById, $srcById, srcBy$src} from "../descr.js";
@@ -92,11 +92,14 @@ async function attrRender($src, scope, attr, sync) {
 	}
 	return type_renderRes(false, $src, $last);
 }
-async function renderChildren($src, scope, sync, sId, $ret) {
-	if (sync.stat !== 0 || srcBy$src.get($src).descr.isCustomHtml) {
-		return $src;
+async function renderChildren($i, scope, sync, sId, $ret) {
+	if (sync.stat !== 0 || srcBy$src.get($i).descr.isCustomHtml) {
+		return $i;
 	}
-	for (let $i = $src.firstChild; $i !== null; $i = $i.nextSibling) {
+	if (!sync.renderParam.isLazyRender && $i.getAttribute(lazyRenderName) !== null) {
+		sync.renderParam.isLazyRender = true;
+	}
+	for ($i = $i.firstChild; $i !== null; $i = $i.nextSibling) {
 //		if ($i.nodeType === 1 && 
 		const iSrc = srcBy$src.get($i);
 		if (iSrc === undefined) {
@@ -189,11 +192,7 @@ function _q_renderTag(arr, isLast, sync, arrLen) {
 async function q_attrRender(arr, attr, isLast, ctx, sync) {
 	const arrLen = arr.length;
 	for (const [n, v] of attr) {
-//console.log(n + v);
-//console.time(n + v);
 		const res = await q_execRender(arr, n, v, isLast, sync);
-//console.log(3333, res);
-//console.timeEnd(n + v);
 		if (sync.stat !== 0) {
 //console.log('isCancel', sync.stat, n, v, 2);
 			return ctx.lastCount;
@@ -247,7 +246,7 @@ function q_addAfterAttr($src, scope, attr, ctx) {
 	if (!ctx.afterAttrKey.has(attrKey)) {
 		ctx.afterAttrKey.set(attrKey, attr);
 	}
-	if (byD) {
+	if (byD !== undefined) {
 		const arr = byD.get(attrKey);
 		if (arr) {
 			arr.push(arrI);
@@ -259,9 +258,13 @@ function q_addAfterAttr($src, scope, attr, ctx) {
 	ctx.afterByDescrByAttr.set(dId, new Map([[attrKey, [arrI]]]));
 }
 function q_renderChildren(arr, isLast, sync) {
-	if (sync.stat !== 0 || srcBy$src.get(arr[0].$src).descr.isCustomHtml) {
-//console.log(78979, sync.stat, arr[0].$src);
+	const $first = arr[0].$src;
+	if (sync.stat !== 0 || srcBy$src.get($first).descr.isCustomHtml) {
+//console.log(78979, sync.stat, $first);
 		return Promise.resolve(arr);
+	}
+	if (!sync.renderParam.isLazyRender && $first.getAttribute(lazyRenderName) !== null) {
+		sync.renderParam.isLazyRender = true;
 	}
 	const iArr = [],
 		arrLen = arr.length;
@@ -451,15 +454,6 @@ export function type_animation(handler, local, viewedSrcId) {
 	for (const p of local.values()) {
 		p.animationsCount++;
 	}
-	return type_animation2(() => {
-		for (const p of local.values()) {
-			if (p.animationsCount > 0) {
-				p.animationsCount--;
-			}
-		}
-		return handler();
-	}, local, viewedSrcId);
-/*
 	return {
 		handler: () => {
 			for (const p of local.values()) {
@@ -469,17 +463,6 @@ export function type_animation(handler, local, viewedSrcId) {
 			}
 			return handler();
 		},
-		local,
-		viewedSrcId,
-
-		promise: null,
-		resolve: null
-	};*/
-}
-export function type_animation2(handler, local, viewedSrcId) {
-	return {
-		handler,
-		local,
 		viewedSrcId
 	};
 }

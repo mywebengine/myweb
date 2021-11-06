@@ -24,7 +24,7 @@ export function preRender($i, isLinking) {// = Tpl_$src) {//todo это не б�
 			continue;
 		}
 		$i = _preRenderCreate($i, descrAlias, isLinking);
-		if ($i.parentNode === $parent) {//если м ыне ушли вглубь - значит и вправо двигаться нельзя
+		if ($i.parentNode === $parent) {//если мы не ушли вглубь - значит и вправо двигаться нельзя
 			break;
 		}
 		if ($i.nextSibling !== null) {
@@ -52,51 +52,51 @@ export function preRender($i, isLinking) {// = Tpl_$src) {//todo это не б�
 				break;
 			}
 		} while (true);
-	} while ($i);
+	} while ($i !== null);
 }
 function _preRenderCreate($e, descrAlias, isLinking) {
 	if ($e.nodeType === 1) {
-		if (isLinking) {
-			const src = _preRenderGetSrc($e, descrAlias);
-			if (!src.isCmd) {
-				return $e;
-			}
-			for (const str of src.descr.attr.keys()) {
-				const asOneIdx = $e.getAttribute(asOneIdxName + str),
-					idx = $e.getAttribute(idxName + str);
-				if (asOneIdx !== null) {
-					if (src.asOneIdx === null) {
-						src.asOneIdx = type_asOneIdx([[str, !isNaN(asOneIdx) ? Number(asOneIdx) : asOneIdx]]);
-					} else {
-						src.asOneIdx.set(str, !isNaN(asOneIdx) ? Number(asOneIdx) : asOneIdx);
-					}
-				}
-				if (idx !== null) {
-					if (src.idx === null) {
-						src.idx = type_idx([[!isNaN(idx) ? Number(idx) : idx]]);
-						continue;
-					}
-					src.idx.set(str, !isNaN(idx) ? Number(idx) : idx);
-				}
-/*!!!!!!!!!!!
-				if (!reqCmd[str].cmd.isAsOne) {
-					continue;
-				}
-				const $from = $i;
-				for (let $j = $i.nextSibling; $j !== null; $j = $j.nextSibling) {
-					if ($j.nodeType !== 1) {
-						continue;
-					}
-					if (get$asOneIdx($j, str) !== asOneIdx && !(get$Idx($j, str) > 0)) {
-						break;
-					}
-					_preRenderCopy($from, iDescr, $i = $j);
-				}
-				break;*/
-			}
+		if (!isLinking) {
+			createSrc($e);
 			return $e;
 		}
-		createSrc($e);
+		const src = _preRenderGetSrc($e, descrAlias);
+		if (!src.isCmd) {
+			return $e;
+		}
+		for (const str of src.descr.attr.keys()) {
+			const asOneIdx = $e.getAttribute(asOneIdxName + str),
+				idx = $e.getAttribute(idxName + str);
+			if (asOneIdx !== null) {
+				if (src.asOneIdx === null) {
+					src.asOneIdx = type_asOneIdx([[str, !isNaN(asOneIdx) ? Number(asOneIdx) : asOneIdx]]);
+				} else {
+					src.asOneIdx.set(str, !isNaN(asOneIdx) ? Number(asOneIdx) : asOneIdx);
+				}
+			}
+			if (idx !== null) {
+				if (src.idx === null) {
+					src.idx = type_idx([[!isNaN(idx) ? Number(idx) : idx]]);
+					continue;
+				}
+				src.idx.set(str, !isNaN(idx) ? Number(idx) : idx);
+			}
+/*!!!!!!!!!!!
+			if (!reqCmd[str].cmd.isAsOne) {
+				continue;
+			}
+			const $from = $i;
+			for (let $j = $i.nextSibling; $j !== null; $j = $j.nextSibling) {
+				if ($j.nodeType !== 1) {
+					continue;
+				}
+				if (get$asOneIdx($j, str) !== asOneIdx && !(get$Idx($j, str) > 0)) {
+					break;
+				}
+				_preRenderCopy($from, iDescr, $i = $j);
+			}
+			break;*/
+		}
 		return $e;
 	}
 	return $e.nodeType === 3 ? replaceTextBlocks($e) : $e;
@@ -140,7 +140,7 @@ function _preRenderCopy($f, fDescr, $i) {
 			$f = $f.firstChild;
 			continue;
 		}
-		if ($i.parentNode === $parent) {//если м ыне ушли вглубь - значит и вправо двигаться нельзя
+		if ($i.parentNode === $parent) {//если мы не ушли вглубь - значит и вправо двигаться нельзя
 			break;
 		}
 		if ($i.nextSibling !== null) {
@@ -286,7 +286,7 @@ export function removeChild($e) {
 			$i = $i.content.firstChild.firstChild;
 			continue;
 		}
-		if ($i.parentNode === $parent) {//если м ыне ушли вглубь - значит и вправо двигаться нельзя
+		if ($i.parentNode === $parent) {//если мы не ушли вглубь - значит и вправо двигаться нельзя
 			break;
 		}
 		if ($i.nextSibling !== null) {
@@ -311,7 +311,7 @@ export function removeChild($e) {
 				break;
 			}
 		} while(true);
-	} while ($i);
+	} while ($i !== null);
 	if (rem.size === 0) {
 		return;
 	}
@@ -750,7 +750,7 @@ function q_cloneNodeCreateChildren($i, $arr, $arrLen, asOneVal) {
 				}
 			}
 		}
-		if ($i.parentNode === $parent) {//если м ыне ушли вглубь - значит и вправо двигаться нельзя
+		if ($i.parentNode === $parent) {//если мы не ушли вглубь - значит и вправо двигаться нельзя
 			break;
 		}
 		if ($i.nextSibling !== null) {
@@ -793,6 +793,7 @@ function type_q_cloneNodeOn(cmd, str, expr) {
 }
 //use in attr
 /*не нужно из-за того что будет срабатывать только один раз - дальше кэш
+// --- вообще то может пригодится если будет надобнасть получить значение которе еще не применено через раф - но пока не нужно
 export function getAttribute($e, name) {
 	if ($e.nodeName === "INPUT") {
 		switch (name) {
@@ -896,7 +897,7 @@ function _hide($e) {
 			$i = $i.content.firstChild.firstChild;
 			continue;
 		}
-		if ($i.parentNode === $parent) {//если м ыне ушли вглубь - значит и вправо двигаться нельзя
+		if ($i.parentNode === $parent) {//если мы не ушли вглубь - значит и вправо двигаться нельзя
 			break;
 		}
 		if ($i.nextSibling !== null) {

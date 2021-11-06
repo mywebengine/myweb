@@ -18,14 +18,14 @@ const incScriptCache = new Map();
 export default {
 	get$els($src, str, expr, pos) {
 //console.log("inc get$els", $src, str, expr)
-		return incGet$els($src, str, expr, pos);
+		return inc_get$els($src, str, expr, pos);
 	},
 	get$first($src, str, expr, pos) {
-		return incGet$first($src, str, expr, pos);
+		return inc_get$first($src, str, expr, pos);
 	},
 	render(req) {
 		return eval2(req, req.$src, true)
-			.then(val => incRender(req, val));
+			.then(val => inc_render(req, val));
 	},
 	q_render(req, arr, isLast) {
 		return q_eval2(req, arr, isLast)
@@ -34,22 +34,22 @@ export default {
 					res = new Array(arrLen);
 				for (let i = 0; i < arrLen; i++) {
 					if (!isLast.has(i)) {
-						res[i] = incRender(type_req(arr[i].$src, req.str, req.expr, arr[i].scope, req.sync), vals[i]);
+						res[i] = inc_render(type_req(arr[i].$src, req.str, req.expr, arr[i].scope, req.sync), vals[i]);
 					}
 				}
 				return res;
 			});
 	}
 };
-function incRender(req, val) {
+function inc_render(req, val) {
 //console.info("inc", req);
 //alert(1);
-	const include = incGet(req, val);
+	const include = getIncude(req, val);
 	if (include === null) {
 		return type_renderRes(true);
 	}
 	const pos = -1,
-		$els = incGet$els(req.$src, req.str, req.expr, pos),
+		$els = inc_get$els(req.$src, req.str, req.expr, pos),
 		$elsLen = $els.length,
 		oldVal = getIdx(srcBy$src.get(req.$src), req.str);
 //todo
@@ -93,7 +93,7 @@ function incRender(req, val) {
 		.then(() => req.sync.stat === 0 && getNewInc(req, include, oldVal, $els, $elsLen, loading)), req.sync.local, 0));
 	return type_renderRes(true, null, $last);
 }
-function incGet(req, val) {
+function getIncude(req, val) {
 	if (typeof val !== "string") {
 		const r = getRequest(val, "");
 		if (r === null) {
@@ -141,8 +141,8 @@ async function createIncFragment(req, include, html) {
 	for (let $i = $div.firstChild; $i !== null; $i = $div.firstChild) {
 		$fr.appendChild($i);
 	}
-	if (self.getLineNo) {
-		self.getLineNo.mark(self.getLineNo.type_markCtx(include.url, html), $fr);
+	if (self.createLineNo) {
+		self.createLineNo(include.url, html, $fr);
 	}
 	joinText($fr);
 	include.$tags = [...$fr.querySelectorAll("link[rel]")];
@@ -261,10 +261,10 @@ function checkScript(err, $e, req, url) {
 	if (url) {
 		return check(err, $e, req, null, url, err.lineNumber, err.columnNumber);
 	}
-	if (!$e.getLineNo) {
+	if (self.getLineNo === undefined) {
 		return check(err, $e, req);
 	}
-	const line = $e.getLineNo(),
+	const line = self.getLineNo($e),
 		numIdx = line.lastIndexOf(":");
 	return check(err, $e, req, null, line.substr(0, numIdx), Number(line.substr(numIdx + 1)) - 1 + err.lineNumber);
 }
@@ -309,8 +309,8 @@ if ($els[i].parentNode !== $parent) {
 //}
 			l.animationsCount = -1;
 			l.newSrcId = newSrcId;
-			if (iSrc.id === req.sync.p.sId) {// && $els[i][p_srcId] !== req.$src[p_srcId]) {
-				req.sync.p.sId = newSrcId;
+			if (iSrc.id === req.sync.renderParam.sId) {// && $els[i][p_srcId] !== req.$src[p_srcId]) {
+				req.sync.renderParam.sId = newSrcId;
 //				continue;
 			}
 		}
@@ -319,9 +319,9 @@ if ($els[i].parentNode !== $parent) {
 		for (let $i = $src;;) {
 			const iSrc = srcBy$src.get($i);
 			if (iSrc !== undefined) {
-console.warn(req.sync.p.sId, iSrc.id);
+console.warn(req.sync.renderParam.sId, iSrc.id);
 alert(1)
-				req.sync.p.sId = iSrc.id;
+				req.sync.renderParam.sId = iSrc.id;
 				//!!переписывать req.$src в данном случаи не имет смысла
 				break;
 			}
@@ -441,9 +441,7 @@ async function renderI(req, $e, $last, h) {
 		}
 		$e = $e.nextSibling;
 	} while ($e !== null);
-//todo
-	console.warn(6666555555, $e, $last, req);
-	alert(11);
+	throw new Error("inc.js");
 }
 //todo replace inline
 function readyInc(req, include, $last) {
@@ -520,61 +518,51 @@ function cloneIncFragment(req, include, oldVal, loading) {
 		}
 		const iAttrs = $i.attributes,
 			iAttrsLen = iAttrs.length,
-			newCmd = new Map(),
-			remCmd = new Set();
-		for (let j = 0; j < iAttrsLen; j++) {
-			let n = iAttrs[j].name;
-			if (!setReqCmd(n)) {
-//				if (curAttr.has(n)) {
-					newCmd.set(n, iAttrs[j].value);
-//				}
-				continue;
-			}
-			if (!curAttr.has(n)) {
-				newCmd.set(n, iAttrs[j].value);
-				remCmd.add(n);
-				continue;
-			}
-			let k = n.indexOf(cmdArgsDiv),
-				num;
-			if (k === -1) {
-				n += cmdArgsDiv;
-				k = n.length;
-			}
-			k = n.indexOf(cmdArgsDiv, k + 1);
-			if (k === -1) {
-				n += cmdArgsDiv;
-				k = n.length;
-			}
-/*--
-			k = n.indexOf(cmdArgsDiv, k + 1);
-			if (k === -1) {
-				n += cmdArgsDiv;
-				k = n.length;
-			}*/
-
-			k = n.indexOf(cmdArgsDiv, k + 1);
-			if (k === -1) {
-				n += cmdArgsDiv;
-				num = 1;
-			} else {
-				num = Number(n.substr(k + cmdArgsDivLen)) || 1;
-			}
-			while (req.$src.getAttribute(n + num)) {
-				num++;
-			}
-			n += num;
-			newCmd.set(n, iAttrs[j].value);
+			newAttr = new Map();
+		for (let i = 0; i < iAttrsLen; i++) {
+			const a = iAttrs[i];
+			newAttr.set(a.name, a.value);
 		}
-//todo проверить
-		for (const n of remCmd) {
+//		for (const n of rem) {
+//			$i.removeAttribute(n);
+//		}
+		const cAttrIt = curAttr.entries(),
+			nSet = new Set();
+		for (let i = cAttrIt.next(); !i.done; i = cAttrIt.next()) {
+			const [n, v] = i.value;
 			$i.removeAttribute(n);
-		}
-		for (const [n, v] of curAttr) {
 			$i.setAttribute(n, v);
-		}
-		for (const [n, v] of newCmd) {
-			$i.setAttribute(n, v);
+			nSet.add(n);
+			if (n !== req.str) {
+				continue;
+			}
+			for (const [n, v] of newAttr) {
+				if (!setReqCmd(n)) {
+					$i.removeAttribute(n);
+					$i.setAttribute(n, v);
+					continue;
+				}
+				let nn = n;
+				while (nSet.has(nn)) {
+					nn += cmdArgsDiv;
+				}
+				nSet.add(nn);
+				$i.setAttribute(nn, v);
+			}
+			for (i = cAttrIt.next(); !i.done; i = cAttrIt.next()) {
+				const [n, v] = i.value;
+				if (!setReqCmd(n)) {
+					$i.removeAttribute(n);
+					$i.setAttribute(n, v);
+					continue;
+				}
+				let nn = n;
+				while (nSet.has(nn)) {
+					nn += cmdArgsDiv;
+				}
+				$i.setAttribute(nn, v);
+			}
+			break;
 		}
 		preRender($i, false);
 		const iSrc = srcBy$src.get($i);
@@ -648,12 +636,12 @@ function makeSlots(req, $fr) {
 		}
 	}
 }
-function incGet$els($src, str, expr, pos) {
+function inc_get$els($src, str, expr, pos) {
 	if ($src.nodeType === 1 && !isRenderdInc($src, str)) {
 		return [$src];
 	}
 	const $els = [];
-	for (let $i = incGet$first($src, str, expr, pos), count = 0; $i !== null; $i = $i.nextSibling) {
+	for (let $i = inc_get$first($src, str, expr, pos), count = 0; $i !== null; $i = $i.nextSibling) {
 		$els.push($i);
 		const iSrc = srcBy$src.get($i);
 		if (iSrc === undefined || !iSrc.isCmd) {
@@ -680,7 +668,7 @@ function incGet$els($src, str, expr, pos) {
 	}
 	throw check(new Error(`>>>Tpl inc:incGet$els: Not found <!--inc_begin-->: "${str}", "${expr}", ${pos}`), $src);
 }
-function incGet$first($src, str, expr, pos) {
+function inc_get$first($src, str, expr, pos) {
 	if ($src.nodeType === 1 && !isRenderdInc($src, str)) {
 		return $src;
 	}

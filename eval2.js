@@ -2,13 +2,11 @@ import {type_req} from "./render/render.js";
 import {getCacheSrcId} from "./cache.js";
 import {cmdPref} from "./config.js";
 import {srcById, srcBy$src} from "./descr.js";
-import {cur$src, setCur$src, proxyStat} from "./proxy.js";
+import {setCur$src, proxyStat} from "./proxy.js";
 import {check} from "./util.js";
 
-const func = Object.getPrototypeOf(async function(){}).constructor;
-
-const _func = self.Tpl_func || {};
-//self._func = _func;
+const func = Object.getPrototypeOf(async function(){}).constructor,
+	_func = self.Tpl_func || {};
 
 export function eval2(req, $src, isReactive) {
 	//1) isReactive ложь только в _getVal(): _fetch data-_ok, _on

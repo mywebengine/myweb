@@ -1,6 +1,6 @@
 import {type_animation} from "../render/render.js";
 import {type_cacheAttrSyncCurI/*, getCacheBySrcId*/} from "../cache.js";
-import {pushModName, replaceModName} from "../config.js";
+import {lazyRenderName, pushModName, replaceModName} from "../config.js";
 import {srcBy$src} from "../descr.js";
 import {setAttribute, setAttributeValue, removeAttribute} from "../dom.js";
 import {eval2, q_eval2} from "../eval2.js";
@@ -15,7 +15,7 @@ import {check} from "../util.js";
 export default {
 	render(req) {
 		return eval2(req, req.$src, true)
-			.then(val => setValue(req, req.$src, getName(req), val));
+			.then(val => attr_render(req, req.$src, getName(req), val));
 	},
 	q_render(req, arr, isLast) {
 		return q_eval2(req, arr, isLast)
@@ -24,21 +24,14 @@ export default {
 					n = getName(req);
 				for (let i = 0; i < arrLen; i++) {
 					if (!isLast.has(i)) {
-						setValue(req, arr[i].$src, n, vals[i]);
+						attr_render(req, arr[i].$src, n, vals[i]);
 					}
 				}
 				return null;
 			});
 	}
 };
-function getName(req) {
-	const n = req.reqCmd.args[0];
-	if (n) {
-		return n;
-	}
-	throw check(new Error(">>>Tpl attr:render:01: Need set attribute name"), req.$src, req);
-}
-function setValue(req, $src, n, v) {
+function attr_render(req, $src, n, v) {
 	const toggleVal = req.reqCmd.args[1],
 //		c = getCacheBySrcId($src[p_srcId]),
 		c = srcBy$src.get($src).cache,
@@ -47,7 +40,7 @@ function setValue(req, $src, n, v) {
 		c.isInits.add(req.str);
 		setClick(req, $src, n);
 	}
-	if (req.sync.p.renderParam.isLinking) {
+	if (req.sync.renderParam.isLinking) {
 		c.current.set(req.str, $src.getAttribute(n));
 		return null;
 	}
@@ -85,11 +78,15 @@ function setValue(req, $src, n, v) {
 	} else {
 		c.attrSyncCur.set(n, type_cacheAttrSyncCurI(req.sync.syncId, v));
 	}
+	const f = !!(v || v === "");
+	if (n === lazyRenderName) {
+		req.sync.renderParam.isLazyRender = f;
+	}
 	if (isInit && curVal === v) {
 		setAttributeValue($src, n, v);
 		return null;
 	}
-	if (v || v === "") {
+	if (f) {
 //todo <body _attr.class.home="[``].indexOf(loc.name) !== -1" _attr.class.main="[`myloc`, `mysnt`, `services`].indexOf(loc.name) !== -1"
 		req.sync.animations.add(type_animation(() => {
 			c.current.set(req.str, v);
@@ -110,11 +107,10 @@ function setClick(req, $src, n) {
 	if ($src.tagName !== "A" || n.toLowerCase() !== "href" || $src.target) {
 		return;
 	}
-	$src.addEventListener("click", async (evt) => {
-		if (!$src.href) {
+	$src.addEventListener("click", async evt => {
+		if (!$src.href || evt.ctrlKey || evt.metaKey) {
 			return;
 		}
-//todo isCtrl, mouse2, touch
 		evt.preventDefault();
 //!!придумать		switch (await getVal($src, null, pushModName, false) ? pushModName : (await getVal($src, null, replaceModName, false) ? replaceModName : req.reqCmd.args[1])) {
 		const mode = req.reqCmd.args[1];
@@ -128,4 +124,11 @@ function setClick(req, $src, n) {
 		}
 		setLoc(location.href);
 	});
+}
+function getName(req) {
+	const n = req.reqCmd.args[0];
+	if (n) {
+		return n;
+	}
+	throw check(new Error(">>>Tpl attr:render:01: Need set attribute name"), req.$src, req);
 }

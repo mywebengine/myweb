@@ -16,8 +16,8 @@ alert(222);
 		return;
 	}
         let errMsg = ">>>Tpl error";
-        if ($src.getLineNo) {
-        	const pos = $src.getLineNo() || $src.parentNode.getLineNo();
+        if (self.getLineNo !== undefined) {
+        	const pos = self.getLineNo($src) || self.getLineNo($src.parentNode);//todo зачем смотреть родителя?
         	if (pos) {
 	        	errMsg += ` in ${pos}`;
 	        }
@@ -32,26 +32,12 @@ alert(222);
 	if (scope) {
 		params.push("\nscope =>", scope);
 	}
-//	if (self.Tpl_debugLevel !== 0) {
+	if (self.Tpl_debugLevel !== 0) {
 		console.info(errMsg, ...params);
-//	}
+	}
 	if (fileName) {
 		res = new Error(res, fileName, lineNum, colNum);
 	}
-/*
-//todo error
-	if ($src.dataset) {
-		const onError = $src.dataset.onerror;
-		if (onError) {
-			try {
-				new Function("err", onError).call($src, res);
-			} catch (err) {
-				console.error(`>>>Tpl error in onerror handler: ${onError}\n$src =>`, $src);
-				return err;
-			}
-		}
-	}*/
-//alert(1);
 	return res;
 }
 

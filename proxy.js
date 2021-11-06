@@ -9,15 +9,14 @@ export const varIdByVar = new Map();
 export const varById = {};
 export const varIdByVarIdByProp = {};
 export const srcIdsByVarId = new Map();
-//!!!!!!!!!!!!
+//todo close--
 self.varIdByVar = varIdByVar;
 self.varById = varById;
 self.varIdByVarIdByProp = varIdByVarIdByProp;
 self.srcIdsByVarId = srcIdsByVarId;
 
-
 //todo--
-self.aa = function() {
+self._testVars = function() {
 	const v = new Set(Array.from(varIdByVar.values()));
 	for (const [vId, srcIds] of srcIdsByVarId) {
 		let fv;
@@ -81,29 +80,27 @@ self.aa = function() {
 }
 
 
-const _isUnshift = Symbol();
-const isSkipNameType = {
-	"undefined": true,
-	"symbol": true
-};
-const isSkipValueType = {
-	"function": true
-};
-const isScalarType = {
-	"boolean": true,
-	"number": true,
-	"string": true,
-	"undefined": true
-};
-
-export let cur$src;
+const _isUnshift = Symbol(),
+	isSkipNameType = {
+		"undefined": true,
+		"symbol": true
+	},
+	isSkipValueType = {
+		"function": true
+	},
+	isScalarType = {
+		"boolean": true,
+		"number": true,
+		"string": true,
+		"undefined": true
+	};
+let cur$src;
 export function setCur$src($src) {
 	cur$src = $src;
 }
 export const proxyStat = {
 	value: 1
 };
-
 export function getProxy(v) {
 	if (typeof v === "object" && v !== null) {
 		const t = v[p_target];
@@ -121,6 +118,34 @@ export function getProxy(v) {
 		v.unshift = new Proxy(v.unshift, unshiftHandler);
 		return new Proxy(v, proxyHandler);
 	}
+	if (v instanceof Set) {
+		const s = new Set(v);
+		v.clear();
+		for (const vv of s) {
+			v.add(getProxy(vv));
+		}
+//		v.next = new Proxy(v.next, nextHandler);
+//		v.has = new Proxy(v.has, getHandler);
+//		v.add = new Proxy(v.add, addHandler);
+		return new Proxy(v, proxyHandler);
+	}
+	if (v instanceof Map) {
+		for (const [kk, vv] of v) {
+			v.set(getProxy(kk), getProxy(vv));
+		}
+//		v.next = new Proxy(v.next, nextHandler);
+//		v.get = new Proxy(v.get, getHandler);
+//		v.has = new Proxy(v.has, getHandler);
+//		v.set = new Proxy(v.add, setHandler);
+		return new Proxy(v, proxyHandler);
+	}
+/*
+	if (v instanceof Set || v instanceof Map) {
+		for (const [kk, vv] of v.entries()) {
+			v.set
+			v[i] = getProxy(v[i]);
+		}
+	}*/
 //todo Sen and Map || not todo
 	for (const i in v) {
 		const val = v[i];
@@ -136,7 +161,7 @@ export function getTarget(v) {
 const proxyHandler = {
 	get(t, n) {
 //if (n == "then") {
-//console.error("get", t, n, t[n], cur$src, typeof t[n] === "object");
+console.error("get", t, n, t[n], cur$src, typeof t[n] === "object");
 //}
 		if (proxyStat.value === 0) {
 			proxyStat.value = 1;
@@ -146,6 +171,9 @@ const proxyHandler = {
 		}
 		const v = t[n],
 			type = typeof v;
+		if (type === "function") {
+			return v.bind(t);
+		}
 		if (cur$src && !isSkipValueType[type] && !isSkipNameType[typeof n]) {
 			addVar(t, n, getTarget(v), cur$src);
 //???		} else if (type === "function") {
@@ -154,7 +182,7 @@ const proxyHandler = {
 		return v;
 	},
 	set(t, n, v) {
-//console.log('set', n, v, "old=>", t[n]);//, Object.getOwnPropertyDescriptor(t, n) && Object.getOwnPropertyDescriptor(t, n).value);
+console.log('set', n, v, "old=>", t[n]);//, Object.getOwnPropertyDescriptor(t, n) && Object.getOwnPropertyDescriptor(t, n).value);
 		if (Array.isArray(t) && n === "length") {
 			const oVal = t[n];
 			t[n] = v;
@@ -165,6 +193,11 @@ const proxyHandler = {
 			return true;
 		}
 		const vTarget = getTarget(v);
+		if (vTarget instanceof Set || vTarget instanceof Map) {
+//			Reflect.set(t, n, v);
+console.log(1111111, vTarget, arguments);
+alert(11)
+		}
 		if (n in t) {
 			const oldVTarget = getTarget(t[n]);
 //связоно с тем что обновить элемент стоит даже если значение такое же та как он может быть изменен как то оначе например через this.value = 1111
@@ -200,15 +233,35 @@ const proxyHandler = {
 		return true;
 	}
 };
-//todo
-self.getProxy = getProxy;
-self.proxyHandler = proxyHandler;
-
 const unshiftHandler = {
 	apply(t, thisValue, args) {
 		getTarget(thisValue)[_isUnshift] = true;
 		t.apply(thisValue, args);
 //		Reflect.apply(t, thisValue, args);
+	}
+};
+const nextHandler = {
+	apply(t, thisValue, args) {
+		t.apply(thisValue, args);
+		console.log(t, thisValue, args);
+	}
+};
+const addHandler = {
+	apply(t, thisValue, args) {
+		t.apply(thisValue, args);
+		console.log(t, thisValue, args);
+	}
+};
+const getHandler = {
+	apply(t, thisValue, args) {
+		t.apply(thisValue, args);
+console.log(t, thisValue, args);
+	}
+};
+const setHandler = {
+	apply(t, thisValue, args) {
+		t.apply(thisValue, args);
+		console.log(t, thisValue, args);
 	}
 };
 //export 
@@ -575,7 +628,7 @@ function setInnerSrcIdSetBy$src(toClear, $i) {
 			$i = $i.firstChild;
 			continue;
 		}
-		if ($i.parentNode === $parent) {
+		if ($i.parentNode === $parent) {//если мы не ушли вглубь - значит и вправо двигаться нельзя
 			break;
 		}
 		if ($i.nextSibling !== null) {
@@ -594,7 +647,7 @@ function setInnerSrcIdSetBy$src(toClear, $i) {
 				break;
 			}
 		} while (true);
-	} while ($i);
+	} while ($i !== null);
 }
 function decVar(t, n, v, sId, vId, deletedVarId) {
 	if (vId === 0) {
@@ -661,3 +714,5 @@ function delVar(vId, v, t, n, deletedVarId) {
 		}
 	}
 }
+//API
+self.getProxy = getProxy;

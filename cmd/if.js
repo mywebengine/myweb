@@ -8,20 +8,20 @@ import {check, kebabToCamelStyle} from "../util.js";
 
 export const ifCmd = {
 	get$els($src, str, expr, pos) {
-		return ifGet$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos);
+		return if_get$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos);
 	},
 	get$first($src, str, expr, pos) {
-		return ifGet$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos);
+		return if_get$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos);
 	},
 	render(req) {
 //console.log("if", req);
 //alert(1);
 		make$first(req, ifCmdName, elseifCmdName, elseCmdName);
 		return eval2(req, req.$src, true)
-			.then(val => ifGet(req, val, ifCmdName, elseifCmdName, elseCmdName));
+			.then(val => if_render(req, val, ifCmdName, elseifCmdName, elseCmdName));
 /*
 .then(val => {
-	const r = await ifGet(req, val, ifCmdName, elseifCmdName, elseCmdName);
+	const r = await if_render(req, val, ifCmdName, elseifCmdName, elseCmdName);
 	console.log("ifres", req.str, req.expr, val, r, req);
 	alert(1);
 	return r;
@@ -42,7 +42,7 @@ export const ifCmd = {
 				do {
 					const reqI = type_req(arr[i].$src, req.str, req.expr, arr[i].scope, req.sync);
 					make$first(reqI, ifCmdName, elseifCmdName, elseCmdName);
-					res[i] = ifGet(reqI, val[i], ifCmdName, elseifCmdName, elseCmdName);
+					res[i] = if_render(reqI, val[i], ifCmdName, elseifCmdName, elseCmdName);
 					while (isLast.has(++i));
 					if (i === arrLen) {
 						break;
@@ -54,10 +54,10 @@ export const ifCmd = {
 };
 export const switchCmd = {
 	get$els($src, str, expr, pos) {
-		return ifGet$els(switchCmdName, caseCmdName, defaultCmdName, $src, str, expr, pos);
+		return if_get$els(switchCmdName, caseCmdName, defaultCmdName, $src, str, expr, pos);
 	},
 	get$first($src, str, expr, pos) {
-		return ifGet$first(switchCmdName, caseCmdName, defaultCmdName, $src, str, expr, pos);
+		return if_get$first(switchCmdName, caseCmdName, defaultCmdName, $src, str, expr, pos);
 	},
 	render(req) {
 //console.log("switch", req);
@@ -81,10 +81,10 @@ export const switchCmd = {
 					req.str = n;
 					req.expr = v;
 					return eval2(req, req.$src, true)
-						.then(val => ifGet(req, val, switchCmdName, caseCmdName, defaultCmdName, f => f === expression));
+						.then(val => if_render(req, val, switchCmdName, caseCmdName, defaultCmdName, f => f === expression));
 /*
 .then(val => {
-	const r = ifGet(req, val, switchCmdName, caseCmdName, defaultCmdName, f => f === expression);
+	const r = if_render(req, val, switchCmdName, caseCmdName, defaultCmdName, f => f === expression);
 	console.log("ifres", expression, req.str, req.expr, val, r, req);
 	alert(1);
 	return r;
@@ -97,7 +97,7 @@ export const switchCmd = {
 //1) прдполагается что если первый скрыт то и все такие же скрыты - и наоборот
 //2) !!: !$i[p_descrId] - это коммент, текст или когда template  и в нем скрыта тектовая нода
 //3) в этом алгоритме нет проверки на эдентичность условий (предполлагается, что если они есть, то дожны быть правильными - так как такого рода ошибка может быть в серверном рендеренге - и это точно ошибка)
-async function ifGet(req, val, ifCmdName, elseifCmdName, elseCmdName, testFunc = f => f, str) {
+async function if_render(req, val, ifCmdName, elseifCmdName, elseCmdName, testFunc = f => f, str) {
 	let isTrue = testFunc(val);
 	if (isTrue) {
 		const valName = req.reqCmd.args[0];
@@ -187,7 +187,7 @@ function make$first(req, ifCmdName, elseifCmdName, elseCmdName) {
 		}
 		pos++;
 	}
-	const $first = ifGet$first(ifCmdName, elseifCmdName, elseCmdName, req.$src, req.str, req.expr, pos);
+	const $first = if_get$first(ifCmdName, elseifCmdName, elseCmdName, req.$src, req.str, req.expr, pos);
 	if (reqCmd[req.str].cmdName === ifCmdName) {
 		req.$src = $first;
 //		$first;
@@ -205,7 +205,7 @@ function make$first(req, ifCmdName, elseifCmdName, elseCmdName) {
 		}
 	}
 }
-function ifGet$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos, firstStr) {
+function if_get$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos, firstStr) {
 	const isStrIf = str !== "" && reqCmd[str].cmdName === ifCmdName;
 	for (let $i = $src; $i !== null; $i = $i.previousSibling) {
 //		if ($i.nodeType !== 1) {
@@ -324,13 +324,13 @@ function ifGet$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos
 	}
 	throw check(new Error(`>>>Tpl if:ifGet$first:02 Invalid structure: if-command not found - str => "${str}"`), $src);
 }
-function ifGet$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos) {
+function if_get$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos) {
 //console.error(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos);
 //todo type
 	const firstStr = {
 		str: ""
 	};
-	let $i = ifGet$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos, firstStr);
+	let $i = if_get$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos, firstStr);
 	for (let iSrc = srcBy$src.get($i); iSrc !== undefined && !iSrc.isCmd && $i !== null; $i = $i.nextSibling, iSrc = srcBy$src.get($i)) {
 		$i = $i.nextSibling;
 	}
@@ -338,7 +338,7 @@ function ifGet$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos) 
 //		!!такого не должно быть
 //	}
 	const iSrc = srcBy$src.get($i),
-		nStr = ifGetNextStr(iSrc, firstStr.str),
+		nStr = if_getNextStr(iSrc, firstStr.str),
 		$els = nStr !== "" ? get$els($i, iSrc.descr.get$elsByStr, nStr) : [$i],
 		beforeAttrCount = isSingle(iSrc, firstStr.str);
 	if (beforeAttrCount === -1) {
@@ -378,7 +378,7 @@ function ifGet$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos) 
 //todo--if ($els.length > 20) {
 //	debugger
 //}
-			const nStr = ifGetNextStr(iSrc, n),
+			const nStr = if_getNextStr(iSrc, n),
 				$iEls = nStr !== "" ? get$els($i, iDescr.get$elsByStr, nStr) : [$i];
 			if ($iEls.length === 1) {
 				if ($maybe.length !== 0) {
@@ -418,36 +418,12 @@ function ifGet$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos) 
 	return $els;
 }
 function isSingle(src, str) {//проверка на то что этот иф входит в конструккцию типа: <div _elseif="*" _if="эотот иф"
-/*
-	let beforeAttrCount = 0,
-		f = false;
-	for (const n of descrById.get($src[p_descrId]).attr.keys()) {
-		if (n === str) {
-			return f && -1 || beforeAttrCount;
-		}
-		beforeAttrCount++;
-		const cmdName = reqCmd[n].cmdName;
-		if (cmdName === ifCmdName || cmdName === elseifCmdName || cmdName === elseCmdName || cmdName === foreachCmdName) {
-			f = true;
-		} else if (cmdName === incCmdName) {
-//todo осмыслить про это
-			const $els = get$els($src, descrById.get($src[p_descrId]).get$elsByStr, n);
-			let $i = $els[$els.length - 2];
-			while (!$i[p_isCmd]) {
-				$i = $i.previousSibling;
-			}
-			f = descrById.get($i[p_descrId]).attr.has(str) || false;
-		}
-	}
-	return f && -1 || beforeAttrCount;*/
 	let beforeAttrCount = 0,
 		f = false;
 	for (const n of src.descr.attr.keys()) {
 		if (n === str) {
 			break;
 		}
-//		const cmdName = reqCmd[n].cmdName;
-//		if (cmdName === ifCmdName || cmdName === elseifCmdName || cmdName === elseCmdName || cmdName === foreachCmdName || switchCmdName, caseCmdName, defaultCmdName) {
 		switch (reqCmd[n].cmdName) {
 			case ifCmdName:
 			case elseifCmdName:
@@ -459,7 +435,7 @@ function isSingle(src, str) {//проверка на то что этот иф �
 				beforeAttrCount++;
 				f = true;
 //console.log(333333, $src, str, n, descrById.get($src[p_descrId]).attr);
-			break;         6
+			break;
 			case incCmdName:
 /*
 //todo осмыслить про это
@@ -476,41 +452,19 @@ console.log(1111111, $src, str);
 				f = false;
 			break;
 		}
-
-/*
-		const cmdName = reqCmd[n].cmdName;
-		if (cmdName === ifCmdName || cmdName === elseifCmdName || cmdName === elseCmdName || cmdName === foreachCmdName) {
-			beforeAttrCount++;
-			f = true;
-//console.log(333333, $src, str, n, descrById.get($src[p_descrId]).attr);
-		} else if (cmdName === incCmdName) {
-			beforeAttrCount++;
-			f = false;
-		}*/
 	}
-//console.error(2222222, f, beforeAttrCount, $src, str);
-//alert(1);
-	return f && -1 || beforeAttrCount;
+	return f ? -1 : beforeAttrCount;
 }
 function makeShow(req, $i, str, isShow) {
 	const src = srcBy$src.get($i),
-		nStr = ifGetNextStr(src, str),
+		nStr = if_getNextStr(src, str),
 		$els = nStr !== "" ? get$els($i, src.descr.get$elsByStr, nStr) : [$i],
 		$elsLen = $els.length,
 		$last = $els[$elsLen - 1];
-//console.log("makeShow", $i, str, nStr, $els, req.str, d.get$elsByStr);
-/*
-	if (isShow ? !$i.content : $i.content) {
-		for (let i = 0; i < $elsLen; i++) {
-			if ($els[i][p_descrId]) {
-				return [$els[$elsLen - 1], $els[i]];
-			}
-		}
-	}*/
 	if (!isShow) {
 		for (let i = 0; i < $elsLen; i++) {
-			const $i = $els[i];
-			if ($i.nodeType !== 8) {
+			$i = $els[i];
+			if ($i.nodeType === 1) {
 				hide(req, $i);
 			}
 		}
@@ -518,19 +472,15 @@ function makeShow(req, $i, str, isShow) {
 	}
 	let $attr = null,
 		attr = null,
-		f = true;
+		isNotAnimations = true;
 	for (let i = 0; i < $elsLen; i++) {
-		const $i = $els[i];
+		$i = $els[i];
 		if ($i.nodeType === 8) {
 			continue;
 		}
 //		if ($attr === null && $i[p_descrId]) {
 		if ($attr === null) {
 			const iSrc = srcBy$src.get($i);
-//todo
-if (!iSrc) {
-	console.warn(iSrc, $i);
-}
 			if (iSrc !== undefined && iSrc.isCmd) {
 				$attr = $i;
 				attr = getAttrAfter(iSrc.descr.attr, str);
@@ -539,44 +489,16 @@ if (!iSrc) {
 		//todo а что если это просто тег?
 		if ($i.nodeName === "TEMPLATE") {
 			show(req, $i);
-			f = false;
+			isNotAnimations = false;
 		}
-/*
-		//todo а что если это просто тег?
-		if ($i.nodeName === "TEMPLATE" && f) {
-			f = false;
-		}
-		show(req, $i);*/
 	}
-	if (f) {
+	if (isNotAnimations) {
 		return [$last, $attr, attr];
 	}
-//	const sId = $attr[p_srcId];
-//todo -20210918 точно?
-	if (req.sync.p.renderParam.isLinking === false) {
-		const sId = srcBy$src.get($attr).id;
-		req.sync.afterAnimations.add(type_animation(() => renderTag($srcById.get(sId), req.scope, attr, req.sync), req.sync.local, 0));
-	}
+	const sId = srcBy$src.get($attr).id;
+	req.sync.afterAnimations.add(type_animation(() => renderTag($srcById.get(sId), req.scope, attr, req.sync), req.sync.local, 0));
 	return [$last, null, null];
-/*
-
-	const showFunc = isShow && show || hide;
-	let $attr,
-		f = isShow;
-	for (let i = 0; i < $elsLen; i++) {
-		if ($els[i].nodeType === 8) {
-			continue;
-		}
-		if (!$attr && $els[i][p_descrId]) {
-			$attr = $els[i];
-		}
-		if (isShow && $i.nodeName === "TEMPLATE" && f) {
-			f = false;
-		}
-		showFunc(req, $els[i]);
-	}
-	return [$els[$elsLen - 1], $attr, f];*/
 }
-function ifGetNextStr(src, str) {
+function if_getNextStr(src, str) {
 	return str !== switchCmdName ? getNextStr(src, str) : getNextStr(src, getNextStr(src, str));
 }

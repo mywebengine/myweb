@@ -5,32 +5,31 @@ import {eval2, q_eval2} from "../eval2.js";
 import {kebabToCamelStyle} from "../util.js";
 
 export default {
-	render,
+	render(req) {
+		return eval2(req, req.$src, true)
+			.then(val => watch_render(req, req.scope, val));
+	},
 	q_render(req, arr, isLast) {
 		return q_eval2(req, arr, isLast)
 			.then(vals => {
 				const arrLen = arr.length;
 				for (let i = 0; i < arrLen; i++) {
 					if (!isLast.has(i)) {
-						setValue(req, arr[i].scope, vals[i]);
+						watch_render(req, arr[i].scope, vals[i]);
 					}
 				}
 				return null;
 			});
 	}
 };
-function render(req) {
-	return eval2(req, req.$src, true)
-		.then(val => setValue(req, req.scope, val));
-}
-function setValue(req, scope, val) {
+function watch_render(req, scope, val) {
 //	const c = getCacheBySrcId(req.$src[p_srcId]),
 	const c = srcBy$src.get(req.$src).cache;
 	if (!c.current.has(req.str)) {
 		c.current.set(req.str, type_watchCur());
 	}
 	const cur = c.current.get(req.str);
-	if (req.sync.p.renderParam.isLinking) {
+	if (req.sync.renderParam.isLinking) {
 		c.isInits.add(req.str);
 		cur.watch = val;
 		return type_renderRes(true);

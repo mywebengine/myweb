@@ -20,9 +20,6 @@ export const Tpl_$src = Tpl_doc.documentElement;
 export const p_target = Symbol();
 export const p_topUrl = Symbol();
 
-self.p_target = p_target;
-self.p_topUrl = p_topUrl;
-
 export const defTaskOpt = {
 	timeout: 160
 };
@@ -46,8 +43,7 @@ export const errorEventName = "error";
 		composed: false
 	};
 
-//dataset attributes
-export const isWhenVisibleName = "whenvisible";
+export const lazyRenderName = "lazyrender";
 
 export const cmdPref = "";
 export const cmdArgsDiv = ".";
@@ -59,8 +55,8 @@ export const isFillingName = "is_filling";
 export const isFillingDiv = "-";
 
 export const attrCmdName = cmdPref + "attr";
-	export const pushModName = "push";
-	export const replaceModName = "replace";
+	export const pushModName = "push";//.toLowerCase();
+	export const replaceModName = "replace";//.toLowerCase();
 
 export const execCmdName = cmdPref + "exec";
 export const fillingCmdName = cmdPref + "filling";
@@ -88,9 +84,10 @@ export const elseCmdName = cmdPref + "else";
 export const incCmdName = cmdPref + "inc";
 
 export const onCmdName = cmdPref + "on";
-	export const preventDefaultModName = "prevent";
-	export const stopModName = "stop";
-	export const selfModName = "self";
+	export const preventDefaultModName = "prevent";//.toLowerCase();
+	export const stopModName = "stop";//.toLowerCase();
+	export const selfModName = "self";//.toLowerCase();
+	export const exactModName = "exact";//.toLowerCase();
 	export const eventScopeName = "evt";
 
 export const scopeCmdName = cmdPref + "scope";
@@ -131,3 +128,6 @@ for (const str in reqCmd) {
 	Text.prototype[p_target] = null;
 	Promise.prototype[p_target] = null;
 //}
+//API
+self.p_target = p_target;
+self.p_topUrl = p_topUrl;
