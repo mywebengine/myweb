@@ -1,11 +1,14 @@
 ﻿import {type_req} from "../render/render.js";
-import {/*getCacheBySrcId, */type_cacheValue} from "../cache.js";
+import {type_cacheValue} from "../cache.js";
 import {p_target, preventDefaultModName, stopModName, selfModName, exactModName, eventScopeName} from "../config.js";
 import {srcBy$src} from "../descr.js";
 import {eval2} from "../eval2.js";
 
 export default {
-	render: on_render,
+	render(req) {
+		on_render(req, req.$src);
+		return null;
+	},
 	q_render(req, arr, isLast) {
 		const arrLen = arr.length;
 		for (let i = 0; i < arrLen; i++) {
@@ -17,30 +20,30 @@ export default {
 	}
 };
 const isInit = new WeakMap();
-function on_render(req, $src = req.$src) {
+function on_render(req, $src) {
 	const n = req.reqCmd.args[0];
 	if (!n) {
 		throw check(new Error(">>>Tpl on:render:01: Need set action name"), $src, req);
 	}
 	const src = srcBy$src.get($src);
 	if (src !== undefined) {
-//	const c = getCacheBySrcId($src[p_srcId]);
+//		const c = getCacheBySrcId($src[p_srcId]);
 		const c = src.cache;
 		if (c.isInits.has(req.str)) {// || ($src._isInit !== undefined && $src._isInit.has(req.str))) {
-			return null;
+			return;
 		}
 		c.isInits.add(req.str);
 		const ii = isInit.get($src);
 		if (ii !== undefined && ii.has(req.str)) {
 			ii.delete(req.str);
-			return null;
+			return;
 		}
 //todo
 	} else {
 console.warn(32423423, req);
 		const ii = isInit.get($src);
 		if (ii !== undefined && ii.has(req.str)) {
-			return null;
+			return;
 		}
 		isInit.set($src, new Set([req.str]));
 	}
@@ -59,7 +62,6 @@ console.warn(32423423, req);
 		}
 	}
 	$src.addEventListener(n, evt => listen(req, $src, evt), opt);
-	return null;
 }
 const holdsKeys = new Set(["ctrl", "alt", "shift", "meta"]);
 function listen(req, $src, evt) {

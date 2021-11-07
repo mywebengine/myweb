@@ -1,5 +1,5 @@
 import {type_animation} from "../render/render.js";
-import {type_cacheAttrSyncCurI/*, getCacheBySrcId*/} from "../cache.js";
+import {type_cacheAttrSyncCurI} from "../cache.js";
 import {lazyRenderName, pushModName, replaceModName} from "../config.js";
 import {srcBy$src} from "../descr.js";
 import {setAttribute, setAttributeValue, removeAttribute} from "../dom.js";
@@ -15,7 +15,10 @@ import {check} from "../util.js";
 export default {
 	render(req) {
 		return eval2(req, req.$src, true)
-			.then(val => attr_render(req, req.$src, getName(req), val));
+			.then(val => {
+				attr_render(req, req.$src, getName(req), val);
+				return null;
+			});
 	},
 	q_render(req, arr, isLast) {
 		return q_eval2(req, arr, isLast)
@@ -42,7 +45,7 @@ function attr_render(req, $src, n, v) {
 	}
 	if (req.sync.renderParam.isLinking) {
 		c.current.set(req.str, $src.getAttribute(n));
-		return null;
+		return;
 	}
 	const curVal = c.current.has(req.str) ? c.current.get(req.str) : $src.getAttribute(n),
 //todo сейчас это, наверное, уже не нужно
@@ -84,7 +87,7 @@ function attr_render(req, $src, n, v) {
 	}
 	if (isInit && curVal === v) {
 		setAttributeValue($src, n, v);
-		return null;
+		return;
 	}
 	if (f) {
 //todo <body _attr.class.home="[``].indexOf(loc.name) !== -1" _attr.class.main="[`myloc`, `mysnt`, `services`].indexOf(loc.name) !== -1"
@@ -92,7 +95,7 @@ function attr_render(req, $src, n, v) {
 			c.current.set(req.str, v);
 			setAttribute($src, n, v);
 		}, req.sync.local, srcBy$src.get($src).id));
-		return null;
+		return;
 	}
 //!!be clone => has attribute => not removing
 //	if (aCurVal !== null) {
@@ -101,7 +104,6 @@ function attr_render(req, $src, n, v) {
 			removeAttribute($src, n);
 		}, req.sync.local, srcBy$src.get($src).id));
 //	}
-	return null;
 }
 function setClick(req, $src, n) {
 	if ($src.tagName !== "A" || n.toLowerCase() !== "href" || $src.target) {

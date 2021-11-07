@@ -12,13 +12,14 @@ export default {
 	q_render(req, arr, isLast) {
 		return q_eval2(req, arr, isLast)
 			.then(vals => {
-				const arrLen = arr.length;
+				const arrLen = arr.length,
+					res = new Array(arrLen);
 				for (let i = 0; i < arrLen; i++) {
 					if (!isLast.has(i)) {
-						watch_render(req, arr[i].scope, vals[i]);
+						res[i] = watch_render(req, arr[i].scope, vals[i]);
 					}
 				}
-				return null;
+				return res;
 			});
 	}
 };

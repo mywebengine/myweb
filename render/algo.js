@@ -189,8 +189,11 @@ if ($sync === undefined) {
 		for (const sId of r.srcIds) {
 			arr[i++] = type_q_arr($srcById.get(sId), r.scope);
 		}
-		pSet.add(_q_renderPack(r, sync, arr, arrLen, 0));//todo не могу сообразить, почему этот вариант быстрее!
-//		pSet.add(q_renderTag(arr, r.attr, type_isLast(), sync));
+console.time(111);
+		pSet.add(_q_renderPack(r, sync, arr, arrLen, 0)
+.then(() => console.timeEnd(111)));//todo не могу сообразить, почему этот вариант быстрее!
+//		pSet.add(q_renderTag(arr, r.attr, type_isLast(), sync)
+//.then(() => console.timeEnd(111)));
 //была проблема с с() из-за потери ид для обновлении при отмене				.then(() => !console.log(123, srcIdsByVarId.get(varIdByVarIdByProp[55].get("green")), arr) && q_renderTag(arr, r.attr, type_isLast(), sync)));
 	}
 //	if (renderPack.length !== 0) {
@@ -235,6 +238,7 @@ console.log(4444, qPackLength * c * 3, len, renderPack.length);
 }*/
 function _q_renderPack(renderParam, sync, arr, arrLen, beginIdx) {
 	const end = beginIdx + qPackLength;
+//console.log(beginIdx, end);
 	if (end < arrLen) {
 		return q_renderTag(arr.slice(beginIdx, end), renderParam.attr, type_isLast(), sync)
 			.then(() => _q_renderPack(renderParam, sync, arr, arrLen, end));
@@ -242,6 +246,7 @@ function _q_renderPack(renderParam, sync, arr, arrLen, beginIdx) {
 	return q_renderTag(arr.slice(beginIdx, arrLen), renderParam.attr, type_isLast(), sync);
 }
 export async function renderLoop(syncInThisRender) {
+//console.log(1111111111111111111)
 	const pSet = new Set();
 //before
 	for (const sync of syncInThisRender) {

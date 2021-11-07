@@ -6,7 +6,10 @@ export default {
 	isCustomHtml: true,
 	render(req) {
 		return eval2(req, req.$src, true)
-			.then(val => html_render(req, req.$src, val));
+			.then(val => {
+				html_render(req, req.$src, val);
+				return null;
+			});
 	},
 	q_render(req, arr, isLast) {
 		return q_eval2(req, arr, isLast)
@@ -22,24 +25,16 @@ export default {
 	}
 };
 function html_render(req, $src, val) {
-//	descrById.get($src[p_descrId]).isCustomHtml = true;
 //	const c = getCacheBySrcId($src[p_srcId]),
 	const c = srcBy$src.get($src).cache;
 	if (req.sync.renderParam.isLinking) {
 		c.current.set(req.str, val);
-		return null;
+		return;
 	}
 	if (val === c.current.get(req.str)) {
-		return null;
-	}
-	if (req.reqCmd.args[0]) {
-		req.sync.animations.add(type_animation(() => {
-			c.current.set(req.str, $src.textContent = val);
-		}, req.sync.local, srcBy$src.get($src).id));
-		return null;
+		return;
 	}
 	req.sync.animations.add(type_animation(() => {
-		c.current.set(req.str, $src.innerHTML = val);
+		c.current.set(req.str, req.reqCmd.args[0] ? ($src.textContent = val) : ($src.innerHTML = val));
 	}, req.sync.local, srcBy$src.get($src).id));
-	return null;
 }

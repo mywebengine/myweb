@@ -5,7 +5,10 @@ import {kebabToCamelStyle} from "../util.js";
 export default {
 	render(req) {
 		return eval2(req, req.$src, true)
-			.then(val => exec_render(req, req.scope, val));
+			.then(val => {
+				exec_render(req, req.scope, val);
+				return null;
+			});
 	},
 	q_render(req, arr, isLast) {
 		return q_eval2(req, arr, isLast)
@@ -25,5 +28,4 @@ function exec_render(req, scope, val) {
 	if (n) {
 		scope[p_target][kebabToCamelStyle(n)] = val;
 	}
-	return null;
 }

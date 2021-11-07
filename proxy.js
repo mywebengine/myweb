@@ -80,21 +80,21 @@ self._testVars = function() {
 }
 
 
-const p_isUnshift = Symbol(),
-	isSkipNameType = {
+//const p_isUnshift = Symbol(),
+const isSkipNameType = {
 //todo
-//		"undefined": true,
-		"symbol": true
-	},
-	isSkipValueType = {
-		"function": true
-	},
-	isScalarType = {
-		"boolean": true,
-		"number": true,
-		"string": true,
-		"undefined": true
-	};
+//	"undefined": true,
+	"symbol": true
+},
+isSkipValueType = {
+	"function": true
+},
+isScalarType = {
+	"boolean": true,
+	"number": true,
+	"string": true,
+	"undefined": true
+};
 let cur$src;
 export function setCur$src($src) {
 	cur$src = $src;
@@ -117,7 +117,11 @@ export function getProxy(v) {
 		for (let i = 0; i < len; i++) {
 			v[i] = getProxy(v[i]);
 		}
-		v.unshift = new Proxy(v.unshift, unshiftFuncHandler);
+		v.push = new Proxy(v.push, changeArrFuncHandler);
+		v.unshift = new Proxy(v.unshift, changeArrFuncHandler);
+		v.shift = new Proxy(v.shift, changeArrFuncHandler);
+		v.pop = new Proxy(v.pop, changeArrFuncHandler);
+		v.splice = new Proxy(v.splice, changeArrFuncHandler);
 		return new Proxy(v, proxyHandler);
 	}
 	if (v instanceof Set) {
@@ -130,6 +134,8 @@ export function getProxy(v) {
 		v.values = new Proxy(v.values, entriesFuncHandler);
 		v.keys = new Proxy(v.keys, entriesFuncHandler);
 		v.add = new Proxy(v.add, addFuncHandler);
+		v.has = new Proxy(v.has, hasFuncHandler);
+		v.clear = new Proxy(v.clear, clearFuncHandler);
 		return new Proxy(v, proxyHandler);
 	}
 	if (v instanceof Map) {
@@ -142,19 +148,12 @@ export function getProxy(v) {
 		v.values = new Proxy(v.values, entriesFuncHandler);
 		v.keys = new Proxy(v.keys, entriesFuncHandler);
 		v.get = new Proxy(v.get, getFuncHandler);
-//		v.has = new Proxy(v.has, getFuncHandler);
 		v.set = new Proxy(v.set, setFuncHandler);
 		v.delete = new Proxy(v.delete, deleteFuncHandler);
+		v.has = new Proxy(v.has, hasFuncHandler);
+		v.clear = new Proxy(v.clear, clearFuncHandler);
 		return new Proxy(v, proxyHandler);
 	}
-/*
-	if (v instanceof Set || v instanceof Map) {
-		for (const [kk, vv] of v.entries()) {
-			v.set
-			v[i] = getProxy(v[i]);
-		}
-	}*/
-//todo Sen and Map || not todo
 	for (const i in v) {
 		const val = v[i];
 		if (typeof val === "object" && val !== null && val !== v && Object.getOwnPropertyDescriptor(v, i)?.writable) {
@@ -176,13 +175,11 @@ const proxyHandler = {
 		}
 		const v = t[n],
 			vType = typeof v;
-		if (cur$src && !isSkipNameType[typeof n] && (Array.isArray(t) || !isSkipValueType[vType])) {
+//		if (cur$src && !isSkipNameType[typeof n] && (Array.isArray(t) || !isSkipValueType[vType])) {
+		if (cur$src && !isSkipNameType[typeof n] && !isSkipValueType[vType]) {
 			addVar(t, n, getTarget(v), cur$src);
 			return v;
 		}
-//		if (vType === "function") {//to inner slots
-//			return v;
-//		}
 		return n !== Symbol.iterator ? v : t.entries;
 	},
 	set(t, n, v) {
@@ -228,22 +225,35 @@ const proxyHandler = {
 //			}
 //			return false;
 		}
-//console.log('del skip', t, n, "old=>", oldV);
 		return true;
 	}
 };
-const unshiftFuncHandler = {
+const changeArrFuncHandler = {
 	apply(f, thisValue, args) {
-		thisValue[p_target][p_isUnshift] = true;
-		return f.apply(thisValue, args);
+		const t = thisValue[p_target];
+		if (t === undefined) {
+			return f.apply(thisValue, args);
+		}
+//		t[p_isUnshift] = true;
+//		return f.apply(thisValue, args);//для массивов аншифт сам сделает перестановки используя прокси
+		const oldLen = t.length,
+			res = f.apply(t, args);
+		setVal(t, "length", t.length, oldLen);
+		return res;
 	}
 };
 const entriesFuncHandler = {
 	apply(f, thisValue, args) {
 //console.log(22222222, thisValue, thisValue[p_target], args);
-		const i = f.apply(thisValue[p_target], args);
-		i.next = new Proxy(i.next, iteratorFuncHandler);
-		i[p_target] = thisValue;
+		const t = thisValue[p_target];
+		if (t === undefined) {
+			return f.apply(thisValue, args);
+		}
+		const i = f.apply(t, args);
+		if (cur$src) {
+			i.next = new Proxy(i.next, iteratorFuncHandler);
+			i[p_target] = thisValue;
+		}
 		return i;
 	}
 };
@@ -251,9 +261,9 @@ const iteratorFuncHandler = {
 	apply(f, thisValue, args) {
 //console.log("next", thisValue, thisValue[p_target], f, args);
 		const val = f.apply(thisValue, args);
-		if (!cur$src) {
-			return val;
-		}
+//		if (!cur$src) {
+//			return val;
+//		}
 		const t = thisValue[p_target][p_target];
 		if (val.value.length !== undefined) {
 			const [k, v] = val.value;
@@ -265,7 +275,7 @@ const iteratorFuncHandler = {
 		addVar(t, vTarget, vTarget, cur$src);
 		return val;
 	}
-}
+};
 const getFuncHandler = {
 	apply(f, thisValue, args) {
 //console.log("getF", cur$src, thisValue, thisValue[p_target], args);
@@ -274,18 +284,19 @@ const getFuncHandler = {
 			return f.apply(thisValue, args);
 		}
 		const v = f.apply(t, args);
-		if (!cur$src) {
-			return v;
+		if (cur$src) {
+			addVar(t, getTarget(args[0]), getTarget(v), cur$src);
 		}
-		vTarget = getTarget(v);
-		addVar(t, getTarget(args[0]), vTarget, cur$src);
-		return val;
+		return v;
 	}
 };
 const setFuncHandler = {
 	apply(f, thisValue, args) {
-		const t = thisValue[p_target],
-			[k, v] = args,
+		const t = thisValue[p_target];
+		if (t === undefined) {
+			return f.apply(thisValue, args);
+		}
+                const [k, v] = args,
 			vTarget = getTarget(v);
 //console.log("setF", t, f, args);
 		if (t.has(k)) {
@@ -306,8 +317,11 @@ const setFuncHandler = {
 };
 const addFuncHandler = {
 	apply(f, thisValue, args) {
-		const t = thisValue[p_target],
-			v = args[0],
+		const t = thisValue[p_target];
+		if (t === undefined) {
+			return f.apply(thisValue, args);
+		}
+		const v = args[0],
 			vTarget = getTarget(v);
 //console.log("addF", t, f, args);
 		if (t.has(v)) {
@@ -324,18 +338,36 @@ const addFuncHandler = {
 };
 const deleteFuncHandler = {
 	apply(f, thisValue, args) {
-		const t = thisValue[p_target],
-			k = args[0];
-		if (!t.has(k)) {
+		const t = thisValue[p_target];
+		if (t === undefined) {
+			return f.apply(thisValue, args);
+		}
+		const k = args[0];
+		if (!t.has(k) || !f.apply(t, args)) {
 			return false;
 		}
 		const oldV = getTarget(t.get(k));
-		if (f.apply(t, args)) {
 //console.log("delF", k, oldV);
-			setVal(t, getTarget(k), undefined, oldV);
-			return true;
+		setVal(t, getTarget(k), undefined, oldV);
+		return true;
+	}
+};
+const hasFuncHandler = {
+	apply(f, thisValue, args) {
+//console.log("hasF", cur$src, thisValue, thisValue[p_target], args);
+		return f.apply(thisValue[p_target] || thisValue, args);
+	}
+};
+const clearFuncHandler = {
+	apply(f, thisValue, args) {
+//console.log("clearF", thisValue, thisValue[p_target], args);
+		const t = thisValue[p_target];
+		if (t === undefined) {
+			return f.apply(thisValue, args);
 		}
-		return false;
+		const oldSize = t.size;
+		f.apply(t, args);
+		setVal(t, "size", 0, oldSize);
 	}
 };
 function getTarget(v) {
@@ -470,13 +502,14 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 	if (self.Tpl_debugLevel === 2) {
 		console.info("Tpl_proxy => setVar", "\n\tname=>", n, "\n\tvalue=>", v, "\n\toldVal=>", oldV, "\n\ttId=>", tId, "\n\ttarget=>", t, "\n\toldId=>", oId, "\n\toldScalarId=>", oldScalarId);
 	}
+/*
 	if (t[p_isUnshift]) {
 		if (n === "length") {
 			_setVal(t, n, oldV, srcIdsByVarId.get(tId), oId);
 			delete t[p_isUnshift];
 		}
 		return;
-	}
+	}*/
 //console.error('setVar', n, v, tId, oId, oldV, oldScalarId, cur$src);
 	if (cur$src) {
 //		proxyStat.value = 2;

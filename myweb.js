@@ -45,7 +45,7 @@ self.addEventListener("scroll", async () => {
 		}
 	}
 	if (pSet.size !== 0) {
-console.log("animation")
+//console.log("animation")
 		Promise.all(pSet)
 			.then(() => renderLoop(scrollSync));
 		return;

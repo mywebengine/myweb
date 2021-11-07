@@ -10,8 +10,8 @@
 				glob = {};
 			}
 			const h1 = "Set and Map";
-			glob.s = new Set([1, 2, 3, 4, {name: 5}, {value: 6}]);
-			glob.m = new Map([[1, 2], [3, 4], [{name: 5}, {value: 6}]]);
+			glob.s = new Set([1, 2, {name: 5}]);
+			glob.m = new Map([[1, "first"], [3, 4], [{name: 5}, {value: 6}]]);
 		</script>
 		<title>${h1} - myweb</title>
 	</head>
@@ -23,6 +23,10 @@
 				on.input="glob.s.add(this.value);
 					glob.m.set(this.value, this.value)" />
 		</fieldset>
+		<h2>map.get</h2>
+		<p>${JSON.stringify(glob.m.get(1))}</p>
+		<h2>map.has</h2>
+		<p>${glob.m.has(1)}</p>
 		<h2>Set</h2>
 		<ul if="glob.s.size !== 0">
 			<li foreach.val.key="glob.s">${JSON.stringify(key)} => ${JSON.stringify(val)}</li>
