@@ -80,9 +80,10 @@ self._testVars = function() {
 }
 
 
-const _isUnshift = Symbol(),
+const p_isUnshift = Symbol(),
 	isSkipNameType = {
-		"undefined": true,
+//todo
+//		"undefined": true,
 		"symbol": true
 	},
 	isSkipValueType = {
@@ -104,7 +105,8 @@ export const proxyStat = {
 export function getProxy(v) {
 	if (typeof v === "object" && v !== null) {
 		const t = v[p_target];
-		if (t || t === null) {//null to skiped objects
+		if (t === null || t !== undefined) {
+//		if (t || t === null) {
 			return v;
 		}
 	} else {
@@ -115,7 +117,7 @@ export function getProxy(v) {
 		for (let i = 0; i < len; i++) {
 			v[i] = getProxy(v[i]);
 		}
-		v.unshift = new Proxy(v.unshift, unshiftHandler);
+		v.unshift = new Proxy(v.unshift, unshiftFuncHandler);
 		return new Proxy(v, proxyHandler);
 	}
 	if (v instanceof Set) {
@@ -124,19 +126,25 @@ export function getProxy(v) {
 		for (const vv of s) {
 			v.add(getProxy(vv));
 		}
-//		v.next = new Proxy(v.next, nextHandler);
-//		v.has = new Proxy(v.has, getHandler);
-//		v.add = new Proxy(v.add, addHandler);
+		v.entries = new Proxy(v.entries, entriesFuncHandler);
+		v.values = new Proxy(v.values, entriesFuncHandler);
+		v.keys = new Proxy(v.keys, entriesFuncHandler);
+		v.add = new Proxy(v.add, addFuncHandler);
 		return new Proxy(v, proxyHandler);
 	}
 	if (v instanceof Map) {
-		for (const [kk, vv] of v) {
+		const s = new Map(v);
+		v.clear();
+		for (const [kk, vv] of s) {
 			v.set(getProxy(kk), getProxy(vv));
 		}
-//		v.next = new Proxy(v.next, nextHandler);
-//		v.get = new Proxy(v.get, getHandler);
-//		v.has = new Proxy(v.has, getHandler);
-//		v.set = new Proxy(v.add, setHandler);
+		v.entries = new Proxy(v.entries, entriesFuncHandler);
+		v.values = new Proxy(v.values, entriesFuncHandler);
+		v.keys = new Proxy(v.keys, entriesFuncHandler);
+		v.get = new Proxy(v.get, getFuncHandler);
+//		v.has = new Proxy(v.has, getFuncHandler);
+		v.set = new Proxy(v.set, setFuncHandler);
+		v.delete = new Proxy(v.delete, deleteFuncHandler);
 		return new Proxy(v, proxyHandler);
 	}
 /*
@@ -155,13 +163,10 @@ export function getProxy(v) {
 	}
 	return new Proxy(v, proxyHandler);
 }
-export function getTarget(v) {
-	return typeof v === "object" && v !== null && v[p_target] || v;
-}
 const proxyHandler = {
 	get(t, n) {
 //if (n == "then") {
-console.error("get", t, n, t[n], cur$src, typeof t[n] === "object");
+//console.error("get", t, n, t[n], cur$src, typeof t[n] === "object");
 //}
 		if (proxyStat.value === 0) {
 			proxyStat.value = 1;
@@ -170,19 +175,18 @@ console.error("get", t, n, t[n], cur$src, typeof t[n] === "object");
 			return t;
 		}
 		const v = t[n],
-			type = typeof v;
-		if (type === "function") {
-			return v.bind(t);
-		}
-		if (cur$src && !isSkipValueType[type] && !isSkipNameType[typeof n]) {
+			vType = typeof v;
+		if (cur$src && !isSkipNameType[typeof n] && (Array.isArray(t) || !isSkipValueType[vType])) {
 			addVar(t, n, getTarget(v), cur$src);
-//???		} else if (type === "function") {
-//			return v.bind(t);
+			return v;
 		}
-		return v;
+//		if (vType === "function") {//to inner slots
+//			return v;
+//		}
+		return n !== Symbol.iterator ? v : t.entries;
 	},
 	set(t, n, v) {
-console.log('set', n, v, "old=>", t[n]);//, Object.getOwnPropertyDescriptor(t, n) && Object.getOwnPropertyDescriptor(t, n).value);
+//console.log('set', n, v, "old=>", t[n], t, v === p_target);//, Object.getOwnPropertyDescriptor(t, n) && Object.getOwnPropertyDescriptor(t, n).value);
 		if (Array.isArray(t) && n === "length") {
 			const oVal = t[n];
 			t[n] = v;
@@ -193,11 +197,6 @@ console.log('set', n, v, "old=>", t[n]);//, Object.getOwnPropertyDescriptor(t, n
 			return true;
 		}
 		const vTarget = getTarget(v);
-		if (vTarget instanceof Set || vTarget instanceof Map) {
-//			Reflect.set(t, n, v);
-console.log(1111111, vTarget, arguments);
-alert(11)
-		}
 		if (n in t) {
 			const oldVTarget = getTarget(t[n]);
 //связоно с тем что обновить элемент стоит даже если значение такое же та как он может быть изменен как то оначе например через this.value = 1111
@@ -219,9 +218,9 @@ alert(11)
 //		return false;
 	},
 	deleteProperty(t, n) {
-		const oldV = getTarget(t[n]);
-//console.log('del', t, n, "old=>", oldV);
+//console.log('del', t, n, "old=>", getTarget(t[n]));
 		if (n in t) {
+			const oldV = getTarget(t[n]);
 			delete t[n];
 //			if (Reflect.deleteProperty(t, n)) {
 				setVal(t, n, undefined, oldV);
@@ -233,37 +232,115 @@ alert(11)
 		return true;
 	}
 };
-const unshiftHandler = {
-	apply(t, thisValue, args) {
-		getTarget(thisValue)[_isUnshift] = true;
-		t.apply(thisValue, args);
-//		Reflect.apply(t, thisValue, args);
+const unshiftFuncHandler = {
+	apply(f, thisValue, args) {
+		thisValue[p_target][p_isUnshift] = true;
+		return f.apply(thisValue, args);
 	}
 };
-const nextHandler = {
-	apply(t, thisValue, args) {
-		t.apply(thisValue, args);
-		console.log(t, thisValue, args);
+const entriesFuncHandler = {
+	apply(f, thisValue, args) {
+//console.log(22222222, thisValue, thisValue[p_target], args);
+		const i = f.apply(thisValue[p_target], args);
+		i.next = new Proxy(i.next, iteratorFuncHandler);
+		i[p_target] = thisValue;
+		return i;
 	}
 };
-const addHandler = {
-	apply(t, thisValue, args) {
-		t.apply(thisValue, args);
-		console.log(t, thisValue, args);
+const iteratorFuncHandler = {
+	apply(f, thisValue, args) {
+//console.log("next", thisValue, thisValue[p_target], f, args);
+		const val = f.apply(thisValue, args);
+		if (!cur$src) {
+			return val;
+		}
+		const t = thisValue[p_target][p_target];
+		if (val.value.length !== undefined) {
+			const [k, v] = val.value;
+			addVar(t, getTarget(k), getTarget(v), cur$src);
+			return val;
+		}
+		const v = val.value,
+			vTarget = getTarget(v);
+		addVar(t, vTarget, vTarget, cur$src);
+		return val;
+	}
+}
+const getFuncHandler = {
+	apply(f, thisValue, args) {
+//console.log("getF", cur$src, thisValue, thisValue[p_target], args);
+		const t = thisValue[p_target];
+		if (t === undefined) {
+			return f.apply(thisValue, args);
+		}
+		const v = f.apply(t, args);
+		if (!cur$src) {
+			return v;
+		}
+		vTarget = getTarget(v);
+		addVar(t, getTarget(args[0]), vTarget, cur$src);
+		return val;
 	}
 };
-const getHandler = {
-	apply(t, thisValue, args) {
-		t.apply(thisValue, args);
-console.log(t, thisValue, args);
+const setFuncHandler = {
+	apply(f, thisValue, args) {
+		const t = thisValue[p_target],
+			[k, v] = args,
+			vTarget = getTarget(v);
+//console.log("setF", t, f, args);
+		if (t.has(k)) {
+			const oldVTarget = getTarget(t.get(k));
+//связоно с тем что обновить элемент стоит даже если значение такое же та как он может быть изменен как то оначе например через this.value = 1111
+			if (vTarget === oldVTarget) {
+				return thisValue;
+			}
+			f.apply(t, [k, getProxy(v)]);
+			setVal(t, getTarget(k), vTarget, oldVTarget);
+			return thisValue;
+		}
+		const kk = getProxy(k);
+		f.apply(t, [kk, getProxy(v)]);
+		setVal(t, getTarget(k), vTarget, undefined);
+		return thisValue;
 	}
 };
-const setHandler = {
-	apply(t, thisValue, args) {
-		t.apply(thisValue, args);
-		console.log(t, thisValue, args);
+const addFuncHandler = {
+	apply(f, thisValue, args) {
+		const t = thisValue[p_target],
+			v = args[0],
+			vTarget = getTarget(v);
+//console.log("addF", t, f, args);
+		if (t.has(v)) {
+			const oldVTarget = getTarget(t.get(v));
+//связоно с тем что обновить элемент стоит даже если значение такое же та как он может быть изменен как то оначе например через this.value = 1111
+			if (vTarget === oldVTarget) {
+				return thisValue;
+			}
+		}
+		f.apply(t, [getProxy(v)]);
+		setVal(t, vTarget, vTarget, undefined);
+		return thisValue;
 	}
 };
+const deleteFuncHandler = {
+	apply(f, thisValue, args) {
+		const t = thisValue[p_target],
+			k = args[0];
+		if (!t.has(k)) {
+			return false;
+		}
+		const oldV = getTarget(t.get(k));
+		if (f.apply(t, args)) {
+//console.log("delF", k, oldV);
+			setVal(t, getTarget(k), undefined, oldV);
+			return true;
+		}
+		return false;
+	}
+};
+function getTarget(v) {
+	return typeof v === "object" && v !== null ? v[p_target] : v;
+}
 //export 
 function addVar(t, n, v, $src) {
 	const tId = varIdByVar.get(t),
@@ -380,7 +457,7 @@ function addVar(t, n, v, $src) {
 }
 function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); - если так сделалть, то после первого - будут удалены varIdByVar.get(oldId), что приведет к тому что все пойдет по ветке !oldId - непонятно нужно ли что-то с этим делать??
 	const tId = varIdByVar.get(t);
-//console.info('setVar', "name=>", n, "\nvalue=>", v, "\ntarget=>", t, "\ntId=>", tId, "\noldVal=>", oldV, t[_isUnshift]);
+//console.info('setVar', "name=>", n, "\nvalue=>", v, "\ntarget=>", t, "\ntId=>", tId, "\noldVal=>", oldV, t[p_isUnshift]);
 	if (!tId) {//!tId - такое получается когда данные изменяются, а отрисовки ещё небыло - первая загрузка странцы и добавление данных на старте - это корректно
 		return;
 	}
@@ -393,10 +470,10 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 	if (self.Tpl_debugLevel === 2) {
 		console.info("Tpl_proxy => setVar", "\n\tname=>", n, "\n\tvalue=>", v, "\n\toldVal=>", oldV, "\n\ttId=>", tId, "\n\ttarget=>", t, "\n\toldId=>", oId, "\n\toldScalarId=>", oldScalarId);
 	}
-	if (t[_isUnshift]) {
+	if (t[p_isUnshift]) {
 		if (n === "length") {
 			_setVal(t, n, oldV, srcIdsByVarId.get(tId), oId);
-			delete t[_isUnshift];
+			delete t[p_isUnshift];
 		}
 		return;
 	}
@@ -579,7 +656,7 @@ for (const sId of toClear) {
 //			}
 			c.value = type_cacheValue();
 /*todo
-			if (!t[_isUnshift]) {
+			if (!t[p_isUnshift]) {
 				c.current = type_cacheCurrent();
 console.log(11111111, sId);
 			}*/

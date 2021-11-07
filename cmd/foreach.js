@@ -129,42 +129,47 @@ function foreach_render(req, val) {
 function getCtx(req, val) {
 	const pos = -1,//нужно было бы запускать с нулевого элемента для получения кэша - эта задача режается в функции получения кэша
 		$first = foreach_get$first(req.$src, req.str, req.expr, pos),
-		$els = foreach_get$els($first, req.str, req.expr, pos);
+		$els = foreach_get$els($first, req.str, req.expr, pos),
+		attrsAfter = getAttrAfter(srcBy$src.get(req.$src).descr.attr, req.str),
+		valName = kebabToCamelStyle(req.reqCmd.args[0]),
+		keyName = kebabToCamelStyle(req.reqCmd.args[1]);
 	if (!val) {
-//		return getEmptyCtx($first, $els);
-		return type_ctx(null, null, $els, [], "", "");
+		return type_ctx([], [], attrsAfter, $els, valName, keyName);
 	}
-	const keys = [];
 	if (Array.isArray(val)) {
-		const len = val.length;
+		const len = val.length,
+			keys =new Array(len);
 		for (let i = 0; i < len; i++) {
-			keys.push(i);
+			keys[i] = i;
 		}
-	} else {
-//todo Set and Map?
-		for (const key in val) {
-			keys.push(key);
+		return type_ctx(keys, val, attrsAfter, $els, valName, keyName);
+	}
+	if (val instanceof Set || val instanceof Map) {
+		const keys = new Array(val.size),
+			arr = new Array(val.size);
+		let i = 0;
+		for (const [k, v] of val) {
+			keys[i] = k;
+			arr[i++] = v;
 		}
+		return type_ctx(keys, arr, attrsAfter, $els, valName, keyName);
 	}
-	if (keys.length === 0) {
-//		return getEmptyCtx($first, $els);
-		return type_ctx(null, null, $els, [], "", "");
+	const keys = [],
+		arr = [];
+	for (const key in val) {
+		keys.push(key);
+		arr.push(val[key]);
 	}
-	return type_ctx(val, getAttrAfter(srcBy$src.get(req.$src).descr.attr, req.str), $els, keys, kebabToCamelStyle(req.reqCmd.args[0]), kebabToCamelStyle(req.reqCmd.args[1]));
+	return type_ctx(keys, arr, attrsAfter, $els, valName, keyName);
 }
-//function getEmptyCtx($first, $els) {
-//	return type_ctx(null, null, $els, [], "", "");
-//}
-function type_ctx(value, attrsAfter, $els, keys, valName, keyName) {
+function type_ctx(keys, value, attrsAfter, $els, valName, keyName) {
 	return {
+		keys,
 		value,
 		attrsAfter,
 		$els,
-		keys,
-
 		valName,
 		keyName
-//		isUpDown: true
 	};
 }
 function show$first(req, ctx, showFunc) {
@@ -507,7 +512,7 @@ function q_forRenderI(req, ctx, $els, idxs) {//!!idxs необходим для 
 		const scopeI = ocopy(req.scope),
 			aI = arr[i] = type_q_arr($i, scopeI);
 		if (ctx.valName) {
-			scopeI[ctx.valName] = ctx.value[ctx.keys[idx]];
+			scopeI[ctx.valName] = ctx.value[idx];
 		}
 		if (ctx.keyName) {
 			scopeI[ctx.keyName] = ctx.keys[idx];
