@@ -2,7 +2,7 @@ import {renderTag, q_renderTag, dispatchLocalEvents, type_isLast, type_q_arr, ty
 import {mw_$src, renderPackSize, lazyRenderName, defIdleCallbackOpt} from "../config.js";
 import {$srcById, srcById, srcBy$src, descrById, get$els} from "../descr.js";
 import {preRender, is$hide, is$visible, isAnimationVisible} from "../dom.js";
-import {loadingCount} from "../util.js";
+import {loadingCount} from "./loading.js";
 
 const renderParams = new Set();
 let mw_delay = 0,

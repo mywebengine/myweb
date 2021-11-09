@@ -3,8 +3,8 @@ import {setReqCmd} from "./render/render.js";
 import {type_cache} from "./cache.js";
 import {reqCmd, incCmdName} from "./config.js";
 import {setAsOneIdx, getIdx, setIdx} from "./dom.js";
+import {loadingCount} from "./loading.js";
 import {getProxy} from "./proxy.js";
-import {loadingCount} from "./util.js";
 
 export const $srcById = new Map();
 export const srcById = new Map();

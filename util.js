@@ -1,7 +1,5 @@
-﻿//import {type_animation} from "./render/render.js";
-import {isFillingName, isFillingDiv, defRequestInit, defEventInit} from "./config.js";
+﻿import {defRequestInit, defEventInit} from "./config.js";
 import {srcBy$src} from "./descr.js";
-import {is$hide} from "./dom.js";
 import {getUrl} from "./loc.js";
 //import {getProxy} from "./proxy.js";
 
@@ -256,108 +254,9 @@ export function dispatchEvt($src, evtName, detail) {
 	}
 	$src.dispatchEvent(new CustomEvent(evtName, p));
 }
-export const loadingCount = new Map();
-//todo
-//self.mw_loadingCount = loadingCount;
-function type_loading() {
-	return new Map([["", 0]]);
-}
-export async function showLoading($e, testFunc, type = "", waitTime = -1) {
-//--	req.sync.animations.add(type_animation(async () => {
-		if (await testFunc()) {
-console.log(1111);
-			decLoading($e, type);
-			return;
-		}
-console.log(222);
-		const src = srcBy$src.get($e),
-			lKey = src !== undefined ? src.id : $e;
-		if (!loadingCount.has(lKey)) {
-			loadingCount.set(lKey, type_loading());
-		}
-		const l = loadingCount.get(lKey);
-		if (waitTime < 0) {
-			toggleLoading($e, "", true, l);
-			toggleLoading($e, type, true, l);
-			return;
-		}
-		toggleLoading($e, "", true, l);
-		if (type !== "") {
-			setTimeout(async () => {
-				if (!await testFunc() && loadingCount.has(lKey)) {
-					toggleLoading($e, type, true, l);
-				}
-			}, waitTime);
-		}
-//	}, req.sync.local, 0));
-}
-function decLoading($e, type) {
-	const src = srcBy$src.get($e),
-		lKey = src !== undefined ? src.id : $e,
-		l = loadingCount.get(lKey);
-console.log(lKey, l);
-	if (l === undefined) {
-		return;
-	}
-	if (type !== "") {
-		const v = l.get(type) - 1
-		l.set(type, v);
-		if (v <= 0) {
-			toggleLoading($e, type, false, l);
-		}
-	}
-	const v = l.get("") - 1;
-	l.set("", v);
-	if (v > 0) {
-		return;
-	}
-	toggleLoading($e, "", false, l);
-	for (const [key, count] of loadingCount) {
-		for (const [tp, v] of count) {
-			if (v > 0) {
-				continue;
-			}
-			if (tp === "") {
-				loadingCount.delete(key);
-			}
-		}
-	}
-}
-function toggleLoading($e, type, f, l) {
-//todo
-	if (is$hide($e)) {
-console.warn(43243242);
-alert(1);
-		return;
-	}
-	const lName = type === "" ? isFillingName : isFillingName + isFillingDiv + type;
-	if (!f) {
-		$e.removeAttribute(lName, "");
-		if ($e.nodeName === "TEMPLATE") {
-			$e.content.firstChild.removeAttribute(lName, "");
-		}
-		return;
-	}
-	if (type === "") {
-		const c = l.get("");
-		l.set("", c + 1);
-	} else {
-		const c = l.get(type);
-		if (c === undefined) {
-			l.set(type, 1);
-		} else {
-			l.set(type, c + 1);
-		}
-	}
-	$e.setAttribute(lName, "");
-	if ($e.nodeName === "TEMPLATE") {
-		$e.content.firstChild.setAttribute(lName, "");
-	}
-}
 //API
 self.mw_oset = oset;
 self.mw_del = del;
 //self.mw_ocopy = ocopy;
 //--self.get$props = get$props;
-self.mw_showLoading = showLoading;
 self.mw_dispatchEvt = dispatchEvt;

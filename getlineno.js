@@ -24,7 +24,7 @@ export default new Promise(resolve => {
 				});
 		});
 });
-const lineNoAttrName = "debug-line";
+const lineNoAttrName = "debug:line";
 function createLineNo(url, html, $src) {
 	let line = 1,
 		$i = $src;

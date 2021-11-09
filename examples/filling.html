@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
-		<script src="../myweb.js?debug" type="module" async="async"></script>
+		<script src="../myweb.js?debug=1" type="module" async="async"></script>
 		<link href="../myweb.css" type="text/css" rel="stylesheet" />
 		<script>
 			const h1 = "filling command";
@@ -24,23 +24,23 @@
 	<body>
 		<h1>${h1} - example</h1>
 		<div is_filling=""
-			filling.spinner.1000="data.isReady"
-			filling.skeleton_n1.2000="data.isReady"
-			exec="if (!data.isReady) setTimeout(() => data.isReady = true, 3000)">
+			filling.spinner.1000="glob.isReady"
+			filling.skeleton_n1.2000="glob.isReady"
+			exec="if (!glob.isReady) setTimeout(() => glob.isReady = true, 3000)">
 			<fieldset>
 				<label>
 					<input type="checkbox"
-						attr.checked="data.isReady"
-						on.input="data.isReady = this.checked" />
-					data.isReady
+						attr.checked="glob.isReady"
+						on.input="glob.isReady = this.checked" />
+					glob.isReady
 				</label>
 			</fieldset>
 		</div>
 		<section>
 			<h2>Inc</h2>
-			<link filling.spinner="data.isReady"
-				inc..cyan="`./inc/inc1.html`"
-				filling.skeleton_n1.500="if (self.a) {aaaaa()} return data.isReady" />
+			<div filling.spinner="glob.isReady"
+				inc.cyan="`./inc/inc1.html`"
+				filling.skeleton_n1.500="if (self.a) aaaaa(); return glob.isReady"></div>
 		</section>
 	</body>
 </html>

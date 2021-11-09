@@ -30,11 +30,11 @@ export function getCacheSrcId($i, str) {
 //todo если _for1 _for2 - кэш будет браться для for2 c первого элемента
 	const src = srcBy$src.get($i);
 //todo
-	if (src === undefined) {
-		console.warn("2323 всё норм, но нужно последить - сейчас такое бываес с _loading -> _inc");
+if (src === undefined) {
+	console.warn("2323 всё норм, но нужно последить - сейчас такое бываес с _loading -> _inc");
 //debugger
-		return 0;
-	}
+	return 0;
+}
 	const descr = src.descr;
 	if (descr.asOnes === null || !descr.asOnes.has(str)) {
 		return src.id;

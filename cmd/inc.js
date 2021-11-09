@@ -6,8 +6,9 @@ import {mw_doc, p_target, cmdPref, cmdArgsDiv, cmdArgsDivLen, incCmdName, fetchC
 import {srcBy$src, getAttrAfter, getAttrItAfter, get$els, type_asOneIdx, type_idx, type_save} from "../descr.js";
 import {preRender, joinText, removeChild, cloneNode, getIdx, setIdx, getTopUrl} from "../dom.js";
 import {eval2, q_eval2} from "../eval2.js";
+import {loadingCount, showLoading} from "./loading.js";
 import {getUrl} from "../loc.js";
-import {getRequest, loadingCount, showLoading, check, ocopy} from "../util.js";
+import {getRequest, check, ocopy} from "../util.js";
 
 const waitingStack = new Map();
 export const incCache = new Map();
@@ -67,8 +68,6 @@ function inc_render(req, val) {
 //alert(22);
 		return $elsLen > 3 ? getInc(req, include, $els, $elsLen) : null;//если много тегов, тогда ренедрим их или продолжаем рендер следующей команды
 	}
-//todo cancel
-//	include.counter++;
 	const $last = $els[$elsLen - 1];
 	if (include.readyState === "complete") {
 		getNewInc(req, include, oldVal, $els, $elsLen, null);
@@ -119,8 +118,7 @@ function type_include(readyState, url, req, res) {
 		res,
 		$fr: null,
 		$tags: null,
-		scope: null//,
-//		counter: 0
+		scope: null
 	};
 }
 function type_incLoading(req) {
@@ -414,12 +412,12 @@ async function renderI(req, $e, $last, h) {
 		if (iSrc !== undefined && iSrc.isCmd) {//это когда template и в нем скрыта тектовая нода
 			$e = await h(req, $e);
 			if (req.sync.stat !== 0) {
-//todo
 //				console.error(7878787, iSrc.id, $e, $last, req);
 //				alert(11);
 				return $last;
 			}
-//todo
+/*
+//todo--
 			if ($e.parentNode !== $last.parentNode) {
 				console.error(555555555, iSrc.id, $e, $last, req);
 				alert(11);
@@ -427,12 +425,12 @@ async function renderI(req, $e, $last, h) {
 				return $last;
 			}
 			if (!$last.nextSibling === $e) {
-//todo
+//todo--
 				console.warn(666666666, $e, $last, req);
 				alert(11);
 
 				return $last;
-			}
+			}*/
 		}
 		if ($e === $last) {
 			return $last;
@@ -468,9 +466,11 @@ function cloneIncFragment(req, include, oldVal, loading) {
 //			console.warn(req);
 //			alert(3333333);
 //		}
-	} else if (loading !== null && loading.isShow) {
+	} else if (loading.isShow) {
 		const sId = src.id,
 			l = loadingCount.get(sId);
+console.log(12, sId, loading, l)
+alert(2)
 		if (l.get("") === 1) {
 			for (let i = 0; i < attrsLen; i++) {
 				const a = attrs[i];

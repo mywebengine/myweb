@@ -4,8 +4,9 @@ import {type_cacheValue, type_cacheCurrent} from "./cache.js";
 import {mw_doc, mw_$src, p_topUrl, visibleScreenSize, defIdleCallbackOpt, incCmdName, onCmdName, textCmdName, descrIdName, asOneIdxName, idxName, removeEventName, defEventInit,
 	reqCmd} from "./config.js";
 import {$srcById, srcById, srcBy$src, descrById, getNewId, createSrc, type_asOneIdx, type_idx, get$els, getNextStr} from "./descr.js";
+import {loadingCount} from "./loading.js";
 import {varIdByVar, varById, srcIdsByVarId, varIdByVarIdByProp} from "./proxy.js";
-import {loadingCount, check} from "./util.js";
+import {check} from "./util.js";
 
 export function preRender($i, isLinking) {// = mw_$src) {//todo это не будет работать если после фора идет вставка на много тегов
 	const $parent = $i.parentNode,
