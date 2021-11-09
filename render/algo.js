@@ -1,67 +1,72 @@
-import {renderTag, q_renderTag, dispatchLocalEvents, type_isLast, type_q_arr} from "./render.js";
-import {Tpl_$src, qPackLength, lazyRenderName} from "../config.js";
+import {renderTag, q_renderTag, dispatchLocalEvents, type_isLast, type_q_arr, type_animation} from "./render.js";
+import {mw_$src, renderPackSize, lazyRenderName, defIdleCallbackOpt} from "../config.js";
 import {$srcById, srcById, srcBy$src, descrById, get$els} from "../descr.js";
-import {preRender, is$hide, isAnimationVisible} from "../dom.js";
+import {preRender, is$hide, is$visible, isAnimationVisible} from "../dom.js";
 import {loadingCount} from "../util.js";
 
 const renderParams = new Set();
-let Tpl_delay = 0,
-	Tpl_delayId = 0,
-	Tpl_syncId = 0;
-const delayPromiseStack = new Set();
+let mw_delay = 0,
+	mw_delayId = 0,
+	mw_syncId = 0;
+const delayParams = new Set();
 export const syncInRender = new Set();
 export let curRender = Promise.resolve();
-export function render($src = Tpl_$src, delay, scope, isLinking = false) {
+
+export function render($src = mw_$src, delay, scope, isLinking = false) {
 	if (!srcBy$src.has($src)) {
 		preRender($src, isLinking);
 	}
 	const sId = srcBy$src.get($src).id;
 	renderParams.add(type_renderParam(sId, scope || null, null, isLinking));
-	return tryRender(delay);
+	return tryRender(delay, sId);
 }
 export function renderBySrcIds(srcs, delay) {
-//console.log("renderBySrcIds", srcs);
 	for (const sId of srcs) {
 		if ($srcById.has(sId)) {//!! это тогда, когда мы удалили элемент, но еще не успели очистить его ссылки
 			renderParams.add(type_renderParam(sId, null, null, false));
 		}
 	}
-	tryRender(delay);
+	tryRender(delay, 0);
 }
 export function setDelay(t, cb) {
 	if (!cb) {
-		Tpl_delay = t;
+		mw_delay = t;
 		return;
 	}
-	const old = Tpl_delay;
-	Tpl_delay = t;
+	const old = mw_delay;
+	mw_delay = t;
 	cb();
-	Tpl_delay = old;
+	mw_delay = old;
 }
-function tryRender(delay = Tpl_delay) {
-	const delayId = ++Tpl_delayId;
-	return new Promise(resolve => {
+function tryRender(delay = mw_delay, sId) {
+	const delayId = ++mw_delayId;
+	return new Promise((resolve, reject) => {
 		setTimeout(() => {//по этому отмена не идёт сразу
-			if (delayId !== Tpl_delayId || renderParams.size === 0) {
-				delayPromiseStack.add(resolve);
+			if (sId !== 0) {
+				delayParams.add(type_delayParam(sId, resolve, reject));
+			}
+			if (delayId !== mw_delayId || renderParams.size === 0) {
 				return;
 			}
-			_tryRender()
+			const delayP = new Set(delayParams);
+			delayParams.clear();
+			_tryRender(delayP)
 				.then(resolve)
 				.catch(err => {
 //todo нужно подумать что еще надо почистить
-					for (const s of syncInRender) {
-						s.resolve();
+					for (const sync of syncInRender) {
+						sync.resolve();
 					}
 					syncInRender.clear();
 					curRender = Promise.resolve();
 					loadingCount.clear();
-					throw err;
+//					throw err;
+					reject(err);
 				});
 		}, delay);
 	});
 }
-function _tryRender() {
+function _tryRender(delayP) {
 	const toCancleSync = new Set(),
 		byD = prepareRenderParam(toCancleSync),
 		repeatByD = new Map();
@@ -122,7 +127,6 @@ function _tryRender() {
 			}
 		}
 	}
-//todo
 //console.log("_R", byD, repeatByD, toCancleSync);
 	if (toCancleSync.size !== 0) {
 		for (const sync of toCancleSync) {
@@ -131,42 +135,40 @@ function _tryRender() {
 		}
 	}
 	if (byD.size !== 0) {
-		const p = _render(byD);
+		const p = _render(byD, delayP);
 		if (repeatByD.size === 0) {
 			curRender = curRender
 				.then(() => p);
 		} else {
 			curRender = curRender
-				.then(() => _render(repeatByD))
+				.then(() => _render(repeatByD, delayP))
 				.then(() => p);
 		}
 	} else if (repeatByD.size !== 0) {
 		curRender = curRender
-			.then(() => _render(repeatByD));
-	} else {
+			.then(() => _render(repeatByD, delayP));
+//	} else {
+//		return curRender;
+	}
+//	if (delayP.size === 0) {
 		return curRender;
-	}
-	if (delayPromiseStack.size !== 0) {
-		const a = new Set(delayPromiseStack);
-		delayPromiseStack.clear();
-		curRender
-			.then(() => {
-				for (const delayResolve of a) {
-					delayResolve();
-				}
-			});
-	}
-	return curRender;
+//	}
+//	return curRender
+//		.then(() => {
+//			for (const resolve of delayP) {
+//				resolve();
+//			}
+//		});
 }
-function _render(byD) {
-	if (self.Tpl_debugLevel !== 0) {
+function _render(byD, delayP) {
+	if (self.mw_debugLevel !== 0) {
 		debugInfo(byD);
 	}
 	const syncInThisRender = new Set(),
 //		renderPack = [],
 		pSet = new Set();
 	for (const [dId, r] of byD) {
-		const sync = type_sync(++Tpl_syncId, r);
+		const sync = type_sync(++mw_syncId, r);
 		syncInRender.add(sync);
 		syncInThisRender.add(sync);
 		if (r.attr === null) {
@@ -180,7 +182,7 @@ if ($sync === undefined) {
 }
 		const arrLen = r.srcIds.size;
 		if (arrLen === 1) {
-//			renderPack.push($sync, r, sync);
+//			renderPack.push({$src: $sync, renderParam: r, sync});
 			pSet.add(renderTag($sync, r.scope, r.attr, sync));
 			continue;
 		}
@@ -189,61 +191,136 @@ if ($sync === undefined) {
 		for (const sId of r.srcIds) {
 			arr[i++] = type_q_arr($srcById.get(sId), r.scope);
 		}
-console.time(111);
-		pSet.add(_q_renderPack(r, sync, arr, arrLen, 0)
-.then(() => console.timeEnd(111)));//todo не могу сообразить, почему этот вариант быстрее!
+//todo не могу сообразить, почему этот (1) вариант быстрее! неужелди выполняется в нескольких потоках?
+//console.time(111);
+		pSet.add(_q_renderPack(r, sync, arr));
 //		pSet.add(q_renderTag(arr, r.attr, type_isLast(), sync)
 //.then(() => console.timeEnd(111)));
 //была проблема с с() из-за потери ид для обновлении при отмене				.then(() => !console.log(123, srcIdsByVarId.get(varIdByVarIdByProp[55].get("green")), arr) && q_renderTag(arr, r.attr, type_isLast(), sync)));
 	}
 //	if (renderPack.length !== 0) {
-//		pSet.add(_renderPack(renderPack, 0));
+//		pSet.add(_renderPack(renderPack));
 //	}
 	return Promise.all(pSet)
 		.then(() => {
+			const pSet = new Set();
 			for (const sync of syncInThisRender) {
+				pSet.add(sync.promise);
+				if (self.mw_debugLevel === 0) {
+					continue;
+				}
 				sync.promise
 					.then(() => {
-						if (self.Tpl_debugLevel === 0) {
-							return;
+						if (sync.stat === 0) {
+//todo
+							console.warn("0 0 sdfsdfsd");
 						}
-						if (sync.stat === 0 || sync.stat === 7) {
+						if (sync.stat === 7) {
 							console.info("ready =>", infoBySrcIds([sync.renderParam.sId]));
 							return;
 						}
 						console.info("cancel =>", infoBySrcIds([sync.renderParam.sId]));
 					});
 			}
-			return renderLoop(syncInThisRender);
+			renderLoop(syncInThisRender);
+			return Promise.all(pSet);
+		})
+		.then(() => {
+			for (const d of delayP) {
+				for (const sync of syncInThisRender) {
+					let l = sync.local.get(d.sId);
+					if (l === undefined) {
+						continue;
+					}
+					for (; l.newSrcId !== 0; l = sync.local.get(d.sId)) {
+						d.sId = l.newSrcId;
+					}
+					d.resolve(sync);
+					break;
+				}
+			}
 		})
 		.catch(err => {
+			for (const d of delayP) {
+				d.reject(err);
+			}
 			throw err;
 		});
 }
 /*
-function _renderPack(renderPack, c) {
-	const l = qPackLength * (c + 1) * 3,
-		ll = renderPack.length,
-		len = l < ll ? l : ll;
-	const pArr = [];
-console.log(4444, qPackLength * c * 3, len, renderPack.length);
-	for (let i = qPackLength * c * 3; i < len; i += 3) {
-		pArr.push(renderTag(renderPack[i], renderPack[i + 1].renderParam.scope, renderPack[i + 1].renderParam.attr, renderPack[i + 2]));
+function _renderPack(arr) {
+	const nows = [],
+		deferreds = [],
+		arrLen = arr.length;
+	for (let i = 0; i < arrLen; i++) {
+		const arrI = arr[i];
+		if (is$visible(arrI.$src)) {
+			nows.push(arrI);
+			continue;
+		}
+		deferreds.push(arrI);
 	}
-	if (l < ll) {
-		return Promise.all(pArr)
-			.then(() => _renderPack(renderPack, c + 1));
+	if (nows.length !== 0) {
+console.log(1, nows)
+		const pSet = new Set(),
+			l = nows.length;
+		for (let i = 0; i < l; i++) {
+			const e = nows[i];
+			pSet.add(renderTag(e.$src, e.renderParam.scope, e.renderParam.attr, e.sync));
+		}
+		return Promise.all(pSet)
+			.then(() => deferreds.length !== 0 && _renderPack(deferreds));
+//			.then(() => deferreds.length !== 0 && sync.afterAnimations.add(type_animation(() => _q_renderPack(renderParam, sync, deferreds), sync.local, 0)));
 	}
-	return Promise.all(pArr);
+console.log(2, deferreds)
+	const pSet = new Set(),
+		l = deferreds.length;
+	for (let i = 0; i < l; i++) {
+		const e = deferreds[i];
+		pSet.add(new Promise(ricResolve => {
+			const ricId = requestIdleCallback(() => {
+alert(1)
+				e.sync.idleCallback.delete(ricId);
+				renderTag(e.$src, e.renderParam.scope, e.renderParam.attr, e.sync)
+					.then(ricResolve);
+			});
+			e.sync.idleCallback.set(ricId, ricResolve);
+		}, defIdleCallbackOpt));
+	}
+	return Promise.all(pSet);
 }*/
-function _q_renderPack(renderParam, sync, arr, arrLen, beginIdx) {
-	const end = beginIdx + qPackLength;
-//console.log(beginIdx, end);
-	if (end < arrLen) {
-		return q_renderTag(arr.slice(beginIdx, end), renderParam.attr, type_isLast(), sync)
-			.then(() => _q_renderPack(renderParam, sync, arr, arrLen, end));
+function _q_renderPack(renderParam, sync, arr) {
+	const nows = [],
+		deferreds = [],
+		arrLen = arr.length;
+	for (let i = 0; i < arrLen; i++) {
+		const arrI = arr[i];
+		if (is$visible(arrI.$src)) {
+			nows.push(arrI);
+			continue;
+		}
+		deferreds.push(arrI);
 	}
-	return q_renderTag(arr.slice(beginIdx, arrLen), renderParam.attr, type_isLast(), sync);
+	if (nows.length !== 0) {
+//console.log(1, nows)
+		return q_renderTag(nows, renderParam.attr, type_isLast(), sync)
+			.then(() => deferreds.length !== 0 && sync.afterAnimations.add(type_animation(() => _q_renderPack(renderParam, sync, deferreds), sync.local, 0)));
+	}
+//console.log(2, deferreds)
+	return new Promise(ricResolve => {
+		const ricId = requestIdleCallback(() => {
+			sync.idleCallback.delete(ricId);
+			q_renderTag(deferreds.splice(0, renderPackSize), renderParam.attr, type_isLast(), sync)
+				.then(() => {
+					if (deferreds.length !== 0) {
+						return _q_renderPack(renderParam, sync, deferreds)
+							.then(ricResolve);
+					}
+					ricResolve();
+				});
+		});
+		sync.idleCallback.set(ricId, ricResolve);
+	}, defIdleCallbackOpt);
 }
 export async function renderLoop(syncInThisRender) {
 //console.log(1111111111111111111)
@@ -335,6 +412,8 @@ export async function renderLoop(syncInThisRender) {
 		}*/
 	}
 	if (repeatSyncs.size !== 0) {
+//todo
+//console.warn("repeatSyncs", repeatSyncs);
 		return renderLoop(repeatSyncs);
 	}
 }
@@ -393,9 +472,7 @@ a.promise = 1;
 					}
 					addAnimation(sync, deferreds, false)
 						.then(rafResolve);
-				}, {
-					timeout: 1000
-				});
+				}, defIdleCallbackOpt);
 			});
 			sync.animationFrame.set(rafId, rafResolve);
 		});
@@ -418,9 +495,7 @@ a.promise = 1;
 				ricResolve();
 				return;
 			});
-		}, {
-			timeout: 1000
-		});
+		}, defIdleCallbackOpt);
 		sync.idleCallback.set(ricId, ricResolve);
 	});
 }
@@ -497,7 +572,7 @@ function prepareRenderParam(toCancleSync) {
 //console.timeEnd("p2")
 //console.time("p3")
 	const mergeByD = new Map(),
-		$top = Tpl_$src.parentNode;
+		$top = mw_$src.parentNode;
 	for (const [dId, r] of byD) {//размечаем глубины и расширяем для get$els
 		let $i = $srcById.get(r.sId),
 			iSrc = srcBy$src.get($i);
@@ -656,7 +731,7 @@ function prpDeleteDescrId(byD, dId, toCancleSync) {
 	}
 	byD.delete(dId);
 }
-function checkSync(sync, renderParam) {
+function checkSync(sync, newRenderParam) {
 //0 - parallel
 //1 - new above
 //2 - new eq
@@ -666,82 +741,73 @@ function checkSync(sync, renderParam) {
 //7 - ready
 //console.log("cancel", sync.stat, sync, p);
 	if (sync.stat !== 0) {
-		return getPosStat(sync, renderParam);
+		return getPosStat(sync, newRenderParam);
 	}
-	const stat = getPosStat(sync, renderParam);
-//	if (stat !== 0) {
-//		_cancelSync(sync, stat);
-//	}
+	const stat = getPosStat(sync, newRenderParam);
 	if (stat === 0) {
 		return stat;
 	}
 	sync.stat = stat;
-//	sync.resolve();
-//	syncInRender.delete(sync);
-
-//	dispatchLocalEvents(local);
 	for (const [id, r] of sync.idleCallback) {
 		cancelIdleCallback(id);
-		r(sync);
+		r();
 	}
 	for (const [id, r] of sync.animationFrame) {
 		cancelAnimationFrame(id);
-		r(sync);
+		r();
 	}
-//	for (const a of sync.scrollAnimations) {
-//		a.resolve();
-//	}
-/*
-	sync.scrollAnimations.clear();
-	sync.beforeAnimations.clear();
-	sync.animations.clear();
-	sync.afterAnimations.clear();*/
 	return stat;
 }
-function getPosStat(sync, renderParam) {
-	let sId = sync.renderParam.sId;
-	if (!srcById.has(sId)) {
-		for (let l = sync.local.get(sId); l.newSrcId !== 0; l = sync.local.get(sId)) {
-			sId = l.newSrcId;
+function getPosStat(sync, newRenderParam) {
+	let syncSrcId = sync.renderParam.sId;
+	if (!srcById.has(syncSrcId)) {
+		for (let l = sync.local.get(syncSrcId); l.newSrcId !== 0; l = sync.local.get(syncSrcId)) {
+			syncSrcId = l.newSrcId;
 		}
 	}
-	const $src = $srcById.get(sId);
+	const $sync = $srcById.get(syncSrcId);
 //todo--
-	if ($src === undefined) {
-//		throw new Error("!!! checkSync - hz " + sId);
-		console.warn("!!! checkSync - hz " + sId);
+	if ($sync === undefined) {
+//		throw new Error("!!! checkSync - hz " + syncSrcId);
+		console.warn("!!! checkSync - hz " + syncSrcId);
 		return 5;
 	}
-	const $top = Tpl_$src.parentNode;
-	if (renderParam.$els === null) {
-		for (let $i = $src; $i !== $top; $i = $i.parentNode) {
+	const $top = mw_$src.parentNode;
+	if (newRenderParam.$els === null) {
+		for (let $i = $sync; $i !== $top; $i = $i.parentNode) {
 			const iId = srcBy$src.get($i).id;
-			if (renderParam.srcIds.has(iId)) {
-				return iId === sId ? 2 : 1;
+			if (newRenderParam.srcIds.has(iId)) {
+				return iId === syncSrcId ? 2 : 1;
 			}
 		}
 	} else {
-		const $elsLen = renderParam.$els.length;
-		for (let i, $i = $src; $i !== $top; $i = $i.parentNode) {
+		const $elsLen = newRenderParam.$els.length;
+		for (let i, $i = $sync; $i !== $top; $i = $i.parentNode) {
 			for (i = 0; i < $elsLen; i++) {
-//				const iId = srcBy$src.get($i).id;
-//				if (srcBy$src.get(renderParam.$els[i]).id === iId) {
-//					return iId === sId ? 2 : 1;
-				if (renderParam.$els[i] === $i) {
-					return srcBy$src.get($i).id === sId ? 2 : 1;
+				const iId = srcBy$src.get($i).id;
+				if (iId === srcBy$src.get(newRenderParam.$els[i]).id) {//если будет большой делаэй, то новый параметр могут скрыть - и поэтому нужнго по ид
+					return iId === syncSrcId ? 2 : 1;
+//				if ($i === newRenderParam.$els[i]) {
+//					return srcBy$src.get($i).id === syncSrcId ? 2 : 1;
 				}
 			}
 		}
 	}
 //todo think about
-	for (let $i = $srcById.get(renderParam.sId).parentNode; $i !== $top; $i = $i.parentNode) {
-		if (srcBy$src.get($i).id === sId) {
+	for (let $i = $srcById.get(newRenderParam.sId).parentNode; $i !== $top; $i = $i.parentNode) {
+		if (srcBy$src.get($i).id === syncSrcId) {
 			return 3;
 		}
 	}
 	return 0;
 }
-//todo удалить - я пока не вижу смысла в эих параметрах
+function type_delayParam(sId, resolve, reject) {
+	return {
+		sId,
+		resolve,
+		reject
+	};
+}
 function type_renderParam(sId, scope, attr, isLinking) {
 	return {
 		sId,
@@ -806,7 +872,7 @@ function infoBySrcIds(sIds) {
 	return i;
 }
 //API
-self.render = render;
-self.curRender = curRender;
-self.setDelay = setDelay;
-self.syncInRender = syncInRender;
+self.mw_render = render;
+self.mw_curRender = curRender;
+self.mw_setDelay = setDelay;
+self.mw_syncInRender = syncInRender;//todo close

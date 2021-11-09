@@ -15,9 +15,9 @@ console.warn("check", res);
 alert(222);
 		return;
 	}
-        let errMsg = ">>>Tpl error";
-        if (self.getLineNo !== undefined) {
-        	const pos = self.getLineNo($src) || self.getLineNo($src.parentNode);//todo зачем смотреть родителя?
+        let errMsg = ">>>mw error";
+        if (self.mw_getLineNo !== undefined) {
+        	const pos = self.mw_getLineNo($src) || self.mw_getLineNo($src.parentNode);//todo зачем смотреть родителя?
         	if (pos) {
 	        	errMsg += ` in ${pos}`;
 	        }
@@ -32,7 +32,7 @@ alert(222);
 	if (scope) {
 		params.push("\nscope =>", scope);
 	}
-	if (self.Tpl_debugLevel !== 0) {
+	if (self.mw_debugLevel !== 0) {
 		console.info(errMsg, ...params);
 	}
 	if (fileName) {
@@ -258,7 +258,7 @@ export function dispatchEvt($src, evtName, detail) {
 }
 export const loadingCount = new Map();
 //todo
-self.loadingCount = loadingCount;
+//self.mw_loadingCount = loadingCount;
 function type_loading() {
 	return new Map([["", 0]]);
 }
@@ -354,10 +354,10 @@ alert(1);
 		$e.content.firstChild.setAttribute(lName, "");
 	}
 }
-
-self.oset = oset;
-self.del = del;
-self.ocopy = ocopy;
+//API
+self.mw_oset = oset;
+self.mw_del = del;
+//self.mw_ocopy = ocopy;
 //--self.get$props = get$props;
-self.showLoading = showLoading;
-self.dispatchEvt = dispatchEvt;
+self.mw_showLoading = showLoading;
+self.mw_dispatchEvt = dispatchEvt;

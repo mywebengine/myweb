@@ -10,21 +10,21 @@ import scopeCmd from "./cmd/scope.js";
 import fillingCmd from "./cmd/filling.js";
 import watchCmd from "./cmd/watch.js";
 
-//import {Tpl_cmd, reqCmd} from "./render/render.js";
-export const Tpl_cmd = {};//self.Tpl_cmd || {};
-export const reqCmd = self.Tpl_reqCmd || {};
+//import {mw_cmd, reqCmd} from "./render/render.js";
+export const mw_cmd = {};//self.mw_cmd || {};
+export const reqCmd = self.mw_reqCmd || {};
 
-export const Tpl_doc = document;
-export const Tpl_$src = Tpl_doc.documentElement;
+export const mw_doc = document;
+export const mw_$src = mw_doc.documentElement;
 
 export const p_target = Symbol();
 export const p_topUrl = Symbol();
 
-export const defTaskOpt = {
-	timeout: 160
+export const visibleScreenSize = 3;
+export const renderPackSize = 100;
+export const defIdleCallbackOpt = {
+	timeout: 1000
 };
-export const visibleScreenSize = 1;
-export const qPackLength = 100;
 
 export const globVarName = "glob";
 export const locVarName = "loc";
@@ -94,7 +94,7 @@ export const scopeCmdName = cmdPref + "scope";
 export const watchCmdName = cmdPref + "watch";
 
 export function addCommand(cmdName, cmd) {
-	Tpl_cmd[cmdName] = cmd;
+	mw_cmd[cmdName] = cmd;
 }
 
 addCommand(attrCmdName, attrCmd);
@@ -118,7 +118,7 @@ addCommand(fillingCmdName, fillingCmd);
 addCommand(watchCmdName, watchCmd);
 //ssr
 for (const str in reqCmd) {
-	reqCmd[str].cmd = Tpl_cmd[str.substr(0, str.indexOf(cmdArgsDiv))];
+	reqCmd[str].cmd = mw_cmd[str.substr(0, str.indexOf(cmdArgsDiv))];
 }
 //if (FormData.prototype[p_target] !== null) {
 	FormData.prototype[p_target] = null;
@@ -129,5 +129,5 @@ for (const str in reqCmd) {
 	Promise.prototype[p_target] = null;
 //}
 //API
-self.p_target = p_target;
-self.p_topUrl = p_topUrl;
+self.mw_p_target = p_target;
+self.mw_p_topUrl = p_topUrl;

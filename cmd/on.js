@@ -23,7 +23,7 @@ const isInit = new WeakMap();
 function on_render(req, $src) {
 	const n = req.reqCmd.args[0];
 	if (!n) {
-		throw check(new Error(">>>Tpl on:render:01: Need set action name"), $src, req);
+		throw check(new Error(">>>mw on:render:01: Need set action name"), $src, req);
 	}
 	const src = srcBy$src.get($src);
 	if (src !== undefined) {
@@ -150,7 +150,7 @@ function listen(req, $src, evt) {
 //https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code
 //https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key
 //https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button
-console.log(mod)
+//console.log(mod)
 		if (evt.type.indexOf("key") === 0) {
 			if (mod === evt.key.toLowerCase()) {
 				continue;

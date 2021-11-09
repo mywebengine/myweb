@@ -1,10 +1,10 @@
 import {p_target, lazyRenderName, mountEventName, renderEventName, defEventInit,
 	cmdArgsDiv, cmdArgsDivLen,
-		Tpl_cmd, reqCmd} from "../config.js";
+		mw_cmd, reqCmd} from "../config.js";
 import {srcById, $srcById, srcBy$src} from "../descr.js";
 
-//export const Tpl_cmd = {};//self.Tpl_cmd || {};
-//export const reqCmd = self.Tpl_reqCmd || {};
+//export const mw_cmd = {};//self.mw_cmd || {};
+//export const reqCmd = self.mw_reqCmd || {};
 
 export function renderTag($src, scope, attr, sync) {
 	if (sync.stat !== 0) {
@@ -371,7 +371,7 @@ export function setReqCmd(str) {
 	}
 	const i = str.indexOf(cmdArgsDiv),
 		cmdName = i === -1 ? str : str.substr(0, i),
-		cmd = Tpl_cmd[cmdName];
+		cmd = mw_cmd[cmdName];
 	if (cmd === undefined) {
 		reqCmd[str] = null;
 		return false;

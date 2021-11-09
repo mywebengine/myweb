@@ -89,6 +89,15 @@ function attr_render(req, $src, n, v) {
 		setAttributeValue($src, n, v);
 		return;
 	}
+	req.sync.animations.add(type_animation(() => {
+		c.current.set(req.str, v);
+		if (f) {
+			setAttribute($src, n, v);
+			return;
+		}
+		removeAttribute($src, n);
+	}, req.sync.local, srcBy$src.get($src).id));
+/*
 	if (f) {
 //todo <body _attr.class.home="[``].indexOf(loc.name) !== -1" _attr.class.main="[`myloc`, `mysnt`, `services`].indexOf(loc.name) !== -1"
 		req.sync.animations.add(type_animation(() => {
@@ -103,7 +112,7 @@ function attr_render(req, $src, n, v) {
 			c.current.set(req.str, v);
 			removeAttribute($src, n);
 		}, req.sync.local, srcBy$src.get($src).id));
-//	}
+//	}*/
 }
 function setClick(req, $src, n) {
 	if ($src.tagName !== "A" || n.toLowerCase() !== "href" || $src.target) {
@@ -132,5 +141,5 @@ function getName(req) {
 	if (n) {
 		return n;
 	}
-	throw check(new Error(">>>Tpl attr:render:01: Need set attribute name"), req.$src, req);
+	throw check(new Error(">>>mw attr:render:01: Need set attribute name"), req.$src, req);
 }

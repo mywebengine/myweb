@@ -15,7 +15,8 @@ export function _go($e, code, s) {
 		removeChild($c.firstChild);
 	}
 	$c.innerHTML = `<div scope="glob" 
-	 is_fiiling1="" filling="console.log(glob.f); return glob.f" on.render="setTimeout(() => glob.f = true, 1000)"
+	is_fiiling1="" filling="console.log(glob.f); return glob.f"
+	on.render="setTimeout(() => glob.f = true, 1000)"
 	exec='!this._init && this.querySelectorAll("script").forEach($s => $s.type === "module" ? import(url) : new Function("glob", $s.textContent).apply(self, [glob[p_target]])); this._init = 1'>${code}</div>`;
 //	$c.innerHTML = `<div scope="glob" exec='!this._init && this.querySelectorAll("script").forEach($s => $s.type === "module" ? import(url) : eval($s.textContent)); this._init = 1'>${code}</div>`;
 	render($c.firstElementChild);

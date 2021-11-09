@@ -5,7 +5,7 @@ import {srcBy$src} from "../descr.js";
 import {eval2} from "../eval2.js";
 import {getRequest, dispatchEvt, check} from "../util.js";
 
-//self.Tpl_fetchDefGetError = undefined;//default error handler
+//self.mw_fetchDefGetError = undefined;//default error handler
 
 export default {
 	render(req) {
@@ -53,8 +53,8 @@ function getRes(req, res, err) {
 		const det = type_fetchDetailEvent(res, err);
 		if (err !== null) {
 			dispatchEvt(req.$src, errorEventName, det);
-//			if (self.Tpl_fetchDefGetError) {
-//				return self.Tpl_fetchDefGetError(det);
+//			if (self.mw_fetchDefGetError) {
+//				return self.mw_fetchDefGetError(det);
 //			}
 			return;
 		}
@@ -65,7 +65,7 @@ function getRes(req, res, err) {
 	}, req.sync.local, 0)), req.sync.local, 0));
 }
 function clearFetch(req) {
-	if (self.Tpl_debugLevel !== 0) {
+	if (self.mw_debugLevel !== 0) {
 		console.info("clear fetch => ", req);
 	}
 	const c = srcBy$src.get(req.$src).cache;

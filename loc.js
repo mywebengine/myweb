@@ -93,8 +93,8 @@ function normalizeUrl_get(url) {
 	//.trim();
 }
 //API
-self.getLoc = getLoc;
-self.setLoc = setLoc;
-self.getUrl = getUrl;
-self.isUri = isUri;
-self.normalizeUrl = normalizeUrl;
+self.mw_getLoc = getLoc;
+self.mw_setLoc = setLoc;
+self.mw_getUrl = getUrl;
+self.mw_isUri = isUri;
+self.mw_normalizeUrl = normalizeUrl;

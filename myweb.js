@@ -14,9 +14,13 @@ import {getLoc, setLoc} from "./loc.js";
 import {getProxy} from "./proxy.js";
 
 const mwUrl = import.meta.url;
-self.Tpl_debugLevel = mwUrl.indexOf("debug=1") !== -1 ? 1 : (mwUrl.indexOf("debug=2") !== -1 ? 2 : 0);
+self.mw_debugLevel = mwUrl.indexOf("debug=1") !== -1 ? 1 : (mwUrl.indexOf("debug=2") !== -1 ? 2 : 0);
 self[globVarName] = getProxy(self[globVarName] || {});
 self[locVarName] = getProxy(getLoc(location.href));
+
+const evtOpt = {
+	passive: true
+};
 
 self.addEventListener("scroll", async () => {
 	const pSet = new Set(),
@@ -51,24 +55,21 @@ self.addEventListener("scroll", async () => {
 		return;
 	}
 	if (scrollSync.size !== 0) {
-console.log("2animation")
+//todo
+console.warn("2animation")
 		renderLoop(scrollSync);
 	}
 
-}, {
-	passive: true
-});
+}, evtOpt);
 self.addEventListener("popstate", () => {
 //console.log('ps', location.href);
 	setLoc(location.href);
-}, {
-	passive: true
-});
+}, evtOpt);
 if (mwUrl.indexOf("skip=1") === -1) {
 	const onload = () => {
-		self.removeEventListener("load", onload);
-		self.removeEventListener("DOMContentLoaded", onload);
-		if (self.Tpl_debugLevel === 0) {
+		self.removeEventListener("load", onload, evtOpt);
+		self.removeEventListener("DOMContentLoaded", onload, evtOpt);
+		if (self.mw_debugLevel === 0) {
 			render(undefined, undefined, undefined, mwUrl.indexOf("tolinking=1") !== -1);
 			return;
 		}
@@ -83,10 +84,10 @@ if (mwUrl.indexOf("skip=1") === -1) {
 			onload();
 		}
 	} else if (document.readyState !== "complete") {
-		self.addEventListener("load", onload);
+		self.addEventListener("load", onload, evtOpt);
 	} else {
 		onload();
 	}
-} else if (self.Tpl_debugLevel !== 0) {
+} else if (self.mw_debugLevel !== 0) {
 	import(mwUrl.replace(/([^\/]+?\.js)/, "getlineno.js"));
 }

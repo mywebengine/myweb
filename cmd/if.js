@@ -91,7 +91,7 @@ export const switchCmd = {
 });*/
 				});
 		}
-		throw check(new Error(">>>Tpl switch:01:Invalide structure: case-cmmand not found"), req.$src, req);
+		throw check(new Error(">>>mw switch:01:Invalide structure: case-cmmand not found"), req.$src, req);
 	}
 };
 //1) прдполагается что если первый скрыт то и все такие же скрыты - и наоборот
@@ -133,7 +133,7 @@ async function if_render(req, val, ifCmdName, elseifCmdName, elseCmdName, testFu
 				break;
 			}
 //			if (pos++ !== beforeAttrCount) {
-//				throw check(new Error(">>>Tpl if:make$first:01 Invalid structure: elseif and else command can be first in this attributes"), $i);
+//				throw check(new Error(">>>mw if:make$first:01 Invalid structure: elseif and else command can be first in this attributes"), $i);
 //			}
 			//!!*3
 			f = false;
@@ -231,7 +231,7 @@ function if_get$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, po
 				}
 			} else if (rc.cmdName === elseifCmdName || rc.cmdName === elseCmdName) {
 				if (l !== 1) {
-					throw check(new Error(">>>Tpl if:make$first:01 Invalid structure: elseif and else command can be first in this attributes"), $i);
+					throw check(new Error(">>>mw if:make$first:01 Invalid structure: elseif and else command can be first in this attributes"), $i);
 				}
 				f = false;
 				break;
@@ -287,7 +287,7 @@ function if_get$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, po
 						}
 					}
 				}
-				throw check(new Error(">>>Tpl if:make$first:02 Invalid structure: inc_begin not found"), $src);
+				throw check(new Error(">>>mw if:make$first:02 Invalid structure: inc_begin not found"), $src);
 			}
 			if (forStr !== "") {
 				const forBeforeLen = forBefore.length;
@@ -322,7 +322,7 @@ function if_get$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, po
 			break;
 		}
 	}
-	throw check(new Error(`>>>Tpl if:ifGet$first:02 Invalid structure: if-command not found - str => "${str}"`), $src);
+	throw check(new Error(`>>>mw if:ifGet$first:02 Invalid structure: if-command not found - str => "${str}"`), $src);
 }
 function if_get$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos) {
 //console.error(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos);
@@ -371,7 +371,7 @@ function if_get$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos)
 				break;
 			}
 //			if (pos++ !== beforeAttrCount) {
-//				throw check(new Error(">>>Tpl if:ifGet$els:01 Invalid structure: elseif and else command can be first in this attributes"), $i);
+//				throw check(new Error(">>>mw if:ifGet$els:01 Invalid structure: elseif and else command can be first in this attributes"), $i);
 //			}
 			//!!*3
 			f = false;

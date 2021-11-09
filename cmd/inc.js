@@ -1,7 +1,7 @@
 import {renderTag, type_req, setReqCmd, type_localCounter, type_animation, type_renderRes} from "../render/render.js";
 //import pimport from "../_pimport.js";
 //import createArrFragment from "../arrfr.js";
-import {Tpl_doc, Tpl_$src, p_target, cmdPref, cmdArgsDiv, cmdArgsDivLen, incCmdName, fetchCmdName, foreachCmdName, elseCmdName, defaultCmdName, onCmdName, isFillingName, isFillingDiv, asOneIdxName, idxName, defRequestInit,
+import {mw_doc, p_target, cmdPref, cmdArgsDiv, cmdArgsDivLen, incCmdName, fetchCmdName, foreachCmdName, elseCmdName, defaultCmdName, onCmdName, isFillingName, isFillingDiv, asOneIdxName, idxName, defRequestInit,
 	reqCmd} from "../config.js";
 import {srcBy$src, getAttrAfter, getAttrItAfter, get$els, type_asOneIdx, type_idx, type_save} from "../descr.js";
 import {preRender, joinText, removeChild, cloneNode, getIdx, setIdx, getTopUrl} from "../dom.js";
@@ -12,8 +12,6 @@ import {getRequest, loadingCount, showLoading, check, ocopy} from "../util.js";
 const waitingStack = new Map();
 export const incCache = new Map();
 const incScriptCache = new Map();
-//self.incCache = incCache;
-//self.waitingStack = waitingStack;
 
 export default {
 	get$els($src, str, expr, pos) {
@@ -135,14 +133,14 @@ function type_incLoading(req) {
 	};
 }
 async function createIncFragment(req, include, html) {
-	const $fr = Tpl_doc.createDocumentFragment(),
-		$div = Tpl_doc.createElement("div");
+	const $fr = mw_doc.createDocumentFragment(),
+		$div = mw_doc.createElement("div");
 	$div.innerHTML = html;
 	for (let $i = $div.firstChild; $i !== null; $i = $div.firstChild) {
 		$fr.appendChild($i);
 	}
-	if (self.createLineNo) {
-		self.createLineNo(include.url, html, $fr);
+	if (self.mw_createLineNo) {
+		self.mw_createLineNo(include.url, html, $fr);
 	}
 	joinText($fr);
 	include.$tags = [...$fr.querySelectorAll("link[rel]")];
@@ -163,13 +161,13 @@ async function createIncFragment(req, include, html) {
 	if (include.$tags.length !== 0) {
 //todo может быть просто вставить?
 //--		req.sync.animations.add(type_animation(() => {//todo- если так сделать то онрендер на тегах не сработает - пусть так
-			if (include.$tags[0].parentNode === Tpl_doc.head) {
+			if (include.$tags[0].parentNode === mw_doc.head) {
 //todo такого не долждно быть - можно удалять
 console.warn("applyIncFragment", include.$tags);
 alert(1);
 			}
 			for (const $i of include.$tags) {
-				Tpl_doc.head.appendChild($i);
+				mw_doc.head.appendChild($i);
 			}
 //--		}, req.sync.local, 0));
 	}
@@ -208,13 +206,13 @@ function createIncScript(req, include, $e) {
 //			return pimport(uurl);
 			return import(uurl)
 				.then(m => {
-					if (self.Tpl_debugLevel !== 0) {//todo
+					if (self.mw_debugLevel !== 0) {//todo
 						URL.revokeObjectURL(uurl);
 					}
 					incToScope(include, m);
 				});
 		} catch (err) {
-			if (self.Tpl_debugLevel !== 0) {//todo
+			if (self.mw_debugLevel !== 0) {//todo
 				URL.revokeObjectURL(uurl);
 			}
 			throw checkScript(err, $e, req);
@@ -235,7 +233,7 @@ function createIncScript(req, include, $e) {
 			if (res.ok) {
 				return res.text();
 			}
-			throw check(new Error(`>>>Tpl inc:createIncScript: Request stat ${res.status}`), req.$src, req);
+			throw check(new Error(`>>>mw inc:createIncScript: Request stat ${res.status}`), req.$src, req);
 		})
 		.then(text => {
 			incScriptCache.set(url, text);
@@ -261,10 +259,10 @@ function checkScript(err, $e, req, url) {
 	if (url) {
 		return check(err, $e, req, null, url, err.lineNumber, err.columnNumber);
 	}
-	if (self.getLineNo === undefined) {
+	if (self.mw_getLineNo === undefined) {
 		return check(err, $e, req);
 	}
-	const line = self.getLineNo($e),
+	const line = self.mw_getLineNo($e),
 		numIdx = line.lastIndexOf(":");
 	return check(err, $e, req, null, line.substr(0, numIdx), Number(line.substr(numIdx + 1)) - 1 + err.lineNumber);
 }
@@ -367,7 +365,7 @@ console.error(1, key, inc?.counter);
 	for (let i = inc.$tags.length - 1; i > -1; i--) {
 		const $i = inc.$tags[i];
 		$i.parentNode.removeChild($i);
-//or		Tpl_doc.head.removeChild($i);
+//or		mw_doc.head.removeChild($i);
 	}
 }*/
 function getNewIncRender(req, include, $src, $last) {
@@ -480,7 +478,7 @@ function cloneIncFragment(req, include, oldVal, loading) {
 					continue;
 				}
 				curAttr.set(a.name, a.value);
-				if (self.Tpl_debugLevel === 0 || a.name.indexOf(idxName) !== 0 && a.name.indexOf(asOneIdxName) !== 0) {//!!имеет смысл только при включеном дебаге
+				if (self.mw_debugLevel === 0 || a.name.indexOf(idxName) !== 0 && a.name.indexOf(asOneIdxName) !== 0) {//!!имеет смысл только при включеном дебаге
 					save.set(a.name, a.value);
 				}
 			}
@@ -498,7 +496,7 @@ function cloneIncFragment(req, include, oldVal, loading) {
 					continue;
 				}
 				curAttr.set(a.name, a.value);
-				if ((self.Tpl_debugLevel === 0 || a.name.indexOf(idxName) !== 0 && a.name.indexOf(asOneIdxName) !== 0) && a.name.indexOf(isFillingName) !== 0) {//!!имеет смысл только при включеном дебаге
+				if ((self.mw_debugLevel === 0 || a.name.indexOf(idxName) !== 0 && a.name.indexOf(asOneIdxName) !== 0) && a.name.indexOf(isFillingName) !== 0) {//!!имеет смысл только при включеном дебаге
 					save.set(a.name, a.value);
 				}
 			}
@@ -507,7 +505,7 @@ function cloneIncFragment(req, include, oldVal, loading) {
 		for (let i = 0; i < attrsLen; i++) {
 			const a = attrs[i];
 			curAttr.set(a.name, a.value);
-			if (self.Tpl_debugLevel === 0 || a.name.indexOf(idxName) !== 0 && a.name.indexOf(asOneIdxName) !== 0) {//!!имеет смысл только при включеном дебаге
+			if (self.mw_debugLevel === 0 || a.name.indexOf(idxName) !== 0 && a.name.indexOf(asOneIdxName) !== 0) {//!!имеет смысл только при включеном дебаге
 				save.set(a.name, a.value);
 			}
 		}
@@ -572,7 +570,7 @@ function cloneIncFragment(req, include, oldVal, loading) {
 		iSrc.idx = type_idx(idx);
 		iSrc.save = save;//!!у всех один и тот же сэйв - но это не должно мешить - в теории можно было бы указать только у первого (что сэйв, что индекс)
 //!!2
-		if (self.Tpl_debugLevel !== 0) {
+		if (self.mw_debugLevel !== 0) {
 			for (const [n, v] of asOneIdx) {
 				$i.setAttribute(asOneIdxName + n, v);
 			}
@@ -590,8 +588,8 @@ function cloneIncFragment(req, include, oldVal, loading) {
 	if (!isR) {//со слотами такая штука: если уже была вставка - это не делаем, так как путаница получиться
 		makeSlots(req, $fr);
 	}
-	$fr.insertBefore(Tpl_doc.createComment("inc_begin"), $fr.firstChild);
-	$fr.appendChild(Tpl_doc.createComment("inc_end"));
+	$fr.insertBefore(mw_doc.createComment("inc_begin"), $fr.firstChild);
+	$fr.appendChild(mw_doc.createComment("inc_end"));
 	return $fr;
 }
 function makeSlots(req, $fr) {
@@ -666,7 +664,7 @@ function inc_get$els($src, str, expr, pos) {
 		}
 		break;
 	}
-	throw check(new Error(`>>>Tpl inc:incGet$els: Not found <!--inc_begin-->: "${str}", "${expr}", ${pos}`), $src);
+	throw check(new Error(`>>>mw inc:incGet$els: Not found <!--inc_begin-->: "${str}", "${expr}", ${pos}`), $src);
 }
 function inc_get$first($src, str, expr, pos) {
 	if ($src.nodeType === 1 && !isRenderdInc($src, str)) {
@@ -698,7 +696,7 @@ function inc_get$first($src, str, expr, pos) {
 		}
 		break;
 	}
-	throw check(new Error(`>>>Tpl inc:incGet$first: Not found <!--inc_begin-->: "${str}", "${expr}", ${pos}`), $src);
+	throw check(new Error(`>>>mw inc:incGet$first: Not found <!--inc_begin-->: "${str}", "${expr}", ${pos}`), $src);
 }
 function getIncCount($i, str, expr, pos) {
 //todo , expr, pos
@@ -735,3 +733,6 @@ function isRenderdInc($i, str) {
 		}
 	}
 }
+//API
+//self.mw_incCache = incCache;
+//self.mw_waitingStack = waitingStack;

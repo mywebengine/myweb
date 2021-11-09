@@ -35,6 +35,12 @@ function html_render(req, $src, val) {
 		return;
 	}
 	req.sync.animations.add(type_animation(() => {
-		c.current.set(req.str, req.reqCmd.args[0] ? ($src.textContent = val) : ($src.innerHTML = val));
+		c.current.set(req.str, val);
+		const m = req.reqCmd.args[0];
+		if (m === undefined || m === "") {
+			$src.textContent = val;
+			return;
+		}
+		$src.innerHTML = val;
 	}, req.sync.local, srcBy$src.get($src).id));
 }

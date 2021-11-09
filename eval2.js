@@ -6,7 +6,7 @@ import {setCur$src, proxyStat} from "./proxy.js";
 import {check} from "./util.js";
 
 const func = Object.getPrototypeOf(async function(){}).constructor,
-	_func = self.Tpl_func || {};
+	_func = self.mw_func || {};
 
 export function eval2(req, $src, isReactive) {
 	//1) isReactive ложь только в _getVal(): _fetch data-_ok, _on

@@ -83,5 +83,5 @@ function getLineNo($e) {
 	return $e.getAttribute(lineNoAttrName);
 }
 //API
-self.createLineNo = createLineNo;
-self.getLineNo = getLineNo;
+self.mw_createLineNo = createLineNo;
+self.mw_getLineNo = getLineNo;

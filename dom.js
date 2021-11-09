@@ -1,13 +1,13 @@
 //import {incCache, incClearByKey} from "./cmd/inc.js";
 import {type_req, type_animation} from "./render/render.js";
 import {type_cacheValue, type_cacheCurrent} from "./cache.js";
-import {Tpl_doc, Tpl_$src, p_topUrl, visibleScreenSize, incCmdName, onCmdName, textCmdName, descrIdName, asOneIdxName, idxName, removeEventName, defEventInit,
+import {mw_doc, mw_$src, p_topUrl, visibleScreenSize, defIdleCallbackOpt, incCmdName, onCmdName, textCmdName, descrIdName, asOneIdxName, idxName, removeEventName, defEventInit,
 	reqCmd} from "./config.js";
 import {$srcById, srcById, srcBy$src, descrById, getNewId, createSrc, type_asOneIdx, type_idx, get$els, getNextStr} from "./descr.js";
 import {varIdByVar, varById, srcIdsByVarId, varIdByVarIdByProp} from "./proxy.js";
 import {loadingCount, check} from "./util.js";
 
-export function preRender($i, isLinking) {// = Tpl_$src) {//todo это не будет работать если после фора идет вставка на много тегов
+export function preRender($i, isLinking) {// = mw_$src) {//todo это не будет работать если после фора идет вставка на много тегов
 	const $parent = $i.parentNode,
 		$p = [],
 		descrAlias = new Map();
@@ -188,7 +188,7 @@ function replaceTextBlocks($src) {
 		$src.parentNode.setAttribute(textCmdName, "`" + text + "`");
 		return $src;
 	}
-	const $t = Tpl_doc.createElement("span");
+	const $t = mw_doc.createElement("span");
 	$t.setAttribute(textCmdName, "`" + text + "`");
 	$src.parentNode.replaceChild($t, $src);
 	createSrc($t);
@@ -214,15 +214,15 @@ function replaceTextBlocks($src) {//, scope) {//когда рендерится 
 //		$src.isTextRendered = true;
 		return $src;
 	}
-	const $fr = Tpl_doc.createDocumentFragment();
+	const $fr = mw_doc.createDocumentFragment();
 	for (let i = 0; i < blocksLen; i++) {
 		const b = blocks[i];
 		if (b.expr) {
-			const $i = $fr.appendChild(Tpl_doc.createElement("span"));
+			const $i = $fr.appendChild(mw_doc.createElement("span"));
 			setAttribute($i, textCmdName, text.substring(b.begin, b.end));
 			continue;
 		}
-		$fr.appendChild(Tpl_doc.createTextNode(text.substring(b.begin, b.end)));
+		$fr.appendChild(mw_doc.createTextNode(text.substring(b.begin, b.end)));
 //			.isTextRendered = true;
 	}
 	const $last = $fr.lastChild;
@@ -319,7 +319,7 @@ export function removeChild($e) {
 //console.time("rem");
 		clearVars(rem);
 //console.timeEnd("rem");
-	});
+	}, defIdleCallbackOpt);
 }
 function clearTag($e, src, rem) {
 //console.log($e, src.id, rem);
@@ -465,7 +465,7 @@ function clearVars(rem) {
 }
 export function cloneNode(req, $e) {//во время клонирования описания не будут созданы - предназначен для клогнирования новго элемента (который ранее не рендерился)
 	if ($e.nodeType === 11) {
-		const $fr = Tpl_doc.createDocumentFragment();
+		const $fr = mw_doc.createDocumentFragment();
 		for ($e = $e.firstChild; $e !== null; $e = $e.nextSibling) {
 			$fr.appendChild(cloneNode(req, $e));
 		}
@@ -502,7 +502,7 @@ export function q_cloneNode(req, sId, beginIdx, len) {//во время клон
 		nStr = getNextStr(src, req.str),
 		$els = nStr !== "" ? get$els($src, src.descr.get$elsByStr, nStr) : [$src],
 		$elsLen = $els.length,
-		$arr = new Array(len),
+		arr = new Array(len),
 		on = [];
 	let fSrc;
 	for (let i = 0, f; i < $elsLen; i++) {
@@ -516,8 +516,8 @@ console.warn($i)
 		break;
 	}
 	if (fSrc === undefined) {
-		console.warn(">>>Tpl dom:q_cloneNode:", req, $els, beginIdx, len);
-		throw check(new Error(`>>>Tpl dom:q_cloneNode: среди элементов для клонирования нет элемента с командой, такого не должно быть`), req.$src, req);
+		console.warn(">>>mw dom:q_cloneNode:", req, $els, beginIdx, len);
+		throw check(new Error(`>>>mw dom:q_cloneNode: среди элементов для клонирования нет элемента с командой, такого не должно быть`), req.$src, req);
 	}
 	const fDescr = fSrc.descr;
 	for (const [n, v] of fDescr.attr) {
@@ -543,7 +543,7 @@ console.warn($i)
 		}
 	}
 	for (let i = 0; i < len; i++) {
-		$arr[i] = new Array($elsLen);
+		arr[i] = type_q$i(new Array($elsLen), i + beginIdx);
 		asOneVal[i] = new Map();
 	}
 	for (let i, idx, j = 0; j < $elsLen; j++) {
@@ -551,13 +551,14 @@ console.warn($i)
 			$j = $els[j];
 		q_cloneNodeCreate($j, $jArr, len, asOneVal, 0, baseAsOne);
 		q_cloneNodeCreateChildren($j, $jArr, len, asOneVal);
-		for (i = 0, idx = beginIdx; i < len; i++, idx++) {
-			const $i = $arr[i][j] = $jArr[i],
+		for (i = 0; i < len; i++) {
+			const arrI = arr[i],
+				$i = arrI.$els[j] = $jArr[i],
 				iSrc = srcBy$src.get($i);
 			if (iSrc === undefined) {
 				continue;
 			}
-			setIdx(iSrc, req.str, idx);
+			setIdx(iSrc, req.str, arrI.idx);
 			if (onLen !== 0) {
 				for (k = 0; k < onLen; k += 3) {
 					const o = on[k];
@@ -569,7 +570,7 @@ console.warn($i)
 			}
 		}
 	}
-	return $arr;
+	return arr;
 }
 /*
 export function ___q_cloneNode(req, $els, beginIdx, len) {//во время клонирования будут созданы описания
@@ -588,8 +589,8 @@ console.log($i)
 		break;
 	}
 	if (fSrc === undefined) {
-		console.warn(">>>Tpl dom:q_cloneNode:", req, $els, beginIdx, len);
-		throw check(new Error(`>>>Tpl dom:q_cloneNode: среди элементов для клонирования нет элемента с командой, такого не должно быть`), req.$src, req);
+		console.warn(">>>mw dom:q_cloneNode:", req, $els, beginIdx, len);
+		throw check(new Error(`>>>mw dom:q_cloneNode: среди элементов для клонирования нет элемента с командой, такого не должно быть`), req.$src, req);
 	}
 	const fDescr = fSrc.descr;
 	for (const [n, v] of fDescr.attr) {
@@ -784,6 +785,12 @@ function q_cloneNodeCreateChildren($i, $arr, $arrLen, asOneVal) {
 		} while (true);
 	} while ($i !== null);
 }
+export function type_q$i($els, idx) {
+	return {
+		$els,
+		idx
+	};
+}
 function type_q_cloneNodeOn(cmd, str, expr) {
 	return {
 		cmd,
@@ -856,7 +863,7 @@ function _show(req, $e) {
 	const $new = $e.content.firstChild;
 	if (!$new || $new.nextSibling !== null) {
 		//todo была ошибка, что $e ет в srcBy$src - овоторить не получается
-		throw check(new Error(">>>Tpl show:01: Template element invalid structure on show function. <template>.content.childNodes.length must be only one element."), $e);
+		throw check(new Error(">>>mw show:01: Template element invalid structure on show function. <template>.content.childNodes.length must be only one element."), $e);
 	}
 	if ($new.nodeType === 1 && srcBy$src.has($e)) {
 		moveProps($e, $new, true);
@@ -874,7 +881,7 @@ export function hide(req, $e) {
 }
 function _hide($e) {
 	let $i = $e;
-	const $new = Tpl_doc.createElement("template"),
+	const $new = mw_doc.createElement("template"),
 		$parent = $i.parentNode,
 		$p = [];
 	do {
@@ -954,7 +961,7 @@ function moveProps($from, $to, isShow) {
 }
 export function is$hide($i) {
 	do {
-		if ($i === Tpl_$src) {
+		if ($i === mw_$src) {
 			return false;
 		}
 		$i = $i.parentNode;
@@ -994,7 +1001,7 @@ export function setAsOneIdx(src, str, idx) {
 	}
 	src.asOneIdx.set(str, idx);
 //!!
-	if (self.Tpl_debugLevel === 0) {
+	if (self.mw_debugLevel === 0) {
 		return;
 	}
 	const $src = $srcById.get(src.id),
@@ -1015,7 +1022,7 @@ export function setIdx(src, str, idx) {
 	}
 	src.idx.set(str, idx);
 //!!
-	if (self.Tpl_debugLevel === 0) {
+	if (self.mw_debugLevel === 0) {
 		return;
 	}
 	const $src = $srcById.get(src.id),
@@ -1032,7 +1039,7 @@ export function getTopUrl(src, str) {
 			return topUrl;
 		}
 	}
-	for (let $i = $srcById.get(src.id).parentNode; $i !== Tpl_$src; $i = $i.parentNode) {
+	for (let $i = $srcById.get(src.id).parentNode; $i !== mw_$src; $i = $i.parentNode) {
 /*--
 		if ($i.nodeType === 11) {//рендер внутри фрагмента возможен, например, for
 //console.log("getTopUrl", $src, str);
@@ -1072,3 +1079,5 @@ function getAttrTopUrl(src, str) {
 	}
 	return topUrl;
 }
+//API
+self.mw_removeChild = removeChild;

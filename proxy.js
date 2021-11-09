@@ -1,19 +1,14 @@
 import {renderBySrcIds} from "./render/algo.js";
 import {type_cacheValue} from "./cache.js";
-import {Tpl_$src, p_target} from "./config.js";
+import {p_target, defIdleCallbackOpt} from "./config.js";
 import {$srcById, srcById, srcBy$src, descrById, getNewId, get$els} from "./descr.js";
 //--import {getIdx} from "./dom.js";
-import {oset} from "./util.js";
+//import {oset} from "./util.js";
 
 export const varIdByVar = new Map();
 export const varById = {};
 export const varIdByVarIdByProp = {};
 export const srcIdsByVarId = new Map();
-//todo close--
-self.varIdByVar = varIdByVar;
-self.varById = varById;
-self.varIdByVarIdByProp = varIdByVarIdByProp;
-self.srcIdsByVarId = srcIdsByVarId;
 
 //todo--
 self._testVars = function() {
@@ -499,8 +494,8 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 	const vIdByProp = varIdByVarIdByProp[tId],
 		oldScalarId = vIdByProp ? vIdByProp.get(n) : 0,
 		oId = oldScalarId ? varIdByVar.get(oldV) : 0;
-	if (self.Tpl_debugLevel === 2) {
-		console.info("Tpl_proxy => setVar", "\n\tname=>", n, "\n\tvalue=>", v, "\n\toldVal=>", oldV, "\n\ttId=>", tId, "\n\ttarget=>", t, "\n\toldId=>", oId, "\n\toldScalarId=>", oldScalarId);
+	if (self.mw_debugLevel === 2) {
+		console.info("mw_proxy => setVar", "\n\tname=>", n, "\n\tvalue=>", v, "\n\toldVal=>", oldV, "\n\ttId=>", tId, "\n\ttarget=>", t, "\n\toldId=>", oId, "\n\toldScalarId=>", oldScalarId);
 	}
 /*
 	if (t[p_isUnshift]) {
@@ -708,7 +703,7 @@ console.log(11111111, sId);
 //						}
 					}
 				}
-			});
+			}, defIdleCallbackOpt);
 		}
 	} else {
 //console.log(1111, n, oldV);
@@ -825,4 +820,9 @@ function delVar(vId, v, t, n, deletedVarId) {
 	}
 }
 //API
-self.getProxy = getProxy;
+self.mw_getProxy = getProxy;
+//todo close--
+self.mw_varIdByVar = varIdByVar;
+self.mw_varById = varById;
+self.mw_varIdByVarIdByProp = varIdByVarIdByProp;
+self.mw_srcIdsByVarId = srcIdsByVarId;

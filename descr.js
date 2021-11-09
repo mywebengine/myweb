@@ -9,14 +9,8 @@ import {loadingCount} from "./util.js";
 export const $srcById = new Map();
 export const srcById = new Map();
 export const srcBy$src = new WeakMap();
-export const descrById = self.Tpl_descrById || new Map();
-export let idCurVal = self.Tpl_idCurVal || 0;
-
-//todo close --
-self.$srcById = $srcById;
-self.srcById = srcById;
-self.srcBy$src = srcBy$src;
-self.descrById = descrById;
+export const descrById = self.mw_descrById || new Map();
+export let idCurVal = self.mw_idCurVal || 0;
 
 export function getNewId() {
 	return ++idCurVal;
@@ -25,10 +19,10 @@ export function createSrc($e, descr, asOneIdx, idx) {//вызов этой фу�
 	const sId = getNewId();
 //!!!
 	if (descr === undefined) {
-//(1)	if (1) {
+//	if (1) {
 		descr = createDescr($e, sId);
 		const src = descr.attr !== null ? type_src(sId, descr, true, null, null, type_cache()) : type_src(sId, descr, false, null, null, null);
-//(1)if (descr.asOnes !== null && asOneIdx !== undefined) {src.asOneIdx = asOneIdx;return src;}
+//if (descr.asOnes !== null && asOneIdx !== undefined) {src.asOneIdx = asOneIdx;}
 		$srcById.set(sId, $e);
 		srcById.set(sId, src);
 		srcBy$src.set($e, src);
@@ -246,3 +240,9 @@ export function getAttrItAfter(attrIt, name, isValues) {
 	}
 	return attrIt;
 }
+//API
+//todo close --
+self.mw_$srcById = $srcById;
+self.mw_srcById = srcById;
+self.mw_srcBy$src = srcBy$src;
+self.mw_descrById = descrById;
