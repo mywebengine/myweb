@@ -41,4 +41,6 @@
 14) сервер
 	+17) $i[p_topUrl]
 	+18) //todo $src._isInit
-20) mapo set
+20) //todo
+//console.log($e, n, v);
+			await eval2(type_req($e, n, v, req.scope, req.sync), $e, true);//привязываем к новым тегам команды ДО

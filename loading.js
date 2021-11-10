@@ -11,7 +11,7 @@ export async function showLoading($e, testFunc, type = "", waitTime) {
 			l = loadingCount.get(lKey);
 		if (await testFunc()) {
 			if (l !== undefined) {
-				_decLoading($e, type, l);
+				decLoading($e, type, l);
 			}
 			return;
 		}
@@ -21,7 +21,9 @@ export async function showLoading($e, testFunc, type = "", waitTime) {
 		}
 		if (waitTime < 0) {
 			toggleLoading($e, "", true, ll);
-			toggleLoading($e, type, true, ll);
+			if (type !== "") {
+				toggleLoading($e, type, true, ll);
+			}
 			return;
 		}
 		toggleLoading($e, "", true, ll);
@@ -29,7 +31,7 @@ export async function showLoading($e, testFunc, type = "", waitTime) {
 			return;
 		}
 		setTimeout(async () => {
-			if (!await testFunc() && loadingCount.has(lKey)) {
+			if (!await testFunc()) {// && loadingCount.has(lKey)) {
 				toggleLoading($e, type, true, ll);
 			}
 		}, waitTime);
@@ -56,7 +58,7 @@ function getLoadingKey($src) {
 	loadingCount.set(src.id, l);
 	return src.id;
 }
-function _decLoading($e, type, l) {
+function decLoading($e, type, l) {
 	if (type !== "") {
 		const v = l.get(type) - 1
 		l.set(type, v);

@@ -6,7 +6,7 @@ import {mw_doc, p_target, cmdPref, cmdArgsDiv, cmdArgsDivLen, incCmdName, fetchC
 import {srcBy$src, getAttrAfter, getAttrItAfter, get$els, type_asOneIdx, type_idx, type_save} from "../descr.js";
 import {preRender, joinText, removeChild, cloneNode, getIdx, setIdx, getTopUrl} from "../dom.js";
 import {eval2, q_eval2} from "../eval2.js";
-import {loadingCount, showLoading} from "./loading.js";
+import {loadingCount, showLoading} from "../loading.js";
 import {getUrl} from "../loc.js";
 import {getRequest, check, ocopy} from "../util.js";
 
@@ -25,6 +25,8 @@ export default {
 	render(req) {
 		return eval2(req, req.$src, true)
 			.then(val => inc_render(req, val));
+//			.then(val => getIncude(req, val))
+//			.then(include => inc_render(req, include));
 	},
 	q_render(req, arr, isLast) {
 		return q_eval2(req, arr, isLast)
@@ -34,9 +36,20 @@ export default {
 				for (let i = 0; i < arrLen; i++) {
 					if (!isLast.has(i)) {
 						res[i] = inc_render(type_req(arr[i].$src, req.str, req.expr, arr[i].scope, req.sync), vals[i]);
+//						res[i] = getIncude(req, vals[i]);
 					}
 				}
 				return res;
+/*
+				return Promise.all(res)
+					.then(includes => {
+						for (let i = 0; i < arrLen; i++) {
+							if (!isLast.has(i)) {
+								res[i] = inc_render(type_req(arr[i].$src, req.str, req.expr, arr[i].scope, req.sync), includes[i]);
+							}
+						}
+						return res;
+					});*/
 			});
 	}
 };
@@ -63,6 +76,7 @@ function inc_render(req, val) {
 //console.log(111, req, $els, oldVal, srcBy$src.get(req.$src), include);
 //alert(1);
 	//если выражение вернуло Request или Response, то такой запрос будет всегда запрашиваться
+//todo если объект тогда новый
 	if ($elsLen !== 1 && oldVal === include.key) {//уже в доме
 //console.log(444, $els, req, `${$elsLen} !== 1 && ${oldVal} === ${include.key}`, $elsLen !== 1 && oldVal === include.key);
 //alert(22);
@@ -75,10 +89,10 @@ function inc_render(req, val) {
 	}
 	const loading = type_incLoading(req);
 	if (loading.isShow) {
-		showLoading(req.$src, () => false, loading.type, loading.waitTime);
+		showLoading(req.$src, () => include.readyState === "complete", loading.type, loading.waitTime);
 	}
 	if (!waitingStack.has(include.key)) {
-		waitingStack.set(include.url, (include.res === null ? fetch(include.req)
+		waitingStack.set(include.key, (include.res === null ? fetch(include.req)
 			.then(res => res.text()) : include.res.text())
 			.then(html => {
 				waitingStack.delete(include.key);
@@ -96,6 +110,13 @@ function getIncude(req, val) {
 		if (r === null) {
 			return null;
 		}
+//todo так как у респонса неполчится узнать гет ли он - то все добовляем кэш А  при использовании в строке в фетч - он всегда будет разный ...
+		if (r.method === "GET" || r.method === undefined) {
+			const include = incCache.get(r.url);
+			if (include !== undefined) {
+				return include;
+			}
+		}
 		const inc = r instanceof Request ? type_include("loading", r.url, r, null) : type_include("loading", r.url, null, r);
 		incCache.set(inc.key, inc);
 		return inc;
@@ -106,12 +127,13 @@ function getIncude(req, val) {
 		return include;
 	}
 	const inc = type_include("loading", r.url, r, null);
-	incCache.set(inc.key, inc);
+	incCache.set(inc.url, inc);
 	return inc;
 }
 function type_include(readyState, url, req, res) {
 	return {
-		key: url !== "" ? url : (res === null ? req : res),
+//		key: req === null ? (res === null ? url : res) : (req.method === "GET" ? url : req),
+		key: req === null ? url : (req.method === "GET" ? url : req),
 		readyState,
 		url,
 		req,
@@ -126,8 +148,8 @@ function type_incLoading(req) {
 		a1 = req.reqCmd.args[1];
 	return {
 		isShow: a1 !== "" && a1 !== undefined || a0 !== "" && a0 !== undefined,
-		type: a0,
-		waitTime: a1
+		type: a0 !== "" && a0 !== undefined ? a0 : "",
+		waitTime: a1 !== "" && a1 !== undefined ? a1 : "",
 	};
 }
 async function createIncFragment(req, include, html) {
@@ -161,7 +183,7 @@ async function createIncFragment(req, include, html) {
 //--		req.sync.animations.add(type_animation(() => {//todo- если так сделать то онрендер на тегах не сработает - пусть так
 			if (include.$tags[0].parentNode === mw_doc.head) {
 //todo такого не долждно быть - можно удалять
-console.warn("applyIncFragment", include.$tags);
+console.warn("applyIncFragment", include.$tags, req);
 alert(1);
 			}
 			for (const $i of include.$tags) {
@@ -242,7 +264,7 @@ function incToScope(include, m) {
 	include.scope = {};
 	for (const i in m) {
 		const j = m[i];
-		include.scope[j.name] = j;
+		include.scope[j.name !== undefined ? j.name : i] = j;
 	}
 }
 function runIncScript(req, text, $e, url) {
@@ -289,20 +311,9 @@ function getNewIncInsert(req, oldVal, $els, $elsLen, $new, $src) {
 		$lastNext = $els[$elsLen - 1].nextSibling,
 		src = srcBy$src.get(req.$src);
 	for (let i = 0; i < $elsLen; i++) {
-/*
-//todo--
-if ($els[i].parentNode !== $parent) {
-	console.warn("$parent", $els[i], $els, req);
-	alert(1);
-	continue;
-}*/
 		const iSrc = srcBy$src.get($els[i]);
 		if (iSrc !== undefined) {
 			const l = req.sync.local.get(iSrc.id);
-//if (!l) {
-//	console.log(req, iSrc.id);
-//	alert(1)
-//}
 			l.animationsCount = -1;
 			l.newSrcId = newSrcId;
 			if (iSrc.id === req.sync.renderParam.sId) {// && $els[i][p_srcId] !== req.$src[p_srcId]) {
@@ -386,7 +397,7 @@ async function renderNewInc(req, $e) {
 //todo наверное всё же не так! для иквов фетчей это может стать проблемой
 		if (v && cn !== elseCmdName && cn !== defaultCmdName && cn !== onCmdName) {
 //todo
-//console.log($e, n, v);
+console.warn(n, v);
 			await eval2(type_req($e, n, v, req.scope, req.sync), $e, true);//привязываем к новым тегам команды ДО
 		}
 		if (n === req.str) {
@@ -456,56 +467,40 @@ function cloneIncFragment(req, include, oldVal, loading) {
 		asOneIdx.delete(n);
 		idx.delete(n);
 	}
-//!!2	idx.set(req.str, include.url);
 	if (isR) {
 		for (const [n, v] of save) {
 			curAttr.set(n, v);
 		}
-//		if (curAttr.size === 0) {
-//todo !!!
-//			console.warn(req);
-//			alert(3333333);
-//		}
-	} else if (loading.isShow) {
-		const sId = src.id,
-			l = loadingCount.get(sId);
-console.log(12, sId, loading, l)
-alert(2)
-		if (l.get("") === 1) {
-			for (let i = 0; i < attrsLen; i++) {
-				const a = attrs[i];
-				if (a.name.indexOf(isFillingName) === 0) {
-					continue;
-				}
-				curAttr.set(a.name, a.value);
-				if (self.mw_debugLevel === 0 || a.name.indexOf(idxName) !== 0 && a.name.indexOf(asOneIdxName) !== 0) {//!!имеет смысл только при включеном дебаге
-					save.set(a.name, a.value);
-				}
+//todo--
+if (curAttr.size === 0) {
+	console.warn(req);
+	alert(3333333);
+}
+	} else {
+		const skipAttrs = new Set();
+		if (loading !== null && loading.isShow) {
+			const sId = src.id,
+				l = loadingCount.get(sId),
+				lCount = l.get("") - 1;
+			l.set("", lCount);
+			if (lCount <= 0) {
+				skipAttrs.add(isFillingName);
 			}
-			loadingCount.delete(sId);
-		} else {
-			l.set("", l.get("") - 1);
-//todo
 			if (loading.type !== "") {
-				l.set(loading.type, l.get(loading.type) - 1);
-			}
-			const lName = loading.type !== "" ? isFillingName + isFillingDiv + loading.type : isFillingName;
-			for (let i = 0; i < attrsLen; i++) {
-				const a = attrs[i];
-				if (a.name === lName) {
-					continue;
-				}
-				curAttr.set(a.name, a.value);
-				if ((self.mw_debugLevel === 0 || a.name.indexOf(idxName) !== 0 && a.name.indexOf(asOneIdxName) !== 0) && a.name.indexOf(isFillingName) !== 0) {//!!имеет смысл только при включеном дебаге
-					save.set(a.name, a.value);
+				const lCount = l.get(loading.type) - 1;
+				l.set(loading.type, lCount);
+				if (lCount <= 0) {
+					skipAttrs.add(isFillingName + isFillingDiv + loading.type);
 				}
 			}
 		}
-	} else {
 		for (let i = 0; i < attrsLen; i++) {
 			const a = attrs[i];
+			if (skipAttrs.has(a.name)) {
+				continue;
+			}
 			curAttr.set(a.name, a.value);
-			if (self.mw_debugLevel === 0 || a.name.indexOf(idxName) !== 0 && a.name.indexOf(asOneIdxName) !== 0) {//!!имеет смысл только при включеном дебаге
+			if ((self.mw_debugLevel !== 0 || a.name.indexOf(idxName) !== 0 && a.name.indexOf(asOneIdxName) !== 0) && a.name.indexOf(isFillingName) !== 0) {
 				save.set(a.name, a.value);
 			}
 		}
@@ -521,12 +516,12 @@ alert(2)
 			const a = iAttrs[i];
 			newAttr.set(a.name, a.value);
 		}
-//		for (const n of rem) {
-//			$i.removeAttribute(n);
-//		}
-		const cAttrIt = curAttr.entries(),
+		for (const n of newAttr.keys()) {
+			$i.removeAttribute(n);
+		}
+		const curAttrIt = curAttr.entries(),
 			nSet = new Set();
-		for (let i = cAttrIt.next(); !i.done; i = cAttrIt.next()) {
+		for (let i = curAttrIt.next(); !i.done; i = curAttrIt.next()) {
 			const [n, v] = i.value;
 			$i.removeAttribute(n);
 			$i.setAttribute(n, v);
@@ -547,7 +542,7 @@ alert(2)
 				nSet.add(nn);
 				$i.setAttribute(nn, v);
 			}
-			for (i = cAttrIt.next(); !i.done; i = cAttrIt.next()) {
+			for (i = curAttrIt.next(); !i.done; i = curAttrIt.next()) {
 				const [n, v] = i.value;
 				if (!setReqCmd(n)) {
 					$i.removeAttribute(n);

@@ -2,7 +2,7 @@ import {renderTag, q_renderTag, dispatchLocalEvents, type_isLast, type_q_arr, ty
 import {mw_$src, renderPackSize, lazyRenderName, defIdleCallbackOpt} from "../config.js";
 import {$srcById, srcById, srcBy$src, descrById, get$els} from "../descr.js";
 import {preRender, is$hide, is$visible, isAnimationVisible} from "../dom.js";
-import {loadingCount} from "./loading.js";
+import {loadingCount} from "../loading.js";
 
 const renderParams = new Set();
 let mw_delay = 0,
@@ -781,14 +781,21 @@ function getPosStat(sync, newRenderParam) {
 			}
 		}
 	} else {
-		const $elsLen = newRenderParam.$els.length;
-		for (let i, $i = $sync; $i !== $top; $i = $i.parentNode) {
-			for (i = 0; i < $elsLen; i++) {
-				const iId = srcBy$src.get($i).id;
-				if (iId === srcBy$src.get(newRenderParam.$els[i]).id) {//если будет большой делаэй, то новый параметр могут скрыть - и поэтому нужнго по ид
-					return iId === syncSrcId ? 2 : 1;
-//				if ($i === newRenderParam.$els[i]) {
-//					return srcBy$src.get($i).id === syncSrcId ? 2 : 1;
+		const $els = newRenderParam.$els,
+			$elsLen = $els.length;
+		for (let j, $i = $sync; $i !== $top; $i = $i.parentNode) {
+//			const iId = srcBy$src.get($i).id;
+			for (j = 0; j < $elsLen; j++) {
+				const $j = $els[j];//,
+//					jSrc = srcBy$src.get($j);
+//				if (jSrc === undefined) {
+//					continue;
+//				}
+//				const jId = jSrc.id;
+//				if (jId === iId) {//если будет большой делаэй, то новый параметр могут скрыть - и поэтому нужнго по ид
+//					return iId === syncSrcId ? 2 : 1;
+				if ($j === $i) {
+					return srcBy$src.get($i).id === syncSrcId ? 2 : 1;
 				}
 			}
 		}

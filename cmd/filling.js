@@ -1,5 +1,5 @@
 ﻿import {eval2} from "../eval2.js";
-import {showLoading} from "../util.js";
+import {showLoading} from "../loading.js";
 
 export default {
 	render(req) {

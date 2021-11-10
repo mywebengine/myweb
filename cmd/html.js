@@ -37,7 +37,7 @@ function html_render(req, $src, val) {
 	req.sync.animations.add(type_animation(() => {
 		c.current.set(req.str, val);
 		const m = req.reqCmd.args[0];
-		if (m === undefined || m === "") {
+		if (m !== undefined && m !== "") {
 			$src.textContent = val;
 			return;
 		}

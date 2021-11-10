@@ -264,6 +264,11 @@ function type_mustacheBlock(begin, end, expr) {
 }*/
 export function removeChild($e) {
 //console.error("remC", srcBy$src.get($e), $e);
+//todo
+//if (!$e.parentNode) {
+//	console.error($e);
+//	alert(11)
+//}
 	$e.parentNode.removeChild($e);
 	$e.dispatchEvent(new CustomEvent(removeEventName, defEventInit));
 	const rem = new Map();
@@ -478,6 +483,11 @@ export function cloneNode(req, $e) {//во время клонирования �
 	}
 	const $on = $n.nodeName !== "TEMPLATE" ? $n : $n.content.firstChild,
 		src = srcBy$src.get(req.$src);//todo а что если это просто тег?
+//todo
+if (!src) {
+console.error(req, src, $n)
+alert(1)
+}
 	for (const [n, v] of src.descr.attr) {
 		if (n === req.str) {
 			break;

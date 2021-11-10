@@ -41,6 +41,9 @@ export function renderTag($src, scope, attr, sync) {
 	}
 	return attrRender($src, scope, attr, sync)
 		.then(res => {
+			if (sync.stat !== 0) {
+				return $src;
+			}
 			if ($src !== res.$src) {
 				$src = res.$src;
 			}
@@ -49,9 +52,10 @@ export function renderTag($src, scope, attr, sync) {
 				return $ret;
 			}
 //todo если мы дошли до сюда - то тег изменился а дети остались теми же - этого не должно быть - должны были ути по isLast
-if (srcBy$src.get($src).id !== sId) {
-	console.warn(2222222);
-}
+//			if (sync.stat !== 0) {//srcBy$src.get($src)?.id !== sId) {
+//				console.warn(sync.stat, "todo если мы дошли до сюда - то тег изменился а дети остались теми же - этого не должно быть - должны были ути по isLast");
+//				return null;
+//			}
 			return renderChildren($src, scope, sync, sId, $ret);
 		});
 }

@@ -25,7 +25,7 @@ export default {
 };
 function exec_render(req, scope, val) {
 	const n = req.reqCmd.args[0];
-	if (n) {
+	if (n !== undefined && n !== "") {
 		scope[p_target][kebabToCamelStyle(n)] = val;
 	}
 }

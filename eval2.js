@@ -156,12 +156,13 @@ return _tpl_val;`;
 		throw check(err, req.$src, req);
 	}
 }
-const _e = ["if", "for", "while", "switch" , "do", "try", "catch", "with", "var", "let", "const"];
+const _e = ["with", "var", "try", "catch", "switch" , "do", "while", "let", "const", "for", "if"];
 function isNeedRet(expr) {
 	if (expr === "") {
 		return false;
 	}
 	expr = clearBlock(clearBlock(clearBlock(clearBlock(clearBlock(expr, "'", "'"), "`", "`"), "\"", "\""), "{", "}"), "(", ")");
+//console.log(expr)
 	for (let i = _e.length - 1; i > -1; i--) {
 		const j = expr.indexOf(_e[i]);
 		if (j === -1) {
@@ -174,10 +175,13 @@ function isNeedRet(expr) {
 			case "\n":
 			case "\t":
 			case "\r":
+//console.log(1, _e[i]);
 				return false;
 		}
-		return true;
+//console.log(2, _e[i]);
+//		return true;
 	}
+//console.log(3);
 	return true;
 }
 function clearBlock(str, begin, end) {
@@ -203,6 +207,8 @@ function clearBlock(str, begin, end) {
 	}
 	return str;
 }
+//self.clearBlock = clearBlock;
+//self.isNeedRet = isNeedRet;
 /*--
 //todo-- attr and get$props
 export function getVal($src, scope, name, isReactive) {
