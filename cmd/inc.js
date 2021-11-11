@@ -3,11 +3,12 @@ import {renderTag, type_req, setReqCmd, type_localCounter, type_animation, type_
 //import createArrFragment from "../arrfr.js";
 import {mw_doc, p_target, cmdPref, cmdArgsDiv, cmdArgsDivLen, incCmdName, fetchCmdName, foreachCmdName, elseCmdName, defaultCmdName, onCmdName, isFillingName, isFillingDiv, asOneIdxName, idxName, defRequestInit,
 	reqCmd} from "../config.js";
-import {srcBy$src, getAttrAfter, getAttrItAfter, get$els, type_asOneIdx, type_idx, type_save} from "../descr.js";
+import {srcById, srcBy$src, getAttrAfter, getAttrItAfter, get$els, type_asOneIdx, type_idx, type_save} from "../descr.js";
 import {preRender, joinText, removeChild, cloneNode, getIdx, setIdx, getTopUrl} from "../dom.js";
 import {eval2, q_eval2} from "../eval2.js";
 import {loadingCount, showLoading} from "../loading.js";
 import {getUrl} from "../loc.js";
+import {srcIdsByVarId} from "../proxy.js";
 import {getRequest, check, ocopy} from "../util.js";
 
 const waitingStack = new Map();
@@ -80,7 +81,9 @@ function inc_render(req, val) {
 	if ($elsLen !== 1 && oldVal === include.key) {//уже в доме
 //console.log(444, $els, req, `${$elsLen} !== 1 && ${oldVal} === ${include.key}`, $elsLen !== 1 && oldVal === include.key);
 //alert(22);
-		return $elsLen > 3 ? getInc(req, include, $els, $elsLen) : null;//если много тегов, тогда ренедрим их или продолжаем рендер следующей команды
+//		return $elsLen > 3 ? getInc(req, include, $els, $elsLen) : null;//если много тегов, тогда ренедрим их или продолжаем рендер следующей команды
+		return $elsLen > 3 ? renderI(req, $els[0], $els[$elsLen - 1], renderInc)
+			.then($last => readyInc(req, include, $last)) : null;//если много тегов, тогда ренедрим их или продолжаем рендер следующей команды
 	}
 	const $last = $els[$elsLen - 1];
 	if (include.readyState === "complete") {
@@ -110,7 +113,7 @@ function getIncude(req, val) {
 		if (r === null) {
 			return null;
 		}
-//todo так как у респонса неполчится узнать гет ли он - то все добовляем кэш А  при использовании в строке в фетч - он всегда будет разный ...
+//todo так как у респонса неполчится узнать гет ли он - то все добовляем кэш - А при использовании в строке в фетч - он всегда будет разный ...
 		if (r.method === "GET" || r.method === undefined) {
 			const include = incCache.get(r.url);
 			if (include !== undefined) {
@@ -214,7 +217,7 @@ function createIncScript(req, include, $e) {
 			try {
 //				return pimport(url);
 				return import(url)
-					.then(m => incToScope(include, m));
+					.then(m => incToScope(m, include));
 			} catch (err) {
 				throw checkScript(err, $e, req, url);
 			}
@@ -229,7 +232,7 @@ function createIncScript(req, include, $e) {
 					if (self.mw_debugLevel !== 0) {//todo
 						URL.revokeObjectURL(uurl);
 					}
-					incToScope(include, m);
+					incToScope(m, include);
 				});
 		} catch (err) {
 			if (self.mw_debugLevel !== 0) {//todo
@@ -260,11 +263,19 @@ function createIncScript(req, include, $e) {
 			runIncScript(req, text, $e, url);
 		});
 }
-function incToScope(include, m) {
+function incToScope(m, include) {
 	include.scope = {};
 	for (const i in m) {
 		const j = m[i];
 		include.scope[j.name !== undefined ? j.name : i] = j;
+	}
+}
+function scopeToInc(include, req) {
+	if (include.scope === null) {
+		return;
+	}
+	for (const n in include.scope) {
+		req.scope[p_target][n] = include.scope[n];
 	}
 }
 function runIncScript(req, text, $e, url) {
@@ -296,7 +307,12 @@ function getNewInc(req, include, oldVal, $els, $elsLen, loading) {
 //		req.sync.afterAnimations.add(type_animation(() => getNewIncRender(req, include, $src, $last), req.sync.local, 0));
 //	}, req.sync.local, 0));
 	req.sync.animations.add(type_animation(() => getNewIncInsert(req, oldVal, $els, $elsLen, $new, $src), req.sync.local, 0));
-	req.sync.afterAnimations.add(type_animation(() => getNewIncRender(req, include, $src, $last), req.sync.local, 0));
+//	req.sync.afterAnimations.add(type_animation(() => getNewIncRender(req, include, $src, $last), req.sync.local, 0));
+	req.sync.afterAnimations.add(type_animation(() => {
+		scopeToInc(include, req);
+		return renderI(req, $src, $last, renderNewInc)
+			.then($last => readyInc(req, include, $last));
+	}, req.sync.local, 0))
 }
 function getNewIncInsert(req, oldVal, $els, $elsLen, $new, $src) {
 	let newSrcId = 0;
@@ -310,37 +326,39 @@ function getNewIncInsert(req, oldVal, $els, $elsLen, $new, $src) {
 	const $parent = $els[0].parentNode,
 		$lastNext = $els[$elsLen - 1].nextSibling,
 		src = srcBy$src.get(req.$src);
-	for (let i = 0; i < $elsLen; i++) {
-		const iSrc = srcBy$src.get($els[i]);
-		if (iSrc !== undefined) {
-			const l = req.sync.local.get(iSrc.id);
-			l.animationsCount = -1;
-			l.newSrcId = newSrcId;
-			if (iSrc.id === req.sync.renderParam.sId) {// && $els[i][p_srcId] !== req.$src[p_srcId]) {
-				req.sync.renderParam.sId = newSrcId;
-//				continue;
-			}
-		}
-		removeChild($els[i]);
-/*
-		for (let $i = $src;;) {
-			const iSrc = srcBy$src.get($i);
-			if (iSrc !== undefined) {
-console.warn(req.sync.renderParam.sId, iSrc.id);
-alert(1)
-				req.sync.renderParam.sId = iSrc.id;
-				//!!переписывать req.$src в данном случаи не имет смысла
-				break;
-			}
-			$i = $i.nextSibling;
-			if ($i === null) {
-				break;
-			}
-		}
-		for (i++; i < $elsLen; i++) {
+	for (let iSrc, i = 0;; i++) {
+		iSrc = srcBy$src.get($els[i]);
+		if (iSrc === undefined) {
 			removeChild($els[i]);
+			continue;
 		}
-		break;*/
+		if (newSrcId !== 0) {
+			const vIds = srcById.get(newSrcId).descr.varIds;
+			for (const vId of iSrc.descr.varIds) {
+				vIds.add(vId);
+				const sIds = srcIdsByVarId.get(vId);
+if (sIds === undefined) {
+//todo
+console.warn("inc.js");
+alert(1)
+//					continue;
+}
+				sIds.add(newSrcId);
+			}
+		}
+		do {
+			if (iSrc !== undefined) {
+				const l = req.sync.local.get(iSrc.id);
+				l.animationsCount = -1;
+				l.newSrcId = newSrcId;
+				if (iSrc.id === req.sync.renderParam.sId) {// && $els[i][p_srcId] !== req.$src[p_srcId]) {
+					req.sync.renderParam.sId = newSrcId;
+				}
+			}
+			removeChild($els[i]);
+			iSrc = srcBy$src.get($els[i]);
+		} while (++i < $elsLen);
+		break;
 	}
 //todo	if (oldVal !== undefined) {
 //		incClear(req.str, src, oldVal);
@@ -377,18 +395,20 @@ console.error(1, key, inc?.counter);
 //or		mw_doc.head.removeChild($i);
 	}
 }*/
-function getNewIncRender(req, include, $src, $last) {
-	if (include.scope !== null) {
-		for (const n in include.scope) {
-			req.scope[p_target][n] = include.scope[n];
-		}
-	}
-	return renderI(req, $src, $last, renderNewInc)
-		.then($last => readyInc(req, include, $last));
-}
+//function getNewIncRender(req, include, $src, $last) {
+//	if (include.scope !== null) {
+//		for (const n in include.scope) {
+//			req.scope[p_target][n] = include.scope[n];
+//		}
+//	}
+//	return renderI(req, $src, $last, renderNewInc)
+//		.then($last => readyInc(req, include, $last));
+//}
 async function renderNewInc(req, $e) {
+/*
 	const afterAttr = new Map(),
-		attrIt = srcBy$src.get($e).descr.attr.entries();
+		descr = srcBy$src.get($e).descr,
+		attrIt = descr.attr.entries();
 	for (let i = attrIt.next(); !i.done; i = attrIt.next()) {
 		const [n, v] = i.value,
 			cn = reqCmd[n].cmdName;
@@ -400,20 +420,22 @@ async function renderNewInc(req, $e) {
 console.warn(n, v);
 			await eval2(type_req($e, n, v, req.scope, req.sync), $e, true);//привязываем к новым тегам команды ДО
 		}
-		if (n === req.str) {
-			break;
+		if (n !== req.str) {
+			continue;
 		}
+		for (i = attrIt.next(); !i.done; i = attrIt.next()) {
+			afterAttr.set(i.value[0], i.value[1]);
+		}
+		return renderTag($e, req.scope, afterAttr, req.sync);
 	}
-	for (let i = attrIt.next(); !i.done; i = attrIt.next()) {
-		afterAttr.set(i.value[0], i.value[1]);
-	}
-	return renderTag($e, req.scope, afterAttr, req.sync);
+	throw new Error("inc.js");*/
+	return renderTag($e, req.scope, getAttrAfter(srcBy$src.get($e).descr.attr, req.str), req.sync);
 }
 //current
-function getInc(req, include, $els, $elsLen) {
-	return renderI(req, $els[0], $els[$elsLen - 1], renderInc)
-		.then($last => readyInc(req, include, $last));
-}
+//function getInc(req, include, $els, $elsLen) {
+//	return renderI(req, $els[0], $els[$elsLen - 1], renderInc)
+//		.then($last => readyInc(req, include, $last));
+//}
 function renderInc(req, $e) {
 	return renderTag($e, req.scope, getAttrAfter(srcBy$src.get($e).descr.attr, req.str), req.sync);
 }
@@ -471,11 +493,6 @@ function cloneIncFragment(req, include, oldVal, loading) {
 		for (const [n, v] of save) {
 			curAttr.set(n, v);
 		}
-//todo--
-if (curAttr.size === 0) {
-	console.warn(req);
-	alert(3333333);
-}
 	} else {
 		const skipAttrs = new Set();
 		if (loading !== null && loading.isShow) {
@@ -729,5 +746,5 @@ function isRenderdInc($i, str) {
 	}
 }
 //API
-//self.mw_incCache = incCache;
+self.mw_incCache = incCache;
 //self.mw_waitingStack = waitingStack;

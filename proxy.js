@@ -3,7 +3,6 @@ import {type_cacheValue} from "./cache.js";
 import {p_target, defIdleCallbackOpt} from "./config.js";
 import {$srcById, srcById, srcBy$src, descrById, getNewId, get$els} from "./descr.js";
 //--import {getIdx} from "./dom.js";
-//import {oset} from "./util.js";
 
 export const varIdByVar = new Map();
 export const varById = {};
@@ -151,7 +150,11 @@ export function getProxy(v) {
 	}
 	for (const i in v) {
 		const val = v[i];
-		if (typeof val === "object" && val !== null && val !== v && Object.getOwnPropertyDescriptor(v, i)?.writable) {
+		if (typeof val !== "object" || val === null || val === v) {
+			continue;
+		}
+		const d = Object.getOwnPropertyDescriptor(v, i);
+		if (d !== undefined && d.writable) {
 			v[i] = getProxy(val);
 		}
 	}

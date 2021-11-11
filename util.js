@@ -3,16 +3,7 @@ import {srcBy$src} from "./descr.js";
 import {getUrl} from "./loc.js";
 //import {getProxy} from "./proxy.js";
 
-//--todo
-//export const spaceRe = /\s+/g;
-
-export function check(res, $src, req, scope, fileName, lineNum, colNum) {
-	if (!(res instanceof Error)) {
-//todo
-console.warn("check", res);
-alert(222);
-		return;
-	}
+export function check(err, $src, req, scope, fileName, lineNum, colNum) {
         let errMsg = ">>>mw error";
         if (self.mw_getLineNo !== undefined) {
         	const pos = self.mw_getLineNo($src) || self.mw_getLineNo($src.parentNode);//todo зачем смотреть родителя?
@@ -20,12 +11,12 @@ alert(222);
 	        	errMsg += ` in ${pos}`;
 	        }
         }
-	errMsg += `\n${res.toString()}`;
+	errMsg += "\n" + err.toString();
 	const params = [];
-	params.push(`\n$src =>`, $src, `\nsId =>`, srcBy$src.get($src)?.id);
+	params.push("\n$src =>", $src, "\nsId =>", srcBy$src.get($src)?.id);
 	if (req) {
 		params.push("\nreq =>", req);
-	        params.push(`\n${req.str} =>`, req.expr);
+	        params.push("\n" + req.str + " =>", req.expr);
 	}
 	if (scope) {
 		params.push("\nscope =>", scope);
@@ -33,12 +24,40 @@ alert(222);
 	if (self.mw_debugLevel !== 0) {
 		console.info(errMsg, ...params);
 	}
-	if (fileName) {
-		res = new Error(res, fileName, lineNum, colNum);
-	}
-	return res;
+	return fileName ? new Error(err, fileName, lineNum, colNum) : err;
 }
-
+export function getRequest(val, topUrl) {
+	if (typeof val === "string") {
+		return val !== "" ? new Request(getUrl(val, topUrl), defRequestInit) : null;
+	}
+	return val instanceof Request || val instanceof Response ? val : null;
+}
+export function dispatchEvt($src, evtName, detail) {
+	const p = {
+		detail
+	};
+	for (const i in defEventInit) {
+		p[i] = defEventInit[i];
+	}
+	$src.dispatchEvent(new CustomEvent(evtName, p));
+}
+export function kebabToCamelStyle(str) {
+	if (!str) {
+		return str;
+	}
+	const words = str.split('-'),
+		wordsLen = words.length;
+	if (wordsLen == 1) {
+		return str;
+	}
+	str = words[0];
+	for (let i = 1; i < wordsLen; i++) {
+		if (words[i] !== "") {
+			str += words[i][0].toUpperCase() + words[i].substr(1);
+		}
+	}
+	return str;
+}
 export function oset(t, n, v) {
 	const o = t[n];
 	if (typeof o !== "object" || o === null || typeof v !== "object" || v === null) {
@@ -159,19 +178,6 @@ export function ocopy(val) {
 	return cpy;
 }
 /*
-export function ocopy2(val) {
-	if (typeof val !== "object" || val === null) {
-		return [val, val];
-	}
-	const c1 = {},
-		c2 = {};
-	for (const i in val) {
-		c1[i] = c2[i] = val[i];
-	}
-//todo!!	return [getProxy(c1), c2];
-	return [getProxy(c1), c1];
-}*/
-/*
 export function copy(val) {
 	if (Array.isArray(val)) {
 		return val.slice();
@@ -222,38 +228,6 @@ function type_get$prop(n, val) {
 		val
 	};
 }*/
-export function kebabToCamelStyle(str) {
-	if (!str) {
-		return str;
-	}
-	const words = str.split('-'),
-		wordsLen = words.length;
-	if (wordsLen == 1) {
-		return str;
-	}
-	str = words[0];
-	for (let i = 1; i < wordsLen; i++) {
-		if (words[i] !== "") {
-			str += words[i][0].toUpperCase() + words[i].substr(1);
-		}
-	}
-	return str;
-}
-export function getRequest(val, topUrl) {
-	if (typeof val === "string") {
-		return val !== "" ? new Request(getUrl(val, topUrl), defRequestInit) : null;
-	}
-	return val instanceof Request || val instanceof Response ? val : null;
-}
-export function dispatchEvt($src, evtName, detail) {
-	const p = {
-		detail
-	};
-	for (const i in defEventInit) {
-		p[i] = defEventInit[i];
-	}
-	$src.dispatchEvent(new CustomEvent(evtName, p));
-}
 //API
 self.mw_oset = oset;
 self.mw_del = del;
