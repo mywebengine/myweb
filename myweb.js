@@ -55,10 +55,10 @@ function begin() {
 	});
 
 }
-if (import.meta.__thisImports__ === undefined) {
+if (import.meta.__imports__ === undefined) {
 	begin();
 } else {
-	import.meta.__thisImports__
+	import.meta.__imports__
 		.then(begin);
 }
 self.addEventListener("scroll", async () => {

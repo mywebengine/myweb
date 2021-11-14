@@ -121,10 +121,10 @@ function begin() {
 		r.cmd = mw_cmd.get(str.substr(0, str.indexOf(cmdArgsDiv)));
 	}
 }
-if (import.meta.__thisImports__ === undefined) {
+if (import.meta.__imports__ === undefined) {
 	begin();
 } else {
-	import.meta.__thisImports__
+	import.meta.__imports__
 		.then(begin);
 }
 //if (FormData.prototype[p_target] !== null) {
