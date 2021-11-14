@@ -8,7 +8,7 @@ import {srcById, $srcById, srcBy$src} from "../descr.js";
 
 export function renderTag($src, scope, attr, sync) {
 	if (sync.stat !== 0) {
-//console.log('isCancel', sync.stat, 1);
+//console.log("isCancel", sync.stat, 1);
 		return $src;
 	}
 //console.error("render", sync.syncId, $src, srcBy$src.get($src).id, srcBy$src.get($src).descrId, scope, attr);
@@ -65,7 +65,7 @@ async function attrRender($src, scope, attr, sync) {
 		const req = type_req($src, n, v, scope, sync),
 			res = await req.reqCmd.cmd.render(req);
 		if (sync.stat !== 0) {
-//console.log('isCancel attrRender', sync.stat, n, v);
+//console.log("isCancel attrRender", sync.stat, n, v);
 			return res || type_renderRes(false, $src, $last);// type_renderRes(res.isLast, res.$src || $src, res.$last || $last);
 		}
 		if (!res) {
@@ -198,7 +198,7 @@ async function q_attrRender(arr, attr, isLast, ctx, sync) {
 	for (const [n, v] of attr) {
 		const res = await q_execRender(arr, n, v, isLast, sync);
 		if (sync.stat !== 0) {
-//console.log('isCancel', sync.stat, n, v, 2);
+//console.log("isCancel", sync.stat, n, v, 2);
 			return ctx.lastCount;
 		}
 		if (!res) {
@@ -309,7 +309,7 @@ function q_renderFlow(arr, isFirst, sync) {
 //!!!как бы так сделать, что бы не идти дальше если рендер говорит что не нужно
 			pSet.add(q_renderTag(dArr, $i[p_isCmd] && descrById.get($i[p_descrId]).attr || null, type_isLast(), sync)
 				.then(() => sync.stat === 0 && q_renderFlow(dArr, false, sync)
-//console.log('isCancel', sync.stat, 222);
+//console.log("isCancel", sync.stat, 222);
 				));
 //		}*/
 	}
@@ -368,19 +368,19 @@ function getAttrKey(attr) {
 	return key;
 }
 export function setReqCmd(str) {
-	const already = reqCmd[str];
-	if (already) {
-//	if (already !== undefined && already !== null) {
+	const already = reqCmd.get(str);
+//	if (already) {
+	if (already !== undefined && already !== null) {
 		return true;
 	}
 	const i = str.indexOf(cmdArgsDiv),
 		cmdName = i === -1 ? str : str.substr(0, i),
-		cmd = mw_cmd[cmdName];
+		cmd = mw_cmd.get(cmdName);
 	if (cmd === undefined) {
-		reqCmd[str] = null;
+		reqCmd.set(str, null);
 		return false;
 	}
-	reqCmd[str] = type_reqCmd(cmdName, cmd, i !== -1 ? str.substr(i + cmdArgsDivLen).split(cmdArgsDiv) : []);
+	reqCmd.set(str, type_reqCmd(cmdName, cmd, i !== -1 ? str.substr(i + cmdArgsDivLen).split(cmdArgsDiv) : []));
 	return true;
 }
 export function dispatchLocalEvents(local) {
@@ -417,7 +417,7 @@ function dispatchLocalEventsBySrcId(sId, l) {
 }
 export function type_req($src, str, expr, scope, sync) {
 	return {
-		reqCmd: reqCmd[str],// || null,//<- in createAttr
+		reqCmd: reqCmd.get(str),// || null,//<- in createAttr
 		$src,
 		str,
 		expr,

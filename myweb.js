@@ -13,15 +13,54 @@ import {isAnimationVisible} from "./dom.js";
 import {getLoc, setLoc} from "./loc.js";
 import {getProxy} from "./proxy.js";
 
-const mwUrl = import.meta.url;
-self.mw_debugLevel = mwUrl.indexOf("debug=1") !== -1 ? 1 : (mwUrl.indexOf("debug=2") !== -1 ? 2 : 0);
-self[globVarName] = getProxy(self[globVarName] || {});
-self[locVarName] = getProxy(getLoc(location.href));
-
 const evtOpt = {
 	passive: true
 };
+function begin() {
+	const mwUrl = import.meta.url;
+	self.mw_debugLevel = mwUrl.indexOf("debug=1") !== -1 ? 1 : (mwUrl.indexOf("debug=2") !== -1 ? 2 : 0);
+	self[globVarName] = getProxy(self[globVarName] || {});
+	self[locVarName] = getProxy(getLoc(location.href));
+	if (mwUrl.indexOf("load=skip") !== -1) {
+		if (self.mw_debugLevel !== 0) {
+			import(mwUrl.replace(/([^\/]+?\.js)/, "getlineno.js"));
+		}
+		return;
+	}
+	const onload = () => {
+		if (self.mw_debugLevel === 0) {
+			render(undefined, undefined, undefined, mwUrl.indexOf("linking=1") !== -1);
+			return;
+		}
+		import(mwUrl.replace(/([^\/]+?\.js)/, "getlineno.js"))
+			.then(m => m.default)
+			.then(() => render(undefined, undefined, undefined, mwUrl.indexOf("linking=1") !== -1));
+	}
+	if (mwUrl.indexOf("load=onload") === -1) {
+		if (document.readyState !== "loading") {
+			onload();
+			return;
+		}
+		document.addEventListener("DOMContentLoaded", onload, {
+			once: true
+		});
+		return;
+	}
+	if (document.readyState === "complete") {
+		onload();
+		return;
+	}
+	self.addEventListener("load", onload, {
+		once: true
+	});
 
+}
+if (import.meta.__thisImports__ === undefined) {
+	begin();
+} else {
+	import.meta.__thisImports__
+		.then(begin);
+}
 self.addEventListener("scroll", async () => {
 	const pSet = new Set(),
 		scrollSync = new Set();
@@ -62,32 +101,6 @@ console.warn("2animation")
 
 }, evtOpt);
 self.addEventListener("popstate", () => {
-//console.log('ps', location.href);
+//console.log("ps", location.href);
 	setLoc(location.href);
 }, evtOpt);
-if (mwUrl.indexOf("skip=1") === -1) {
-	const onload = () => {
-		self.removeEventListener("load", onload, evtOpt);
-		self.removeEventListener("DOMContentLoaded", onload, evtOpt);
-		if (self.mw_debugLevel === 0) {
-			render(undefined, undefined, undefined, mwUrl.indexOf("tolinking=1") !== -1);
-			return;
-		}
-		import(mwUrl.replace(/([^\/]+?\.js)/, "getlineno.js"))
-			.then(m => m.default)
-			.then(() => render(undefined, undefined, undefined, mwUrl.indexOf("tolinking=1") !== -1));
-	}
-	if (mwUrl.indexOf("onload=1") === -1) {
-		if (!document.readyState || document.readyState === "loading") {
-			document.addEventListener("DOMContentLoaded", onload);
-		} else {
-			onload();
-		}
-	} else if (document.readyState !== "complete") {
-		self.addEventListener("load", onload, evtOpt);
-	} else {
-		onload();
-	}
-} else if (self.mw_debugLevel !== 0) {
-	import(mwUrl.replace(/([^\/]+?\.js)/, "getlineno.js"));
-}

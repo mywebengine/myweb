@@ -1,11 +1,11 @@
 ﻿import {oset} from "./util.js";
 
-const trimSlashRe = /(^\/|\/$)/g;
+const trimSlashRe = new RegExp("(^/|/$)", "g");
 
-const reHost = /^(\w+\:\/\/|\/\/)/;//.+?(\/|$)/;
-const reSlash = /\/\/+/;
-const reUp = /[^\/]+\/+\.\.\//;
-const reThis = /\/+\.\//;
+const reHost = new RegExp("^(\\w+\\://|//)");//.+?(\/|$)/;
+const reSlash = new RegExp("//+");
+const reUp = new RegExp("[^/]+/+\\.\\./");
+const reThis = new RegExp("/+\\./");
 
 export function getLoc(url, defPageName = "") {
 	url = new URL(url);

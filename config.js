@@ -11,8 +11,8 @@ import fillingCmd from "./cmd/filling.js";
 import watchCmd from "./cmd/watch.js";
 
 //import {mw_cmd, reqCmd} from "./render/render.js";
-export const mw_cmd = {};//self.mw_cmd || {};
-export const reqCmd = self.mw_reqCmd || {};
+export const mw_cmd = new Map();//self.mw_cmd || {};
+export const reqCmd = self.mw_reqCmd || new Map();
 
 export const mw_doc = document;
 export const mw_$src = mw_doc.documentElement;
@@ -50,7 +50,7 @@ export const cmdArgsDiv = ".";
 export const cmdArgsDivLen = cmdArgsDiv.length;
 export const descrIdName = "_did" + cmdArgsDiv;
 export const asOneIdxName = "_aidx" + cmdArgsDiv;
-export const idxName = "debug:idx" + cmdArgsDiv;
+export const idxName = "_idx" + cmdArgsDiv;
 export const isFillingName = "is_filling";
 export const isFillingDiv = "-";
 
@@ -94,31 +94,38 @@ export const scopeCmdName = cmdPref + "scope";
 export const watchCmdName = cmdPref + "watch";
 
 export function addCommand(cmdName, cmd) {
-	mw_cmd[cmdName] = cmd;
+	mw_cmd.set(cmdName, cmd);
 }
+function begin() {
+	addCommand(attrCmdName, attrCmd);
+	addCommand(execCmdName, execCmd);
+	addCommand(fetchCmdName, fetchCmd);
+	addCommand(foreachCmdName, foreachCmd);
+	addCommand(htmlCmdName, htmlCmd);
 
-addCommand(attrCmdName, attrCmd);
-addCommand(execCmdName, execCmd);
-addCommand(fetchCmdName, fetchCmd);
-addCommand(foreachCmdName, foreachCmd);
-addCommand(htmlCmdName, htmlCmd);
+	addCommand(ifCmdName, ifCmd);
+	addCommand(elseifCmdName, ifCmd);
+	addCommand(elseCmdName, ifCmd);
 
-addCommand(ifCmdName, ifCmd);
-addCommand(elseifCmdName, ifCmd);
-addCommand(elseCmdName, ifCmd);
+	addCommand(switchCmdName, switchCmd);
+	addCommand(caseCmdName, switchCmd);
+	addCommand(defaultCmdName, switchCmd);
 
-addCommand(switchCmdName, switchCmd);
-addCommand(caseCmdName, switchCmd);
-addCommand(defaultCmdName, switchCmd);
-
-addCommand(incCmdName, incCmd);
-addCommand(onCmdName, onCmd);
-addCommand(scopeCmdName, scopeCmd);
-addCommand(fillingCmdName, fillingCmd);
-addCommand(watchCmdName, watchCmd);
+	addCommand(incCmdName, incCmd);
+	addCommand(onCmdName, onCmd);
+	addCommand(scopeCmdName, scopeCmd);
+	addCommand(fillingCmdName, fillingCmd);
+	addCommand(watchCmdName, watchCmd);
 //ssr
-for (const str in reqCmd) {
-	reqCmd[str].cmd = mw_cmd[str.substr(0, str.indexOf(cmdArgsDiv))];
+	for (const [str, r] of reqCmd) {
+		r.cmd = mw_cmd.get(str.substr(0, str.indexOf(cmdArgsDiv)));
+	}
+}
+if (import.meta.__thisImports__ === undefined) {
+	begin();
+} else {
+	import.meta.__thisImports__
+		.then(begin);
 }
 //if (FormData.prototype[p_target] !== null) {
 	FormData.prototype[p_target] = null;

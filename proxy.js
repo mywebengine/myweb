@@ -5,8 +5,8 @@ import {$srcById, srcById, srcBy$src, descrById, getNewId, get$els} from "./desc
 //--import {getIdx} from "./dom.js";
 
 export const varIdByVar = new Map();
-export const varById = {};
-export const varIdByVarIdByProp = {};
+export const varById = new Map();
+export const varIdByVarIdByProp = new Map();
 export const srcIdsByVarId = new Map();
 
 //todo--
@@ -17,10 +17,11 @@ self._testVars = function() {
 		if (!v.has(vId)) {
 			let f;
 			for (const vvId of v) {
-				if (!varIdByVarIdByProp[vvId]) {
+				const vIdByProp = varIdByVarIdByProp.get(vvId);
+				if (vIdByProp === undefined) {
 					continue;
 				}
-				for (const pId of varIdByVarIdByProp[vvId].values()) {
+				for (const pId of vIdByProp.values()) {
 					if (pId === vId) {
 						for (const sId of srcIds) {
 							if (!$srcById.has(sId)) {
@@ -56,8 +57,8 @@ self._testVars = function() {
 				console.log(1, sId);
 			}
 		}
-		const vIdByProp = varIdByVarIdByProp[vId];
-		if (vIdByProp) {
+		const vIdByProp = varIdByVarIdByProp.get(vId);
+		if (vIdByProp !== undefined) {
 			for (const pId of vIdByProp.values()) {
 				const propS = srcIdsByVarId.get(pId);
 				if (propS) {// && propS.has(sId)) {
@@ -181,7 +182,7 @@ const proxyHandler = {
 		return n !== Symbol.iterator ? v : t.entries;
 	},
 	set(t, n, v) {
-//console.log('set', n, v, "old=>", t[n], t, v === p_target);//, Object.getOwnPropertyDescriptor(t, n) && Object.getOwnPropertyDescriptor(t, n).value);
+//console.log("set", n, v, "old=>", t[n], t, v === p_target);//, Object.getOwnPropertyDescriptor(t, n) && Object.getOwnPropertyDescriptor(t, n).value);
 		if (Array.isArray(t) && n === "length") {
 			const oVal = t[n];
 			t[n] = v;
@@ -213,7 +214,7 @@ const proxyHandler = {
 //		return false;
 	},
 	deleteProperty(t, n) {
-//console.log('del', t, n, "old=>", getTarget(t[n]));
+//console.log("del", t, n, "old=>", getTarget(t[n]));
 		if (n in t) {
 			const oldV = getTarget(t[n]);
 			delete t[n];
@@ -397,8 +398,8 @@ function addVar(t, n, v, $src) {
 //1
 			descr.varIds.add(tId);
 
-			const vIdByProp = varIdByVarIdByProp[tId];
-			if (vIdByProp) {
+			const vIdByProp = varIdByVarIdByProp.get(tId);
+			if (vIdByProp !== undefined) {
 				const propId = vIdByProp.get(n);
 				if (propId) {
 //1
@@ -422,7 +423,7 @@ function addVar(t, n, v, $src) {
 				return;
 			}
 			const newPropId = getNewId();
-			varIdByVarIdByProp[tId] = new Map([[n, newPropId]]);
+			varIdByVarIdByProp.set(tId, new Map([[n, newPropId]]));
 			srcIdsByVarId.set(newPropId, new Set([sId]));
 //console.log(4, newPropId);
 //1
@@ -431,14 +432,14 @@ function addVar(t, n, v, $src) {
 		}
 		const nId = getNewId();
 		varIdByVar.set(t, nId);
-		varById[nId] = t;
+		varById.set(nId, t);
 		srcIdsByVarId.set(nId, new Set([sId]));
 //console.log(5, nId);
 //1
 		descr.varIds.add(nId);
 
 		const newPropId = getNewId();
-		varIdByVarIdByProp[nId] = new Map([[n, newPropId]]);
+		varIdByVarIdByProp.set(nId, new Map([[n, newPropId]]));
 		srcIdsByVarId.set(newPropId, new Set([sId]));
 //console.log(6, newPropId, t, n, v, $src);
 //1
@@ -458,7 +459,7 @@ function addVar(t, n, v, $src) {
 	} else {
 		const nId = getNewId();
 		varIdByVar.set(t, nId);
-		varById[nId] = t;
+		varById.set(nId, t);
 		srcIdsByVarId.set(nId, new Set([sId]));
 //console.log(8, sId);
 //1
@@ -479,7 +480,7 @@ function addVar(t, n, v, $src) {
 	}
 	const newValId = getNewId();
 	varIdByVar.set(v, newValId);
-	varById[newValId] = v;
+	varById.set(newValId, v);
 	srcIdsByVarId.set(newValId, new Set([sId]));
 //console.log(10, sId);
 //1
@@ -487,15 +488,15 @@ function addVar(t, n, v, $src) {
 }
 function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); - если так сделалть, то после первого - будут удалены varIdByVar.get(oldId), что приведет к тому что все пойдет по ветке !oldId - непонятно нужно ли что-то с этим делать??
 	const tId = varIdByVar.get(t);
-//console.info('setVar', "name=>", n, "\nvalue=>", v, "\ntarget=>", t, "\ntId=>", tId, "\noldVal=>", oldV, t[p_isUnshift]);
+//console.info("setVar", "name=>", n, "\nvalue=>", v, "\ntarget=>", t, "\ntId=>", tId, "\noldVal=>", oldV, t[p_isUnshift]);
 	if (!tId) {//!tId - такое получается когда данные изменяются, а отрисовки ещё небыло - первая загрузка странцы и добавление данных на старте - это корректно
 		return;
 	}
 	if (Array.isArray(t) && !isNaN(n)) {
 		n = Number(n);
 	}
-	const vIdByProp = varIdByVarIdByProp[tId],
-		oldScalarId = vIdByProp ? vIdByProp.get(n) : 0,
+	const vIdByProp = varIdByVarIdByProp.get(tId),
+		oldScalarId = vIdByProp !== undefined ? vIdByProp.get(n) : 0,
 		oId = oldScalarId ? varIdByVar.get(oldV) : 0;
 	if (self.mw_debugLevel === 2) {
 		console.info("mw_proxy => setVar", "\n\tname=>", n, "\n\tvalue=>", v, "\n\toldVal=>", oldV, "\n\ttId=>", tId, "\n\ttarget=>", t, "\n\toldId=>", oId, "\n\toldScalarId=>", oldScalarId);
@@ -508,7 +509,7 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 		}
 		return;
 	}*/
-//console.error('setVar', n, v, tId, oId, oldV, oldScalarId, cur$src);
+//console.error("setVar", n, v, tId, oId, oldV, oldScalarId, cur$src);
 	if (cur$src) {
 //		proxyStat.value = 2;
 		addVar(t, n, v, cur$src);
@@ -520,12 +521,12 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 			if (vIdByProp) {
 				vIdByProp.set(n, newPropId);
 			} else {
-				varIdByVarIdByProp[tId] = new Map([[n, newPropId]]);
+				varIdByVarIdByProp.set(tId, new Map([[n, newPropId]]));
 			}
 		} else {
 			const newId = getNewId();
 			varIdByVar.set(v, newId);
-			varById[newId] = v;
+			varById.set(newId, v);
 		}
 	}*/
 /*--
@@ -545,7 +546,7 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 		vIdByProp.delete(n);
 //!!todo GC
 		if (vIdByProp.size === 0) {
-			delete varIdByVarIdByProp[tId];
+			varIdByVarIdByProp.delete(tId);
 		}
 	}
 	_setVal(t, n, oldV, srcIdsByVarId.get(oId || tId), oId);
@@ -573,7 +574,7 @@ function _setVal(t, n, oldV, s, oId) {
 			continue;
 		}
 		for (const str of d.attr.keys()) {
-			if (!reqCmd[str].cmd.isAsOne) {
+			if (!reqCmd.get(str).cmd.isAsOne) {
 				continue;
 			}
 			const idx = getIdx($i, str);
@@ -632,7 +633,7 @@ console.log(1, sId, $srcById[sId]);
 		const attrIt = descr.attr.keys();
 		for (let i = attrIt.next(); !i.done; i = attrIt.next()) {
 			const str = i.value;
-			if (!reqCmd[str].cmd.isAsOne) {
+			if (!reqCmd.get(str).cmd.isAsOne) {
 				continue;
 			}
 			const idx = getIdx(src, str);
@@ -643,7 +644,7 @@ console.log(1, sId, $srcById[sId]);
 			if (idx === 0) {
 				let isFirst = true;
 				for (i = attrIt.next(); !i.done; i = attrIt.next()) {
-					if (reqCmd[i.value].cmd.isAsOne && getIdx(src, i.value) !== 0) {
+					if (reqCmd.get(i.value).cmd.isAsOne && getIdx(src, i.value) !== 0) {
 						isFirst = false;
 						break;
 					}
@@ -760,12 +761,18 @@ function setInnerSrcIdSetBy$src(toClear, $i) {
 function decVar(t, n, v, sId, vId, deletedVarId) {
 	if (vId === 0) {
 		if (isScalarType[typeof v] || v === null) {
-			const vIdByProp = varIdByVarIdByProp[varIdByVar.get(t)];
-			if (vIdByProp) {
-				vId = vIdByProp.get(n) || 0;
+			const vIdByProp = varIdByVarIdByProp.get(varIdByVar.get(t));
+			if (vIdByProp !== undefined) {
+				vId = vIdByProp.get(n);
+				if (vId === undefined) {
+					vId = 0;
+				}
 			}
 		} else {
-			vId = varIdByVar.get(v) || 0;
+			vId = varIdByVar.get(v);
+			if (vId === undefined) {
+				vId = 0;
+			}
 		}
 	}
 	if (vId !== 0) {
@@ -799,24 +806,25 @@ function delVar(vId, v, t, n, deletedVarId) {
 	deletedVarId.add(vId);
 	srcIdsByVarId.delete(vId);
 	if (isScalarType[typeof v] || v === null) {
-		const vIdByProp = varIdByVarIdByProp[vId = varIdByVar.get(t)];
-		if (vIdByProp) {
-			vIdByProp.delete(n);
-			if (vIdByProp.size === 0) {
-				delete varIdByVarIdByProp[vId];
-			}
+		const vIdByProp = varIdByVarIdByProp.get(vId = varIdByVar.get(t));
+		if (vIdByProp === undefined) {
+			return;
+		}
+		vIdByProp.delete(n);
+		if (vIdByProp.size === 0) {
+			varIdByVarIdByProp.delete(vId);
 		}
 		return;
 	}
 	//пробегать по свойствам объекта и удалять их - не нужно, так как свойства могут быть (объекты и скаляры) использоваться где-нибудь ещё
 	varIdByVar.delete(v);
-	delete varById[vId];
-//!!	delete varIdByVarIdByProp[vId];
-	const vIdByProp = varIdByVarIdByProp[vId];
+	varById.delete(vId);
+//!!	varIdByVarIdByProp.delete(vId);
+	const vIdByProp = varIdByVarIdByProp.get(vId);
 //!! не надо - там должно быть песто, но если нет - то можно будет заметить
 //!! сейчас там то что не используется, - по какойто причине в get прокси запрашивается "then" - хотя в шаблоне нет такого запроса
-	if (vIdByProp) {
-		delete varIdByVarIdByProp[vId];
+	if (vIdByProp !== undefined) {
+		varIdByVarIdByProp.delete(vId);
 		for (const pId of vIdByProp.values()) {
 			srcIdsByVarId.delete(pId);
 		}

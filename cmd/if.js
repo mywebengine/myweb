@@ -1,6 +1,5 @@
 import {renderTag, type_req, type_animation, type_renderRes} from "../render/render.js";
-import {p_target, ifCmdName, elseifCmdName, elseCmdName, switchCmdName, caseCmdName, defaultCmdName, foreachCmdName, incCmdName,
-	reqCmd} from "../config.js";
+import {p_target, ifCmdName, elseifCmdName, elseCmdName, switchCmdName, caseCmdName, defaultCmdName, foreachCmdName, incCmdName, reqCmd} from "../config.js";
 import {$srcById, srcBy$src, getAttrAfter, get$els, get$first, getNextStr} from "../descr.js";
 import {show, hide, getIdx} from "../dom.js";
 import {eval2, q_eval2} from "../eval2.js";
@@ -71,7 +70,7 @@ export const switchCmd = {
 				}
 				continue;
 			}
-			const rc = reqCmd[n];
+			const rc = reqCmd.get(n);
 			if (rc.cmdName !== caseCmdName) {
 				continue;
 			}
@@ -128,7 +127,7 @@ async function if_render(req, val, ifCmdName, elseifCmdName, elseCmdName, testFu
 			if (pos++ < beforeAttrCount) {
 				continue;
 			}
-			const rc = reqCmd[n];
+			const rc = reqCmd.get(n);
 			if (rc.cmdName !== elseifCmdName && rc.cmdName !== elseCmdName) {
 				break;
 			}
@@ -188,13 +187,13 @@ function make$first(req, ifCmdName, elseifCmdName, elseCmdName) {
 		pos++;
 	}
 	const $first = if_get$first(ifCmdName, elseifCmdName, elseCmdName, req.$src, req.str, req.expr, pos);
-	if (reqCmd[req.str].cmdName === ifCmdName) {
+	if (reqCmd.get(req.str).cmdName === ifCmdName) {
 		req.$src = $first;
 //		$first;
 		return;
 	}
 	for (const [n, v] of srcBy$src.get($first).descr.attr) {
-		const rc = reqCmd[n];
+		const rc = reqCmd.get(n);
 		if (rc.cmdName === ifCmdName) {
 			req.reqCmd = rc;
 			req.str = n;
@@ -206,7 +205,7 @@ function make$first(req, ifCmdName, elseifCmdName, elseCmdName) {
 	}
 }
 function if_get$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos, firstStr) {
-	const isStrIf = str !== "" && reqCmd[str].cmdName === ifCmdName;
+	const isStrIf = str !== "" && reqCmd.get(str).cmdName === ifCmdName;
 	for (let $i = $src; $i !== null; $i = $i.previousSibling) {
 //		if ($i.nodeType !== 1) {
 		const iSrc = srcBy$src.get($i);
@@ -219,7 +218,7 @@ function if_get$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, po
 		let f = true,
 			l = 0;
 		for (const n of iSrc.descr.attr.keys()) {
-			const rc = reqCmd[n];
+			const rc = reqCmd.get(n);
 			if (rc.cmdName === incCmdName) {
 				l = 0;
 				continue;
@@ -249,7 +248,7 @@ function if_get$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, po
 			for (let i = attrIt.next(); !i.done; i = attrIt.next()) {
 				if (incCount === 0) {
 					const n = i.value,
-						rc = reqCmd[n];
+						rc = reqCmd.get(n);
 					if (rc.cmdName === foreachCmdName) {
 						forBefore.push([n, getIdx(iSrc, n)]);
 					}
@@ -259,7 +258,7 @@ function if_get$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, po
 				}
 				for (i = attrIt.next(); !i.done; i = attrIt.next()) {
 					const n = i.value,
-						rc = reqCmd[n];
+						rc = reqCmd.get(n);
 					if (forStr === "" && rc.cmdName === incCmdName) {
 						if (getIdx(iSrc, n) !== undefined) {
 							incCount++;
@@ -366,7 +365,7 @@ function if_get$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos)
 			if (pos++ < beforeAttrCount) {
 				continue;
 			}
-			const rc = reqCmd[n];
+			const rc = reqCmd.get(n);
 			if (rc.cmdName !== elseifCmdName && rc.cmdName !== elseCmdName) {
 				break;
 			}
@@ -424,7 +423,7 @@ function isSingle(src, str) {//проверка на то что этот иф �
 		if (n === str) {
 			break;
 		}
-		switch (reqCmd[n].cmdName) {
+		switch (reqCmd.get(n).cmdName) {
 			case ifCmdName:
 			case elseifCmdName:
 			case elseCmdName:

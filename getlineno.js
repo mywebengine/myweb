@@ -32,7 +32,7 @@ function createLineNo(url, html, $src) {
 		$p = [];
 	do {
 		if ($i.nodeType === 1) {
-			const idx = html.indexOf('<' + $i.localName);
+			const idx = html.indexOf("<" + $i.localName);
 			if (idx === -1) {
 //				console.error(`Mark lines error: index <${$i.localName} = -1`, $i, ctx);
 				return;
@@ -46,10 +46,16 @@ function createLineNo(url, html, $src) {
 			$i = $i.firstChild;
 			continue;
 		}
+/*
 		//todo а что если это просто тег?
 		if ($i.nodeName === "TEMPLATE" && $i.content.firstChild.firstChild !== null) {
 			$p.push($i);
 			$i = $i.content.firstChild.firstChild;
+			continue;
+		}*/
+		if ($i.nodeName === "TEMPLATE" && $i.content.firstChild !== null) {
+			$p.push($i);
+			$i = $i.content.firstChild;
 			continue;
 		}
 		if ($i.parentNode === $parent) {//если мы не ушли вглубь - значит и вправо двигаться нельзя

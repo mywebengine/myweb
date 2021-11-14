@@ -69,7 +69,7 @@ export function createDescr($e, sId) {
 	const descr = type_descr(id, sId, attr, new Set());
 	let pos = 0;
 	for (const [str, expr] of attr) {
-		const rc = reqCmd[str];
+		const rc = reqCmd.get(str);
 		if (rc.cmd.get$els) {
 			if (descr.get$elsByStr === null) {
 				descr.get$elsByStr = type_get$elsByStr();
@@ -172,7 +172,7 @@ export function get$els($e, get$elsByStr, str) {
 		const n = i.value,
 			get$e = get$elsByStr.get(n);
 		if (get$e !== undefined) {
-			return reqCmd[n].cmd.get$els($e, n, get$e.expr, get$e.pos);
+			return reqCmd.get(n).cmd.get$els($e, n, get$e.expr, get$e.pos);
 		}
 		i = attrIt.next();
 	}
@@ -192,7 +192,7 @@ export function get$first($e, get$elsByStr, str) {
 		const n = i.value,
 			get$e = get$elsByStr.get(str);
 		if (get$e !== undefined) {
-			return reqCmd[str].cmd.get$first($e, str, get$e.expr, get$e.pos);
+			return reqCmd.get(str).cmd.get$first($e, str, get$e.expr, get$e.pos);
 		}
 		i = attrIt.next();
 	}

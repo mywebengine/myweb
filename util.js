@@ -45,7 +45,7 @@ export function kebabToCamelStyle(str) {
 	if (!str) {
 		return str;
 	}
-	const words = str.split('-'),
+	const words = str.split("-"),
 		wordsLen = words.length;
 	if (wordsLen == 1) {
 		return str;

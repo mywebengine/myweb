@@ -1,10 +1,8 @@
 import {q_renderTag, type_req, type_isLast, type_q_arr, type_animation, type_renderRes} from "../render/render.js";
-import {mw_doc, p_target, visibleScreenSize, defIdleCallbackOpt, foreachCmdName,
-	reqCmd, renderPackSize} from "../config.js";
+import {mw_doc, p_target, visibleScreenSize, defIdleCallbackOpt, foreachCmdName, renderPackSize} from "../config.js";
 import {srcBy$src, $srcById, getNewId, type_asOneIdx, getAttrAfter, get$els, get$first, getNextStr} from "../descr.js";
 import {show, hide, is$visible, removeChild, q_cloneNode, type_q$i, setAsOneIdx, getIdx, setIdx} from "../dom.js";
 import {eval2, q_eval2} from "../eval2.js";
-import {varIdByVar, varIdByVarIdByProp, setCur$src} from "../proxy.js";
 import {ocopy, kebabToCamelStyle, check} from "../util.js";
 
 //--import {isInc, incGet$els} from "./inc.js";

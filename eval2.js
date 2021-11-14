@@ -57,11 +57,12 @@ export function q_eval2(req, arr, isLast) {
 //console.log("q_eval2", req, arr, isLast);
 	return q_getEval2Func(req, req.expr)
 		.apply(null, [req, arr, isLast, req.str, setCur$src, proxyStat, srcBy$src])
+		.then(vals => Promise.all(vals))
 		.catch(err => {
 			throw check(err, req.$src, req);
 		});
 }
-//const commentRe = /\/\/.+?(\n|$)/g;
+//const commentRe = new RegExp("//.+?(\n|$)", "g");
 export function getEval2Func(req, expr) {
 	expr = expr.trim();
 	const cacheKey = expr,
@@ -73,7 +74,7 @@ export function getEval2Func(req, expr) {
 		return _func[cacheKey] = new func();
 	}
 //todo
-//	expr = expr.replace(commentRe, '');
+//	expr = expr.replace(commentRe, "");
 	if (isNeedRet(expr)) {
 		expr = "const _tpl_res = " + expr + ";\nreturn _tpl_res;";
 	}
@@ -128,16 +129,16 @@ for (let i = 0; i < _tpl_len; i++) {
 		src = _tpl_srcBy$src.get($i),
 		c = src.cache;
 	if (c.value.has(_tpl_str)) {
-//console.log(888, _tpl_str, src.id, c.value.get(_tpl_str));
 		_tpl_val[i] = c.value.get(_tpl_str);
 		continue;
 	}
-
 	_tpl_proxyStat.value = 0;
 	_tpl_setCur$src($i);
 	const v = _tpl_val[i] = (function() {
 //todebug 
-req.scope = _tpl_arr[i].scope;
+		if (self.mw_debugLevel !== 0) {
+			req.scope = _tpl_arr[i].scope;
+		}
 		with (_tpl_arr[i].scope) {${expr}
 		}
 	}).apply($i);

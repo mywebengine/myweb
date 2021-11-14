@@ -18,10 +18,16 @@ export function preRender($i, isLinking) {// = mw_$src) {//todo это не бу
 			$i = $i.firstChild;
 			continue;
 		}
+/*
 		//todo непонятно это команда или нет
 		if ($i.nodeName === "TEMPLATE" && $i.content.firstChild.firstChild !== null) {
 			$p.push($i);
 			$i = $i.content.firstChild.firstChild;
+			continue;
+		}*/
+		if ($i.nodeName === "TEMPLATE" && $i.content.firstChild !== null) {
+			$p.push($i);
+			$i = $i.content.firstChild;
 			continue;
 		}
 		$i = _preRenderCreate($i, descrAlias, isLinking);
@@ -83,7 +89,7 @@ function _preRenderCreate($e, descrAlias, isLinking) {
 				src.idx.set(str, !isNaN(idx) ? Number(idx) : idx);
 			}
 /*!!!!!!!!!!!
-			if (!reqCmd[str].cmd.isAsOne) {
+			if (!reqCmd.get(str).cmd.isAsOne) {
 				continue;
 			}
 			const $from = $i;
@@ -285,11 +291,17 @@ export function removeChild($e) {
 			$i = $i.firstChild;
 			continue;
 		}
+/*
 		//todo а что если это просто тег?
 //		if ($i.nodeName === "TEMPLATE" && iSrc.isCmd && $i.content.firstChild.firstChild !== null) {//проверку на кастом не делается из соображений экономичности
 		if ($i.nodeName === "TEMPLATE" && iSrc.isCmd && !iSrc.descr.isCustomHtml && $i.content.firstChild.firstChild !== null) {
 			$p.push($i);
 			$i = $i.content.firstChild.firstChild;
+			continue;
+		}*/
+		if ($i.nodeName === "TEMPLATE" && $i.content.firstChild !== null) {
+			$p.push($i);
+			$i = $i.content.firstChild;
 			continue;
 		}
 		if ($i.parentNode === $parent) {//если мы не ушли вглубь - значит и вправо двигаться нельзя
@@ -396,7 +408,7 @@ function clearVars(rem) {
 		if (!s) {
 			continue;
 		}
-		const vIdByProp = varIdByVarIdByProp[vId];
+		const vIdByProp = varIdByVarIdByProp.get(vId);
 //		let f = false;
 		for (const sId of sIds) {
 //			if (skipDelBySrcId[sId]) {
@@ -431,11 +443,10 @@ function clearVars(rem) {
 		if (s.size === 0) {
 			deletedVarId.add(vId);
 			srcIdsByVarId.delete(vId);
-			const v = varById[vId];
-			delete varById[vId];
-			varIdByVar.delete(v);
+			varIdByVar.delete(varById.get(vId));
+			varById.delete(vId);
 			if (vIdByProp) {
-				delete varIdByVarIdByProp[vId];
+				varIdByVarIdByProp.delete(vId);
 //todo
 				if (vIdByProp.size !== 0) {
 					console.warn("должно быть пусто", vId, vIdByProp);
@@ -446,7 +457,7 @@ function clearVars(rem) {
 			}
 		} else if (vIdByProp && vIdByProp.size === 0) {
 //console.warn(11111, vId, vIdByProp);
-			delete varIdByVarIdByProp[vId];
+			varIdByVarIdByProp.delete(vId);
 		}
 	}
 	for (const [dId, s] of rem) {
@@ -483,16 +494,11 @@ export function cloneNode(req, $e) {//во время клонирования �
 	}
 	const $on = $n.nodeName !== "TEMPLATE" ? $n : $n.content.firstChild,
 		src = srcBy$src.get(req.$src);//todo а что если это просто тег?
-//todo
-if (!src) {
-console.error(req, src, $n)
-alert(1)
-}
 	for (const [n, v] of src.descr.attr) {
 		if (n === req.str) {
 			break;
 		}
-		const rc = reqCmd[n];
+		const rc = reqCmd.get(n);
 		if (rc.cmdName === onCmdName) {
 //console.log(111111, n, v, $on);
 			rc.cmd.render(type_req($on, n, v, req.scope, req.sync));
@@ -535,7 +541,7 @@ console.warn($i)
 		if (n === req.str) {
 			break;
 		}
-		const rc = reqCmd[n];
+		const rc = reqCmd.get(n);
 		if (rc.cmdName === onCmdName) {
 			on.push(type_q_cloneNodeOn(rc.cmd, n, v));
 		}
@@ -560,7 +566,7 @@ console.warn($i)
 	for (let i, idx, j = 0; j < $elsLen; j++) {
 		const $jArr = new Array(len),
 			$j = $els[j];
-		q_cloneNodeCreate($j, $jArr, len, asOneVal, 0, baseAsOne);
+		q_cloneNodeCreate($j, $j.nodeName !== "TEMPLATE", $jArr, len, asOneVal, 0, baseAsOne);
 		q_cloneNodeCreateChildren($j, $jArr, len, asOneVal);
 		for (i = 0; i < len; i++) {
 			const arrI = arr[i],
@@ -608,7 +614,7 @@ console.log($i)
 		if (n === req.str) {
 			break;
 		}
-		const rc = reqCmd[n];
+		const rc = reqCmd.get(n);
 		if (rc.cmdName === onCmdName) {
 			on.push(type_q_cloneNodeOn(rc.cmd, n, v));
 		}
@@ -655,7 +661,7 @@ console.log($i)
 	}
 	return $arr;
 }*/
-function q_cloneNodeCreate($e, $arr, $arrLen, asOneVal, type, baseAsOne) {
+function q_cloneNodeCreate($e, isNotTemplate, $arr, $arrLen, asOneVal, type, baseAsOne) {
 	const src = srcBy$src.get($e);
 	if (src === undefined) {
 		if (type === 2) {
@@ -665,8 +671,14 @@ function q_cloneNodeCreate($e, $arr, $arrLen, asOneVal, type, baseAsOne) {
 			return $e;
 		}
 		if (type === 1) {
+			if (isNotTemplate) {
+				for (let i = 0; i < $arrLen; i++) {
+					$arr[i] = $arr[i].appendChild($e.cloneNode());
+				}
+				return $e;
+			}
 			for (let i = 0; i < $arrLen; i++) {
-				$arr[i] = $arr[i].appendChild($e.cloneNode());
+				$arr[i] = $arr[i].content.appendChild($e.cloneNode());
 			}
 			return $e;
 		}
@@ -677,8 +689,10 @@ function q_cloneNodeCreate($e, $arr, $arrLen, asOneVal, type, baseAsOne) {
 	}
 	const descr = src.descr,
 		idx = src.idx,
-		save = src.save;
-	if (descr.asOnes === null) {
+		save = src.save,
+		asOneIdx = src.asOneIdx;
+	if (asOneIdx === null) {
+//	if (descr.asOnes === null) {
 		if (type === 2) {
 			for (let i = 0; i < $arrLen; i++) {
 				createSrc($arr[i] = $arr[i].parentNode.appendChild($e.cloneNode()), descr, null, idx === null ? null : type_idx(idx)).save = save;
@@ -686,8 +700,14 @@ function q_cloneNodeCreate($e, $arr, $arrLen, asOneVal, type, baseAsOne) {
 			return $e;
 		}
 		if (type === 1) {
+			if (isNotTemplate) {
+				for (let i = 0; i < $arrLen; i++) {
+					createSrc($arr[i] = $arr[i].appendChild($e.cloneNode()), descr, null, idx === null ? null : type_idx(idx)).save = save;
+				}
+				return $e;
+			}
 			for (let i = 0; i < $arrLen; i++) {
-				createSrc($arr[i] = $arr[i].appendChild($e.cloneNode()), descr, null, idx === null ? null : type_idx(idx)).save = save;
+				createSrc($arr[i] = $arr[i].content.appendChild($e.cloneNode()), descr, null, idx === null ? null : type_idx(idx)).save = save;
 			}
 			return $e;
 		}
@@ -696,7 +716,6 @@ function q_cloneNodeCreate($e, $arr, $arrLen, asOneVal, type, baseAsOne) {
 		}
 		return $e;
 	}
-	const asOneIdx = src.asOneIdx;
 	if (type === 2) {
 		for (let i = 0; i < $arrLen; i++) {
 			createSrc($arr[i] = $arr[i].parentNode.appendChild($e.cloneNode()), descr, type_asOneIdx(asOneIdx), type_idx(src.idx)).save = save;
@@ -705,8 +724,15 @@ function q_cloneNodeCreate($e, $arr, $arrLen, asOneVal, type, baseAsOne) {
 		return $e;
 	}
 	if (type === 1) {
+		if (isNotTemplate) {
+			for (let i = 0; i < $arrLen; i++) {
+				createSrc($arr[i] = $arr[i].appendChild($e.cloneNode()), descr, type_asOneIdx(asOneIdx), type_idx(src.idx)).save = save;
+			}
+			q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, asOneIdx);
+			return $e;
+		}
 		for (let i = 0; i < $arrLen; i++) {
-			createSrc($arr[i] = $arr[i].appendChild($e.cloneNode()), descr, type_asOneIdx(asOneIdx), type_idx(src.idx)).save = save;
+			createSrc($arr[i] = $arr[i].content.appendChild($e.cloneNode()), descr, type_asOneIdx(asOneIdx), type_idx(src.idx)).save = save;
 		}
 		q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, asOneIdx);
 		return $e;
@@ -743,6 +769,7 @@ function q_cloneNodeCreateChildren($i, $arr, $arrLen, asOneVal) {
 	}
 	do {
 //////////////////////
+/*
 		const iSrc = srcBy$src.get($i);
 		if (iSrc !== undefined && !iSrc.descr.isCustomHtml) {
 			if ($i.firstChild !== null) {
@@ -751,22 +778,34 @@ function q_cloneNodeCreateChildren($i, $arr, $arrLen, asOneVal) {
 			}
 			//todo а что если это просто тег?
 			if ($i.nodeName === "TEMPLATE") {
-				const iSrc = srcBy$src.get($i);
-				if (iSrc !== undefined && iSrc.isCmd && $i.content.firstChild.firstChild !== null) {
+//				if (iSrc !== undefined && iSrc.isCmd && $i.content.firstChild.firstChild !== null) {
 					$p.push($i);
 					for (let i = 0; i < $arrLen; i++) {
 						$tP[i].push($arr[i]);
 					}
 					$i = q_cloneNodeCreate($i.content.firstChild.firstChild, $arr, $arrLen, asOneVal, 1);
 					continue;
-				}
+//				}
 			}
+		}*/
+		if ($i.firstChild !== null) {
+			$i = q_cloneNodeCreate($i.firstChild, true, $arr, $arrLen, asOneVal, 1, null);
+			continue;
+		}
+		//todo а что если это просто тег?
+		if ($i.nodeName === "TEMPLATE" && $i.content.firstChild !== null) {
+			$p.push($i);
+			for (let i = 0; i < $arrLen; i++) {
+				$tP[i].push($arr[i]);
+			}
+			$i = q_cloneNodeCreate($i.content.firstChild, false, $arr, $arrLen, asOneVal, 1, null);
+			continue;
 		}
 		if ($i.parentNode === $parent) {//если мы не ушли вглубь - значит и вправо двигаться нельзя
 			break;
 		}
 		if ($i.nextSibling !== null) {
-			$i = q_cloneNodeCreate($i.nextSibling, $arr, $arrLen, asOneVal, 2);
+			$i = q_cloneNodeCreate($i.nextSibling, true, $arr, $arrLen, asOneVal, 2, null);
 			continue;
 		}
 		do {
@@ -790,7 +829,7 @@ function q_cloneNodeCreateChildren($i, $arr, $arrLen, asOneVal) {
 				}
 			}
 			if ($i.nextSibling !== null) {
-				$i = q_cloneNodeCreate($i.nextSibling, $arr, $arrLen, asOneVal, 2);
+				$i = q_cloneNodeCreate($i.nextSibling, true, $arr, $arrLen, asOneVal, 2, null);
 				break;
 			}
 		} while (true);
@@ -1077,14 +1116,14 @@ function getAttrTopUrl(src, str) {
 			if (n === str) {
 				break;
 			}
-			if (reqCmd[n].cmdName === incCmdName) {//!!maybe todo пока работает только для inc
+			if (reqCmd.get(n).cmdName === incCmdName) {//!!maybe todo пока работает только для inc
 				topUrl = getIdx(src, n);
 			}
 		}
 		return topUrl;
 	}
 	for (const n of nattr) {
-		if (reqCmd[n].cmdName === incCmdName) {//!!maybe todo пока работает только для inc
+		if (reqCmd.get(n).cmdName === incCmdName) {//!!maybe todo пока работает только для inc
 			topUrl = getIdx(src, n);
 		}
 	}

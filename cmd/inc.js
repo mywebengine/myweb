@@ -369,7 +369,7 @@ alert(1)
 function incClear(str, src, incKey) {
 	incClearByKey(incKey);
 	for (const n of getAttrItAfter(src.descr.attr.keys(), str, false)) {
-		if (reqCmd[n].cmdName !== incCmdName) {
+		if (reqCmd.get(n).cmdName !== incCmdName) {
 			break;
 		}
 		incKey = getIdx(src, n);
@@ -411,9 +411,9 @@ async function renderNewInc(req, $e) {
 		attrIt = descr.attr.entries();
 	for (let i = attrIt.next(); !i.done; i = attrIt.next()) {
 		const [n, v] = i.value,
-			cn = reqCmd[n].cmdName;
+			cn = reqCmd.get(n).cmdName;
 //todo inc args --
-//		if (v && ((cn !== incCmdName && cn !== fetchCmdName) || !reqCmd[n].args[0]) && cn !== elseCmdName && cn !== defaultCmdName && cn !== onCmdName) {
+//		if (v && ((cn !== incCmdName && cn !== fetchCmdName) || !reqCmd.get(n).args[0]) && cn !== elseCmdName && cn !== defaultCmdName && cn !== onCmdName) {
 //todo наверное всё же не так! для иквов фетчей это может стать проблемой
 		if (v && cn !== elseCmdName && cn !== defaultCmdName && cn !== onCmdName) {
 //todo
@@ -715,7 +715,7 @@ function getIncCount($i, str, expr, pos) {
 	let count = 0;
 	const attrIt = getAttrItAfter(srcBy$src.get($i).descr.attr.keys(), str, false);
 	for (let i = attrIt.next(); !i.done; i = attrIt.next()) {
-		if (reqCmd[i.value].cmdName !== incCmdName) {
+		if (reqCmd.get(i.value).cmdName !== incCmdName) {
 			continue;
 		}
 		if (!isRenderdInc($i, i.value)) {
@@ -740,7 +740,7 @@ function isRenderdInc($i, str) {
 		return getIdx(iSrc, str) !== undefined;
 	}
 	for (const n of iSrc.descr.attr.keys()) {
-		if (reqCmd[n].cmdName === incCmdName) {
+		if (reqCmd.get(n).cmdName === incCmdName) {
 			return getIdx(iSrc, n) !== undefined;
 		}
 	}
