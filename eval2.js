@@ -157,7 +157,7 @@ return _tpl_val;`;
 		throw check(err, req.$src, req);
 	}
 }
-const _e = ["with", "var", "try", "catch", "switch" , "do", "while", "let", "const", "for", "if"];
+const _e = ["with", "var", "try", "catch", "switch" , "do", "while", "let", "const", "for", "if", "return"];
 function isNeedRet(expr) {
 	if (expr === "") {
 		return false;

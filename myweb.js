@@ -7,6 +7,7 @@
 
 import {syncInRender, render, renderLoop, addAnimation} from "./render/algo.js";
 import "./addons.js";
+import "./api.js";
 import {globVarName, locVarName} from "./config.js";
 import {$srcById} from "./descr.js";
 import {isAnimationVisible} from "./dom.js";

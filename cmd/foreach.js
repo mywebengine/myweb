@@ -152,7 +152,7 @@ function getCtx(req, val) {
 		const keys = new Array(val.size),
 			arr = new Array(val.size);
 		let i = 0;
-		for (const [k, v] of val) {
+		for (const [k, v] of val.entries()) {
 			keys[i] = k;
 			arr[i++] = v;
 		}
@@ -239,7 +239,7 @@ function foreach_get$els($e, str, expr, pos) {
 				if (iSrc === undefined || !iSrc.isCmd) {
 					continue;
 				}
-				if (iSrc.asOneIdx.get(str) !== asOneIdx) {
+				if (iSrc.asOneIdx === null || iSrc.asOneIdx.get(str) !== asOneIdx) {
 					return $els;
 				}
 				break;
@@ -319,14 +319,13 @@ function q_addInsert(req, ctx, sId, keysLen, idx, step, from$last) {
 	throw new Error("foreach.js");
 }
 function get$last(req, $last, lastIdx) {
-//	const asOneIdx = srcBy$src.get($last).asOneIdx.get(req.str);
+	const asOneIdx = srcBy$src.get($last).asOneIdx.get(req.str);
 	for (let $i = $last.nextSibling; $i !== null; $i = $i.nextSibling) {
 		const iSrc = srcBy$src.get($i);
 		if (iSrc === undefined || !iSrc.isCmd) {
 			continue;
 		}
-//		if (iSrc.asOneIdx === null || iSrc.asOneIdx.get(req.str) !== asOneIdx || getIdx(iSrc, req.str) !== lastIdx) {
-		if (iSrc.asOneIdx === null || getIdx(iSrc, req.str) > lastIdx) {
+		if (iSrc.asOneIdx === null || iSrc.asOneIdx.get(req.str) !== asOneIdx || getIdx(iSrc, req.str) !== lastIdx) {
 			return $last;
 		}
 		$last = $i;

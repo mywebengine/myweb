@@ -117,6 +117,3 @@ alert(1);
 function type_loading() {
 	return new Map([["", 0]]);
 }
-//API
-self.mw_loadingCount = loadingCount;//todo--
-self.mw_showLoading = showLoading;

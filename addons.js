@@ -1,36 +1,17 @@
-/*
-export function getLocalNumber(val, fmt) {
-	if (!val || typeof(val) !== "string") {
-		return val;
+//todo удалить когда наступит момент
+if (!self.requestIdleCallback) {
+	self.requestIdleCallback = function(f) {
+		const startTime = Date.now();
+		return setTimeout(() => {
+			f({
+				didTimeout: false,
+				timeRemaining() {
+					return Math.max(0, 50.0 - (Date.now() - startTime));
+				}
+			});
+		}, 1);
 	}
-	val = val.replace(/\s+/g, "");
-	if (getLocalNumber.dotSymbol === ".") {
-		val = val.replace(/,/g, "");
-	} else {
-		val = val.replace(/\./g, "");
-		val = val.replace(",", ".");
-	}
-	if (fmt && fmt.scale > 0) {
-		const dotIdx = val.indexOf(getLocalNumber.dotSymbol);
-		if (dotIdx !== -1) {
-			val = val.substr(0, dotIdx + fmt.scale + 1);
-		}
-	}
-	return val * 1;
 }
-//getLocalNumber.locale = "en-Us";
-getLocalNumber.dotSymbol = (0.1).toLocaleString(getLocalNumber.locale).indexOf(".") === -1 ? "," : ".";*/
-/*
-export function formatFunc(val, fmt) {
-	if (val === "" || isNaN(val)) {
-		return "";
-	}
-//	return Number(val).toLocaleString(navigator.language, {
-	return Number(val).toLocaleString(undefined, {
-		maximumFractionDigits: fmt ? fmt.scale : 0//,
-//		useGrouping: false
-	});
-}*/
 if (!String.prototype.copyToClipboard) {
 	String.prototype.copyToClipboard = function() {
 		const $f = document.createElement("input");
@@ -77,18 +58,4 @@ function hideEnum(obj, pName) {
 	Object.defineProperty(obj, pName, {
 		enumerable: false
 	});
-}
-//todo удалить когда наступит момент
-if (!self.requestIdleCallback) {
-	self.requestIdleCallback = function(f) {
-		const startTime = Date.now();
-		return setTimeout(() => {
-			f({
-				didTimeout: false,
-				timeRemaining() {
-					return Math.max(0, 50.0 - (Date.now() - startTime));
-				}
-			});
-		}, 1);
-	}
 }

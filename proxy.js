@@ -75,7 +75,6 @@ self._testVars = function() {
 }
 
 
-//const p_isUnshift = Symbol(),
 const isSkipNameType = {
 //todo
 //	"undefined": true,
@@ -117,6 +116,8 @@ export function getProxy(v) {
 		v.shift = new Proxy(v.shift, changeArrFuncHandler);
 		v.pop = new Proxy(v.pop, changeArrFuncHandler);
 		v.splice = new Proxy(v.splice, changeArrFuncHandler);
+		v.sort = new Proxy(v.sort, changeArrFuncHandler);
+		v.reverse = new Proxy(v.reverse, changeArrFuncHandler);
 		return new Proxy(v, proxyHandler);
 	}
 	if (v instanceof Set) {
@@ -233,8 +234,6 @@ const changeArrFuncHandler = {
 		if (t === undefined) {
 			return f.apply(thisValue, args);
 		}
-//		t[p_isUnshift] = true;
-//		return f.apply(thisValue, args);//для массивов аншифт сам сделает перестановки используя прокси
 		const oldLen = t.length,
 			res = f.apply(t, args);
 		setVal(t, "length", t.length, oldLen);
@@ -488,7 +487,7 @@ function addVar(t, n, v, $src) {
 }
 function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); - если так сделалть, то после первого - будут удалены varIdByVar.get(oldId), что приведет к тому что все пойдет по ветке !oldId - непонятно нужно ли что-то с этим делать??
 	const tId = varIdByVar.get(t);
-//console.info("setVar", "name=>", n, "\nvalue=>", v, "\ntarget=>", t, "\ntId=>", tId, "\noldVal=>", oldV, t[p_isUnshift]);
+//console.info("setVar", "name=>", n, "\nvalue=>", v, "\ntarget=>", t, "\ntId=>", tId, "\noldVal=>", oldV);
 	if (!tId) {//!tId - такое получается когда данные изменяются, а отрисовки ещё небыло - первая загрузка странцы и добавление данных на старте - это корректно
 		return;
 	}
@@ -501,14 +500,6 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 	if (self.mw_debugLevel === 2) {
 		console.info("mw_proxy => setVar", "\n\tname=>", n, "\n\tvalue=>", v, "\n\toldVal=>", oldV, "\n\ttId=>", tId, "\n\ttarget=>", t, "\n\toldId=>", oId, "\n\toldScalarId=>", oldScalarId);
 	}
-/*
-	if (t[p_isUnshift]) {
-		if (n === "length") {
-			_setVal(t, n, oldV, srcIdsByVarId.get(tId), oId);
-			delete t[p_isUnshift];
-		}
-		return;
-	}*/
 //console.error("setVar", n, v, tId, oId, oldV, oldScalarId, cur$src);
 	if (cur$src) {
 //		proxyStat.value = 2;
@@ -830,10 +821,3 @@ function delVar(vId, v, t, n, deletedVarId) {
 		}
 	}
 }
-//API
-self.mw_getProxy = getProxy;
-//todo close--
-self.mw_varIdByVar = varIdByVar;
-self.mw_varById = varById;
-self.mw_varIdByVarIdByProp = varIdByVarIdByProp;
-self.mw_srcIdsByVarId = srcIdsByVarId;

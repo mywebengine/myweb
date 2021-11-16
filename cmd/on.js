@@ -142,7 +142,7 @@ function listen(req, $src, evt) {
 				continue;
 		}
 		if (evt.type === "input") {
-			if (mod === evt.data.toLowerCase()) {
+			if (evt.data !== null && mod === evt.data.toLowerCase()) {
 				continue;
 			}
 			return;

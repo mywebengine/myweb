@@ -62,7 +62,7 @@ export function isUri(url) {
 	url = url.trimLeft();
 	return url.search(reHost) !== 0 && url[0] !== "/";
 }
-function normalizeUrl(url) {
+export function normalizeUrl(url) {
 	url = url.trim();
 //	if (url.search(reHost) === 0) {
 //		return new URL(url).href;
@@ -92,9 +92,3 @@ function normalizeUrl_get(url) {
 	return url.substr(0, i + 1) + url.substr(i + 1).replace(reSlash, "/");
 	//.trim();
 }
-//API
-self.mw_getLoc = getLoc;
-self.mw_setLoc = setLoc;
-self.mw_getUrl = getUrl;
-self.mw_isUri = isUri;
-self.mw_normalizeUrl = normalizeUrl;

@@ -878,8 +878,3 @@ function infoBySrcIds(sIds) {
 	}
 	return i;
 }
-//API
-self.mw_render = render;
-self.mw_curRender = curRender;
-self.mw_setDelay = setDelay;
-self.mw_syncInRender = syncInRender;//todo close

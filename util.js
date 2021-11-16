@@ -1,7 +1,6 @@
 ﻿import {defRequestInit, defEventInit} from "./config.js";
 import {srcBy$src} from "./descr.js";
 import {getUrl} from "./loc.js";
-//import {getProxy} from "./proxy.js";
 
 export function check(err, $src, req, scope, fileName, lineNum, colNum) {
         let errMsg = ">>>mw error";
@@ -198,39 +197,3 @@ export function copy(val) {
 	}
 	return c;
 }*/
-/*
-//todo--
-export function get$props($body, req) {
-	const cmdPrefLen = cmdPref.length,
-		t = {
-			$body
-		},
-		pArr = [];
-	for (const n in $body.dataset) {
-		const str = n.indexOf(cmdPref) == 0 && n.substr(cmdPrefLen) || n;
-		pArr.push(getVal($body, req.scope, str, true)
-			.then(val => type_get$prop(str, val)));
-	}
-	if (pArr.length === 0) {
-		return t;
-	}
-	return Promise.all(pArr)
-		.then(vals => {
-			for (const v of vals) {
-				t[v.n] = v.val;
-			}
-			return t;
-		});
-}
-function type_get$prop(n, val) {
-	return {
-		n,
-		val
-	};
-}*/
-//API
-self.mw_oset = oset;
-self.mw_del = del;
-//self.mw_ocopy = ocopy;
-//--self.get$props = get$props;
-self.mw_dispatchEvt = dispatchEvt;

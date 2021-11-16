@@ -1,5 +1,5 @@
 ﻿import {p_target} from "../config.js";
-import {check} from "../util.js";
+import {check, kebabToCamelStyle} from "../util.js";
 
 export default {
 	render(req) {
@@ -20,8 +20,9 @@ export default {
 	}
 };
 function scope_render(req, scope) {
-	if (req.expr === "") {
+	const n = req.reqCmd.args[0];
+	if (n === undefined || n === "") {
 		throw check(new Error(">>>mw scope:render: Need set scope name"), req.$src, req);
 	}
-	scope[p_target][req.expr] = req.scope;
+	scope[p_target][kebabToCamelStyle(n)] = scope;
 }

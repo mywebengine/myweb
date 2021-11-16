@@ -240,9 +240,3 @@ export function getAttrItAfter(attrIt, name, isValues) {
 	}
 	return attrIt;
 }
-//API
-//todo close --
-self.mw_$srcById = $srcById;
-self.mw_srcById = srcById;
-self.mw_srcBy$src = srcBy$src;
-self.mw_descrById = descrById;

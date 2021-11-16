@@ -745,6 +745,3 @@ function isRenderdInc($i, str) {
 		}
 	}
 }
-//API
-self.mw_incCache = incCache;
-//self.mw_waitingStack = waitingStack;

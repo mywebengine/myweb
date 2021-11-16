@@ -135,6 +135,3 @@ if (import.meta.__imports__ === undefined) {
 	Text.prototype[p_target] = null;
 	Promise.prototype[p_target] = null;
 //}
-//API
-self.mw_p_target = p_target;
-self.mw_p_topUrl = p_topUrl;

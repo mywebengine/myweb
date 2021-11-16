@@ -1129,5 +1129,3 @@ function getAttrTopUrl(src, str) {
 	}
 	return topUrl;
 }
-//API
-self.mw_removeChild = removeChild;
