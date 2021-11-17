@@ -5,11 +5,12 @@ import {mw_doc, p_target, cmdPref, cmdArgsDiv, cmdArgsDivLen, incCmdName, fetchC
 	reqCmd} from "../config.js";
 import {srcById, srcBy$src, getAttrAfter, getAttrItAfter, get$els, type_asOneIdx, type_idx, type_save} from "../descr.js";
 import {preRender, joinText, removeChild, cloneNode, getIdx, setIdx, getTopUrl} from "../dom.js";
+import {getErr} from "../err.js";
 import {eval2, q_eval2} from "../eval2.js";
 import {loadingCount, showLoading} from "../loading.js";
-import {getUrl} from "../loc.js";
+import {ocopy} from "../oset.js";
 import {srcIdsByVarId} from "../proxy.js";
-import {getRequest, check, ocopy} from "../util.js";
+import {getRequest, getUrl} from "../url.js";
 
 const waitingStack = new Map();
 export const incCache = new Map();
@@ -256,7 +257,7 @@ function createIncScript(req, include, $e) {
 			if (res.ok) {
 				return res.text();
 			}
-			throw check(new Error(`>>>mw inc:createIncScript: Request stat ${res.status}`), req.$src, req);
+			throw getErr(new Error(`>>>mw inc:createIncScript: Request stat ${res.status}`), req.$src, req);
 		})
 		.then(text => {
 			incScriptCache.set(url, text);
@@ -288,14 +289,14 @@ function runIncScript(req, text, $e, url) {
 }
 function checkScript(err, $e, req, url) {
 	if (url) {
-		return check(err, $e, req, null, url, err.lineNumber, err.columnNumber);
+		return getErr(err, $e, req, null, url, err.lineNumber, err.columnNumber);
 	}
 	if (self.mw_getLineNo === undefined) {
-		return check(err, $e, req);
+		return getErr(err, $e, req);
 	}
 	const line = self.mw_getLineNo($e),
 		numIdx = line.lastIndexOf(":");
-	return check(err, $e, req, null, line.substr(0, numIdx), Number(line.substr(numIdx + 1)) - 1 + err.lineNumber);
+	return getErr(err, $e, req, null, line.substr(0, numIdx), Number(line.substr(numIdx + 1)) - 1 + err.lineNumber);
 }
 //new
 function getNewInc(req, include, oldVal, $els, $elsLen, loading) {
@@ -676,7 +677,7 @@ function inc_get$els($src, str, expr, pos) {
 		}
 		break;
 	}
-	throw check(new Error(`>>>mw inc:incGet$els: Not found <!--inc_begin-->: "${str}", "${expr}", ${pos}`), $src);
+	throw getErr(new Error(`>>>mw inc:incGet$els: Not found <!--inc_begin-->: "${str}", "${expr}", ${pos}`), $src);
 }
 function inc_get$first($src, str, expr, pos) {
 	if ($src.nodeType === 1 && !isRenderdInc($src, str)) {
@@ -708,7 +709,7 @@ function inc_get$first($src, str, expr, pos) {
 		}
 		break;
 	}
-	throw check(new Error(`>>>mw inc:incGet$first: Not found <!--inc_begin-->: "${str}", "${expr}", ${pos}`), $src);
+	throw getErr(new Error(`>>>mw inc:incGet$first: Not found <!--inc_begin-->: "${str}", "${expr}", ${pos}`), $src);
 }
 function getIncCount($i, str, expr, pos) {
 //todo , expr, pos

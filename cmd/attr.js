@@ -3,9 +3,9 @@ import {type_cacheAttrSyncCurI} from "../cache.js";
 import {lazyRenderName, pushModName, replaceModName} from "../config.js";
 import {srcBy$src} from "../descr.js";
 import {setAttribute, setAttributeValue, removeAttribute} from "../dom.js";
+import {getErr} from "../err.js";
 import {eval2, q_eval2} from "../eval2.js";
 import {setLoc} from "../loc.js";
-import {check} from "../util.js";
 
 //1) _attr.<name>="<string|bool>"
 //2) _attr.<name>.<value>="<bool>"
@@ -133,6 +133,7 @@ function setClick(req, $src, n) {
 			location.href = $src.href;
 			return;
 		}
+		document.scrollingElement.scrollTop = 0;//todo /#id
 		setLoc(location.href);
 	});
 }
@@ -141,5 +142,5 @@ function getName(req) {
 	if (n) {
 		return n;
 	}
-	throw check(new Error(">>>mw attr:render:01: Need set attribute name"), req.$src, req);
+	throw getErr(new Error(">>>mw attr:render:01: Need set attribute name"), req.$src, req);
 }

@@ -4,9 +4,9 @@ import {type_cacheValue, type_cacheCurrent} from "./cache.js";
 import {mw_doc, mw_$src, p_topUrl, visibleScreenSize, defIdleCallbackOpt, incCmdName, onCmdName, textCmdName, descrIdName, asOneIdxName, idxName, removeEventName, defEventInit,
 	reqCmd} from "./config.js";
 import {$srcById, srcById, srcBy$src, descrById, getNewId, createSrc, type_asOneIdx, type_idx, get$els, getNextStr} from "./descr.js";
+import {getErr} from "./err.js";
 import {loadingCount} from "./loading.js";
 import {varIdByVar, varById, srcIdsByVarId, varIdByVarIdByProp} from "./proxy.js";
-import {check} from "./util.js";
 
 export function preRender($i, isLinking) {// = mw_$src) {//todo это не будет работать если после фора идет вставка на много тегов
 	const $parent = $i.parentNode,
@@ -534,7 +534,7 @@ console.warn($i)
 	}
 	if (fSrc === undefined) {
 		console.warn(">>>mw dom:q_cloneNode:", req, $els, beginIdx, len);
-		throw check(new Error(`>>>mw dom:q_cloneNode: среди элементов для клонирования нет элемента с командой, такого не должно быть`), req.$src, req);
+		throw getErr(new Error(`>>>mw dom:q_cloneNode: среди элементов для клонирования нет элемента с командой, такого не должно быть`), req.$src, req);
 	}
 	const fDescr = fSrc.descr;
 	for (const [n, v] of fDescr.attr) {
@@ -607,7 +607,7 @@ console.log($i)
 	}
 	if (fSrc === undefined) {
 		console.warn(">>>mw dom:q_cloneNode:", req, $els, beginIdx, len);
-		throw check(new Error(`>>>mw dom:q_cloneNode: среди элементов для клонирования нет элемента с командой, такого не должно быть`), req.$src, req);
+		throw getErr(new Error(`>>>mw dom:q_cloneNode: среди элементов для клонирования нет элемента с командой, такого не должно быть`), req.$src, req);
 	}
 	const fDescr = fSrc.descr;
 	for (const [n, v] of fDescr.attr) {
@@ -913,7 +913,7 @@ function _show(req, $e) {
 	const $new = $e.content.firstChild;
 	if (!$new || $new.nextSibling !== null) {
 		//todo была ошибка, что $e ет в srcBy$src - овоторить не получается
-		throw check(new Error(">>>mw show:01: Template element invalid structure on show function. <template>.content.childNodes.length must be only one element."), $e);
+		throw getErr(new Error(">>>mw show:01: Template element invalid structure on show function. <template>.content.childNodes.length must be only one element."), $e);
 	}
 	if ($new.nodeType === 1 && srcBy$src.has($e)) {
 		moveProps($e, $new, true);

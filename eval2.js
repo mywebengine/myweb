@@ -2,8 +2,8 @@ import {type_req} from "./render/render.js";
 import {getCacheSrcId} from "./cache.js";
 import {cmdPref} from "./config.js";
 import {srcById, srcBy$src} from "./descr.js";
+import {getErr} from "./err.js";
 import {setCur$src, proxyStat} from "./proxy.js";
-import {check} from "./util.js";
 
 const func = Object.getPrototypeOf(async function(){}).constructor,
 	_func = self.mw_func || {};
@@ -31,7 +31,7 @@ if (c === null) {
 		const val = func
 			.apply($src, [req, req.scope])
 			.catch(err => {
-				throw check(err, req.$src, req);
+				throw getErr(err, req.$src, req);
 			});
 		if (proxyStat.value !== 0) {
 //--			setCacheValue(cacheSrcId, req.str, val);
@@ -44,7 +44,7 @@ if (c === null) {
 	const val = func
 		.apply($src, [req, req.scope])
 		.catch(err => {
-			throw check(err, req.$src, req);
+			throw getErr(err, req.$src, req);
 		});
 	if (proxyStat.value !== 0) {
 //--		setCacheValue(cacheSrcId, req.str, val);
@@ -59,7 +59,7 @@ export function q_eval2(req, arr, isLast) {
 		.apply(null, [req, arr, isLast, req.str, setCur$src, proxyStat, srcBy$src])
 		.then(vals => Promise.all(vals))
 		.catch(err => {
-			throw check(err, req.$src, req);
+			throw getErr(err, req.$src, req);
 		});
 }
 //const commentRe = new RegExp("//.+?(\n|$)", "g");
@@ -103,7 +103,7 @@ or
 //console.log(fBody)
 		return _func[cacheKey] = new func("req", "_tpl_scope", fBody);
 	} catch (err) {
-		throw check(err, req.$src, req);
+		throw getErr(err, req.$src, req);
 	}
 }
 export function q_getEval2Func(req, expr) {
@@ -154,7 +154,7 @@ return _tpl_val;`;
 	try {
 		return _func[cacheKey] = new func("req", "_tpl_arr", "_tpl_isLast", "_tpl_str", "_tpl_setCur$src", "_tpl_proxyStat", "_tpl_srcBy$src", fBody);//, "_tpl_isReactive"
 	} catch (err) {
-		throw check(err, req.$src, req);
+		throw getErr(err, req.$src, req);
 	}
 }
 const _e = ["with", "var", "try", "catch", "switch" , "do", "while", "let", "const", "for", "if", "return"];

@@ -49,8 +49,8 @@
 				<link if="loc.name === `myweb`"
 					inc="`./loc/main.html`" />
 				<link else=""
-					inc="fetch(getUrl(`./loc/${loc.name}.html`, `/myweb/examples/`))
-						.then(res => res.ok ? res : fetch(getUrl(`./loc/${res.status}.html`, `/myweb/examples/`)))"
+					inc="fetch(mw_getUrl(`./loc/${loc.name}.html`, `/myweb/examples/`))
+						.then(res => res.ok ? res : fetch(mw_getUrl(`./loc/${res.status}.html`, `/myweb/examples/`)))"
 					if="true" />
 			</div>
 		</section>

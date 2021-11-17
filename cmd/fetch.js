@@ -3,7 +3,8 @@ import {type_cacheValue, type_cacheCurrent} from "../cache.js";
 import {defRequestInit, loadEventName, okEventName, errorEventName, resultDetailName, errorDetailName} from "../config.js";
 import {srcBy$src} from "../descr.js";
 import {eval2} from "../eval2.js";
-import {getRequest, dispatchEvt, check} from "../util.js";
+import {dispatchCustomEvent} from "../evt.js";
+import {getRequest} from "../url.js";
 
 //self.mw_fetchDefGetError = undefined;//default error handler
 
@@ -52,15 +53,15 @@ function getRes(req, res, err) {
 	req.sync.afterAnimations.add(type_animation(() => req.sync.beforeAnimations.add(type_animation(() => {//это нужно для того что бы избежать ситуации, когда ранее уже был загружен и был сет (который вызывает отмену рендера и очистку текущего)
 		const det = type_fetchDetailEvent(res, err);
 		if (err !== null) {
-			dispatchEvt(req.$src, errorEventName, det);
+			dispatchCustomEvent(req.$src, errorEventName, det);
 //			if (self.mw_fetchDefGetError) {
 //				return self.mw_fetchDefGetError(det);
 //			}
 			return;
 		}
-		dispatchEvt(req.$src, loadEventName, det);
+		dispatchCustomEvent(req.$src, loadEventName, det);
 		if (res.ok) {
-			dispatchEvt(req.$src, okEventName, det);
+			dispatchCustomEvent(req.$src, okEventName, det);
 		}
 	}, req.sync.local, 0)), req.sync.local, 0));
 }

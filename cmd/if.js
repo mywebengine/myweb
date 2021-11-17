@@ -2,8 +2,9 @@ import {renderTag, type_req, type_animation, type_renderRes} from "../render/ren
 import {p_target, ifCmdName, elseifCmdName, elseCmdName, switchCmdName, caseCmdName, defaultCmdName, foreachCmdName, incCmdName, reqCmd} from "../config.js";
 import {$srcById, srcBy$src, getAttrAfter, get$els, get$first, getNextStr} from "../descr.js";
 import {show, hide, getIdx} from "../dom.js";
+import {getErr} from "../err.js";
 import {eval2, q_eval2} from "../eval2.js";
-import {check, kebabToCamelStyle} from "../util.js";
+import {kebabToCamelCase} from "../str.js";
 
 export const ifCmd = {
 	get$els($src, str, expr, pos) {
@@ -90,7 +91,7 @@ export const switchCmd = {
 });*/
 				});
 		}
-		throw check(new Error(">>>mw switch:01:Invalide structure: case-cmmand not found"), req.$src, req);
+		throw getErr(new Error(">>>mw switch:01:Invalide structure: case-cmmand not found"), req.$src, req);
 	}
 };
 //1) прдполагается что если первый скрыт то и все такие же скрыты - и наоборот
@@ -101,7 +102,7 @@ async function if_render(req, val, ifCmdName, elseifCmdName, elseCmdName, testFu
 	if (isTrue) {
 		const valName = req.reqCmd.args[0];
 		if (valName) {
-			req.scope[p_target][kebabToCamelStyle(valName)] = val;
+			req.scope[p_target][kebabToCamelCase(valName)] = val;
 		}
 	}
 	let [$last, $attr, attr] = makeShow(req, req.$src, req.str, isTrue);
@@ -132,7 +133,7 @@ async function if_render(req, val, ifCmdName, elseifCmdName, elseCmdName, testFu
 				break;
 			}
 //			if (pos++ !== beforeAttrCount) {
-//				throw check(new Error(">>>mw if:make$first:01 Invalid structure: elseif and else command can be first in this attributes"), $i);
+//				throw getErr(new Error(">>>mw if:make$first:01 Invalid structure: elseif and else command can be first in this attributes"), $i);
 //			}
 			//!!*3
 			f = false;
@@ -158,7 +159,7 @@ async function if_render(req, val, ifCmdName, elseifCmdName, elseCmdName, testFu
 			if (isTrue = testFunc(val)) {
 				const valName = reqI.reqCmd.args[0];
 				if (valName) {
-					req.scope[p_target][kebabToCamelStyle(valName)] = val;
+					req.scope[p_target][kebabToCamelCase(valName)] = val;
 				}
 				[$last, $attr, attr] = makeShow(reqI, $i, n, true);
 //console.log(4, $last, $attr, attr);
@@ -230,7 +231,7 @@ function if_get$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, po
 				}
 			} else if (rc.cmdName === elseifCmdName || rc.cmdName === elseCmdName) {
 				if (l !== 1) {
-					throw check(new Error(">>>mw if:make$first:01 Invalid structure: elseif and else command can be first in this attributes"), $i);
+					throw getErr(new Error(">>>mw if:make$first:01 Invalid structure: elseif and else command can be first in this attributes"), $i);
 				}
 				f = false;
 				break;
@@ -286,7 +287,7 @@ function if_get$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, po
 						}
 					}
 				}
-				throw check(new Error(">>>mw if:make$first:02 Invalid structure: inc_begin not found"), $src);
+				throw getErr(new Error(">>>mw if:make$first:02 Invalid structure: inc_begin not found"), $src);
 			}
 			if (forStr !== "") {
 				const forBeforeLen = forBefore.length;
@@ -321,7 +322,7 @@ function if_get$first(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, po
 			break;
 		}
 	}
-	throw check(new Error(`>>>mw if:ifGet$first:02 Invalid structure: if-command not found - str => "${str}"`), $src);
+	throw getErr(new Error(`>>>mw if:ifGet$first:02 Invalid structure: if-command not found - str => "${str}"`), $src);
 }
 function if_get$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos) {
 //console.error(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos);
@@ -370,7 +371,7 @@ function if_get$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos)
 				break;
 			}
 //			if (pos++ !== beforeAttrCount) {
-//				throw check(new Error(">>>mw if:ifGet$els:01 Invalid structure: elseif and else command can be first in this attributes"), $i);
+//				throw getErr(new Error(">>>mw if:ifGet$els:01 Invalid structure: elseif and else command can be first in this attributes"), $i);
 //			}
 			//!!*3
 			f = false;

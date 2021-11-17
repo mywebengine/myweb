@@ -1,5 +1,6 @@
 ﻿import {p_target} from "../config.js";
-import {check, kebabToCamelStyle} from "../util.js";
+import {getErr} from "../err.js";
+import {kebabToCamelCase} from "../str.js";
 
 export default {
 	render(req) {
@@ -22,7 +23,7 @@ export default {
 function scope_render(req, scope) {
 	const n = req.reqCmd.args[0];
 	if (n === undefined || n === "") {
-		throw check(new Error(">>>mw scope:render: Need set scope name"), req.$src, req);
+		throw getErr(new Error(">>>mw scope:render: Need set scope name"), req.$src, req);
 	}
-	scope[p_target][kebabToCamelStyle(n)] = scope;
+	scope[p_target][kebabToCamelCase(n)] = scope;
 }

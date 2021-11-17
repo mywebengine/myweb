@@ -2,6 +2,7 @@
 import {type_cacheValue} from "../cache.js";
 import {p_target, preventDefaultModName, stopModName, selfModName, exactModName, eventScopeName} from "../config.js";
 import {srcBy$src} from "../descr.js";
+import {getErr} from "../err.js";
 import {eval2} from "../eval2.js";
 
 export default {
@@ -23,7 +24,7 @@ const isInit = new WeakMap();
 function on_render(req, $src) {
 	const n = req.reqCmd.args[0];
 	if (!n) {
-		throw check(new Error(">>>mw on:render:01: Need set action name"), $src, req);
+		throw getErr(new Error(">>>mw on:render:01: Need set action name"), $src, req);
 	}
 	const src = srcBy$src.get($src);
 	if (src !== undefined) {

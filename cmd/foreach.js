@@ -3,7 +3,8 @@ import {mw_doc, p_target, visibleScreenSize, defIdleCallbackOpt, foreachCmdName,
 import {srcBy$src, $srcById, getNewId, type_asOneIdx, getAttrAfter, get$els, get$first, getNextStr} from "../descr.js";
 import {show, hide, is$visible, removeChild, q_cloneNode, type_q$i, setAsOneIdx, getIdx, setIdx} from "../dom.js";
 import {eval2, q_eval2} from "../eval2.js";
-import {ocopy, kebabToCamelStyle, check} from "../util.js";
+import {ocopy} from "../oset.js";
+import {kebabToCamelCase} from "../str.js";
 
 //--import {isInc, incGet$els} from "./inc.js";
 
@@ -135,8 +136,8 @@ function getCtx(req, val) {
 		$first = foreach_get$first(req.$src, req.str, req.expr, pos),
 		$els = foreach_get$els($first, req.str, req.expr, pos),
 		attrsAfter = getAttrAfter(srcBy$src.get(req.$src).descr.attr, req.str),
-		valName = kebabToCamelStyle(req.reqCmd.args[0]),
-		keyName = kebabToCamelStyle(req.reqCmd.args[1]);
+		valName = kebabToCamelCase(req.reqCmd.args[0]),
+		keyName = kebabToCamelCase(req.reqCmd.args[1]);
 	if (!val) {
 		return type_ctx([], [], attrsAfter, $els, valName, keyName);
 	}

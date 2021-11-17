@@ -1,6 +1,6 @@
 ﻿import {p_target} from "../config.js";
 import {eval2, q_eval2} from "../eval2.js";
-import {kebabToCamelStyle} from "../util.js";
+import {kebabToCamelCase} from "../str.js";
 
 export default {
 	render(req) {
@@ -26,6 +26,6 @@ export default {
 function exec_render(req, scope, val) {
 	const n = req.reqCmd.args[0];
 	if (n !== undefined && n !== "") {
-		scope[p_target][kebabToCamelStyle(n)] = val;
+		scope[p_target][kebabToCamelCase(n)] = val;
 	}
 }

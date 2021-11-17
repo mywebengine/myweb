@@ -12,23 +12,6 @@ if (!self.requestIdleCallback) {
 		}, 1);
 	}
 }
-if (!String.prototype.copyToClipboard) {
-	String.prototype.copyToClipboard = function() {
-		const $f = document.createElement("input");
-		$f.type = "text";
-		$f.contentEditable = true;
-		$f.value = this;
-		$f.style.position = "absolute";
-		$f.style.left = "-1000px";
-		document.body.appendChild($f);
-//		$f.select();
-		$f.focus();
-		$f.setSelectionRange(0, this.length);//<- hz - maybe safari???
-		document.execCommand("copy");
-		$f.parentNode.removeChild($f);
-	}
-	hideEnum(String.prototype, "copyToClipboard");
-}
 /*
 if (!FormData.prototype.toJSON) {
 	FormData.prototype.toJSON = function() {
@@ -53,9 +36,9 @@ if (!HTMLFormElement.prototype.toJSON) {
 		return obj;
 	}
 //	hideEnum(HTMLFormElement.prototype, "toJSON");
-}*/
+}
 function hideEnum(obj, pName) {
 	Object.defineProperty(obj, pName, {
 		enumerable: false
 	});
-}
+}*/
