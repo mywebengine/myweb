@@ -257,11 +257,14 @@ const entriesFuncHandler = {
 };
 const iteratorFuncHandler = {
 	apply(f, thisValue, args) {
-//console.log("next", thisValue, thisValue[p_target], f, args);
+//console.log("next", thisValue, thisValue[p_target], f, args, cur$src);
 		const val = f.apply(thisValue, args);
 //		if (!cur$src) {
 //			return val;
 //		}
+		if (val.done) {
+			return val;
+		}
 		const t = thisValue[p_target][p_target];
 		if (val.value.length !== undefined) {
 			const [k, v] = val.value;

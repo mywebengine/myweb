@@ -134,4 +134,5 @@ if (import.meta.__imports__ === undefined) {
 	HTMLElement.prototype[p_target] = null;
 	Text.prototype[p_target] = null;
 	Promise.prototype[p_target] = null;
+	Date.prototype[p_target] = null;
 //}

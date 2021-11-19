@@ -1,3 +1,5 @@
+import {p_target} from "./config.js";
+
 export function oset(t, n, v) {
 	const o = t[n];
 	if (typeof o !== "object" || o === null || typeof v !== "object" || v === null) {
@@ -113,6 +115,16 @@ export function ocopy(val) {
 		cpy[i] = val[i];
 	}
 	return cpy;
+}
+export function srcSetScope(src, scope) {
+	const s = src.scopeCache,
+		ss = s[p_target],
+		sst = scope[p_target],
+		sss = sst !== undefined ? sst : scope;
+	for (const i in sss) {
+		ss[i] = sss[i];
+	}
+	return s;
 }
 /*
 export function copy(val) {

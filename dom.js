@@ -1037,12 +1037,17 @@ export function is$visible($e) {
 			return true;
 		}
 	}
+//	const b = $e.getBoundingClientRect();
+//	if (b.width === 0 && b.height === 0) {
+//		return false;
+//	}
 	const visibleK = 1 - visibleScreenSize,
 		left = $scroll.clientWidth * visibleK,
 		right = $scroll.clientWidth + left * -1,
 		top = $scroll.clientHeight * visibleK,
 		bottom = $scroll.clientHeight + top * -1,
 		b = $e.getBoundingClientRect();
+//console.log(`!((${b.top} > ${bottom} || ${b.top} + ${b.height} < ${top}) || (b.left > right || b.left + b.width < left))`);
 	return !((b.top > bottom || b.top + b.height < top) || (b.left > right || b.left + b.width < left));
 }
 export function setAsOneIdx(src, str, idx) {

@@ -66,7 +66,7 @@ function foreach_render(req, val) {
 		req.sync.animations.add(type_animation(() => {
 			for (let j, i = elsLen - 1; i > 0; i--) {
 				const $elsI = ctx.els[i].$els;
-				for (j = ctx.els[i].length - 1; j > -1; j--) {
+				for (j = $elsI.length - 1; j > -1; j--) {
 					removeChild($elsI[j]);
 				}
 			}
@@ -270,7 +270,7 @@ function q_add(req, ctx) {
 //	if (sId === 0) {
 //		throw new Error("foreach.js");
 //	}
-	const step = Math.ceil(document.scrollingElement.clientHeight * visibleScreenSize / viewSize) || renderPackSize;
+	const step = viewSize !== 0 ? Math.ceil(document.scrollingElement.clientHeight * visibleScreenSize / viewSize) : renderPackSize;
 	if (is$visible(from$last)) {
 		req.sync.animations.add(type_animation(() => q_addInsert(req, ctx, sId, keysLen, idx, step, from$last), req.sync.local, 0));//!! нельзя не вставить этот элементи двигасться дальше, так что если даже на момент отрисовки его не будет видно, его всё рано нужно вставить
 		return;

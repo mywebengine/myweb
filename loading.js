@@ -31,6 +31,11 @@ export async function showLoading($e, testFunc, type = "", waitTime) {
 			return;
 		}
 		setTimeout(async () => {
+			if (is$hide($e)) {//!!так как запуст может быть через таймер - многое могло случится
+//console.warn(43243242);
+//alert(1);
+				return;
+			}
 			if (!await testFunc()) {// && loadingCount.has(lKey)) {
 				toggleLoading($e, type, true, ll);
 			}
@@ -84,12 +89,12 @@ function decLoading($e, type, l) {
 	}
 }
 function toggleLoading($e, type, f, l) {
-//todo
-	if (is$hide($e)) {
+/*
+	if (is$hide($e)) {//так как запуст может быть через таймер - многое могло случится
 console.warn(43243242);
 alert(1);
 		return;
-	}
+	}*/
 	const lName = type === "" ? isFillingName : isFillingName + isFillingDiv + type;
 	if (!f) {
 		$e.removeAttribute(lName, "");

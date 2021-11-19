@@ -31,7 +31,8 @@ export function getCacheSrcId($i, str) {
 	const src = srcBy$src.get($i);
 //todo
 if (src === undefined) {
-	console.warn("2323 всё норм, но нужно последить - сейчас такое бываес с _loading -> _inc");
+//Такое было с filling - так как запуск через таймер и что-то могло удалится. Нужно защетиться от всех подобных ситуаций.
+	console.warn("2323", $i, str);
 //debugger
 	return 0;
 }

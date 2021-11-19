@@ -102,6 +102,6 @@ console.warn("2animation")
 
 }, evtOpt);
 self.addEventListener("popstate", () => {
-//console.log("ps", location.href);
+//console.log("ps", location.href, location.hash);
 	setLoc(location.href);
 }, evtOpt);

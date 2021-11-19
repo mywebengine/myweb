@@ -4,6 +4,7 @@ import {p_target, preventDefaultModName, stopModName, selfModName, exactModName,
 import {srcBy$src} from "../descr.js";
 import {getErr} from "../err.js";
 import {eval2} from "../eval2.js";
+import {kebabToCamelCase} from "../str.js";
 
 export default {
 	render(req) {
@@ -62,7 +63,7 @@ console.warn(32423423, req);
 				continue;
 		}
 	}
-	$src.addEventListener(n, evt => listen(req, $src, evt), opt);
+	$src.addEventListener(kebabToCamelCase(n), evt => listen(req, $src, evt), opt);
 }
 const holdsKeys = new Set(["ctrl", "alt", "shift", "meta"]);
 function listen(req, $src, evt) {

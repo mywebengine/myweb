@@ -12,7 +12,7 @@ const reSlash = new RegExp("//+");
 const reUp = new RegExp("[^/]+/+\\.\\./");
 const reThis = new RegExp("/+\\./");
 
-export function getUrl(url, topUrl = location.href) {
+export function getUrl(url, topUrl = location.pathname) {
 	if (isUri(url)) {
 //		if (topUrl !== undefined) {
 			if (isUri(topUrl)) {

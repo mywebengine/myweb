@@ -1,7 +1,8 @@
-import {p_target, lazyRenderName, mountEventName, renderEventName, defEventInit,
+import {lazyRenderName, mountEventName, renderEventName, defEventInit,
 	cmdArgsDiv, cmdArgsDivLen,
 		mw_cmd, reqCmd} from "../config.js";
 import {srcById, $srcById, srcBy$src} from "../descr.js";
+import {srcSetScope} from "../oset.js";
 
 //export const mw_cmd = {};//self.mw_cmd || {};
 //export const reqCmd = self.mw_reqCmd || {};
@@ -28,13 +29,14 @@ export function renderTag($src, scope, attr, sync) {
 	if (scope === null) {
 		scope = src.scopeCache;
 	} else {
-		const s = src.scopeCache,
-			ss = s[p_target],
-			sss = scope[p_target] || scope;
-		for (const i in sss) {
-			ss[i] = sss[i];
-		}
-		scope = s;
+//		const s = src.scopeCache,
+//			ss = s[p_target],
+//			sss = scope[p_target] || scope;
+//		for (const i in sss) {
+//			ss[i] = sss[i];
+//		}
+//		scope = s;
+		scope = srcSetScope(src, scope);
 	}
 	if (attr === null || attr.size === 0) {
 		return renderChildren($src, scope, sync, sId, $src);
@@ -142,42 +144,16 @@ export function q_renderTag(arr, attr, isLast, sync) {
 		if (aI.scope === null) {
 			aI.scope = iSrc.scopeCache;
 		} else {
-			const s = iSrc.scopeCache,
-				ss = s[p_target],
-				sss = aI.scope[p_target] || aI.scope;
-			for (const i in sss) {
-				ss[i] = sss[i];
-			}
-			aI.scope = s;
+//			const s = iSrc.scopeCache,
+//				ss = s[p_target],
+//				sss = aI.scope[p_target] || aI.scope;
+//			for (const i in sss) {
+//				ss[i] = sss[i];
+//			}
+//			aI.scope = s;
+			aI.scope = srcSetScope(iSrc, aI.scope);
 		}
 	}
-/*
-	const d = descrById.get(arr[0].$src[p_descrId]);
-//todo
-	if (!d) {
-console.warn(11322, arr, attr, arr[0].$src[p_srcId], arr[0].$src[p_descrId], $srcById[arr[0].$src[p_srcId]]);
-alert(1);
-	}
-//!!
-//	if (d.isWhenVisible && await getVal(arr[0].$src, arr[0].scope, isWhenVisibleName, false) !== undefined) {
-//		sync.isWhenVisible = true;
-//	}*/
-
-
-/*
-	if (attr !== null && attr.size !== 0) {
-		const lastCount = await q_attrRender(arr, attr, isLast, type_q_renderCtx(), sync);
-		if (lastCount === arrLen) {
-			return arr;
-		}
-	}
-	await q_renderChildren(arr, isLast, sync);
-	for (let i = 0; i < arrLen; i++) {
-		const $i = arr[i].$src,
-			iId = $i[p_srcId];
-		testLocalEventsBySrcId(sync.local, iId);
-	}
-	return arr;*/
 	if (attr !== null && attr.size !== 0) {
 		return q_attrRender(arr, attr, isLast, type_q_renderCtx(), sync)
 			.then(lastCount => lastCount === arrLen ? arr : _q_renderTag(arr, isLast, sync, arrLen));

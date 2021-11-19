@@ -4,6 +4,7 @@ import {$srcById, srcBy$src, getAttrAfter, get$els, get$first, getNextStr} from 
 import {show, hide, getIdx} from "../dom.js";
 import {getErr} from "../err.js";
 import {eval2, q_eval2} from "../eval2.js";
+import {ocopy, srcSetScope} from "../oset.js";
 import {kebabToCamelCase} from "../str.js";
 
 export const ifCmd = {
@@ -98,15 +99,18 @@ export const switchCmd = {
 //2) !!: !$i[p_descrId] - это коммент, текст или когда template  и в нем скрыта тектовая нода
 //3) в этом алгоритме нет проверки на эдентичность условий (предполлагается, что если они есть, то дожны быть правильными - так как такого рода ошибка может быть в серверном рендеренге - и это точно ошибка)
 async function if_render(req, val, ifCmdName, elseifCmdName, elseCmdName, testFunc = f => f, str) {
+	const pSrc = srcBy$src.get(req.$src.parentNode),
+		pScope = pSrc !== undefined ? pSrc.scopeCache : {},
+		reqI = type_req(req.$src, req.str, req.expr, srcSetScope(srcBy$src.get(req.$src), pScope), req.sync);
 	let isTrue = testFunc(val);
 	if (isTrue) {
-		const valName = req.reqCmd.args[0];
+		const valName = reqI.reqCmd.args[0];
 		if (valName) {
-			req.scope[p_target][kebabToCamelCase(valName)] = val;
+			reqI.scope[p_target][kebabToCamelCase(valName)] = val;
 		}
 	}
-	let [$last, $attr, attr] = makeShow(req, req.$src, req.str, isTrue);
-	const beforeAttrCount = isSingle(srcBy$src.get(req.$src), req.str);
+	let [$last, $attr, attr] = makeShow(reqI, reqI.$src, reqI.str, isTrue);
+	const beforeAttrCount = isSingle(srcBy$src.get(reqI.$src), reqI.str);
 //console.log(1, isTrue, $last, $attr, attr, beforeAttrCount, req, ifCmdName, elseifCmdName, elseCmdName);
 	if (beforeAttrCount === -1) {
 //		return type_renderRes(!isTrue, $attr, $last);
@@ -135,6 +139,7 @@ async function if_render(req, val, ifCmdName, elseifCmdName, elseCmdName, testFu
 //			if (pos++ !== beforeAttrCount) {
 //				throw getErr(new Error(">>>mw if:make$first:01 Invalid structure: elseif and else command can be first in this attributes"), $i);
 //			}
+			const reqI = type_req($i, n, v, srcSetScope(iSrc, pScope), req.sync);
 			//!!*3
 			f = false;
 			if (isTrue) {//это означает, что ранее был показан блок и текущий нужно скрыть, и далее рендерить по ранее заданному $attr
@@ -142,24 +147,23 @@ async function if_render(req, val, ifCmdName, elseifCmdName, elseCmdName, testFu
 //					$last = $i;
 //					break;
 //				}
-				[$last] = makeShow(req, $i, n, false);
+				[$last] = makeShow(reqI, $i, n, false);
 //console.log(2, $last, $attr, attr);
 				$i = $last;
 				break;
 			}
 			if (rc.cmdName === elseCmdName) {
-				[$last, $attr, attr] = makeShow(req, $i, n, true);
+				[$last, $attr, attr] = makeShow(reqI, $i, n, true);
 //console.log(3, $last, $attr, attr);
 				$i = $last;
 				break;
 			}
 			//это elsif
-			const reqI = type_req($i, n, v, req.scope, req.sync);
 			val = await eval2(reqI, $i, true);
 			if (isTrue = testFunc(val)) {
 				const valName = reqI.reqCmd.args[0];
 				if (valName) {
-					req.scope[p_target][kebabToCamelCase(valName)] = val;
+					reqI.scope[p_target][kebabToCamelCase(valName)] = val;
 				}
 				[$last, $attr, attr] = makeShow(reqI, $i, n, true);
 //console.log(4, $last, $attr, attr);
