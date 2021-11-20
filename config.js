@@ -135,4 +135,6 @@ if (self.__imports === undefined) {
 	Text.prototype[p_target] = null;
 	Promise.prototype[p_target] = null;
 	Date.prototype[p_target] = null;
+	Request.prototype[p_target] = null;
+	Response.prototype[p_target] = null;
 //}
