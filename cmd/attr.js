@@ -147,7 +147,7 @@ function setClick(req, $src, n) {
 					if ($id) {
 						$id.scrollIntoView();
 					}
-				}), 500));
+				}), 200));
 	});
 }
 function getName(req) {

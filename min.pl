@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-my $v = '0.9.01';
+my $v = '0.9.02';
 my $in = "./";
 
 my %import;
