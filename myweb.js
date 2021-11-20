@@ -4,7 +4,6 @@
  * Released under the MIT License.
  * https://github.com/mywebengine/myweb
  */
-
 import {syncInRender, render, renderLoop, addAnimation} from "./render/algo.js";
 import "./addons.js";
 import "./api.js";
@@ -14,10 +13,7 @@ import {isAnimationVisible} from "./dom.js";
 import {getLoc, setLoc} from "./loc.js";
 import {getProxy} from "./proxy.js";
 
-const evtOpt = {
-	passive: true
-};
-function begin() {
+(() => {
 	const mwUrl = import.meta.url;
 	self.mw_debugLevel = mwUrl.indexOf("debug=1") !== -1 ? 1 : (mwUrl.indexOf("debug=2") !== -1 ? 2 : 0);
 	self[globVarName] = getProxy(self[globVarName] || {});
@@ -55,13 +51,10 @@ function begin() {
 		once: true
 	});
 
-}
-if (import.meta.__imports__ === undefined) {
-	begin();
-} else {
-	import.meta.__imports__
-		.then(begin);
-}
+})();
+const evtOpt = {
+	passive: true
+};
 self.addEventListener("scroll", async () => {
 	const pSet = new Set(),
 		scrollSync = new Set();

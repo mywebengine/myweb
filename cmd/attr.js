@@ -1,3 +1,4 @@
+import {curRender} from "../render/algo.js";
 import {type_animation} from "../render/render.js";
 import {type_cacheAttrSyncCurI} from "../cache.js";
 import {lazyRenderName, pushModName, replaceModName} from "../config.js";
@@ -115,6 +116,7 @@ function attr_render(req, $src, n, v) {
 //	}*/
 }
 function setClick(req, $src, n) {
+//todo toLowerCase
 	if ($src.tagName !== "A" || n.toLowerCase() !== "href" || $src.target) {
 		return;
 	}
@@ -133,8 +135,19 @@ function setClick(req, $src, n) {
 			location.href = $src.href;
 			return;
 		}
-		document.scrollingElement.scrollTop = 0;//todo /#id
+		document.scrollingElement.scrollTop = 0;
 		setLoc(location.href);
+		if (location.hash === "") {
+			return;
+		}
+		curRender
+			.then(() => setTimeout(() => curRender
+				.then(() => {
+					const $id = document.getElementById(location.hash.substr(1));
+					if ($id) {
+						$id.scrollIntoView();
+					}
+				}), 500));
 	});
 }
 function getName(req) {

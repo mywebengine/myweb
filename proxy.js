@@ -182,7 +182,7 @@ const proxyHandler = {
 		}
 		return n !== Symbol.iterator ? v : t.entries;
 	},
-	set(t, n, v) {
+	set(t, n, v, r) {
 //console.log("set", n, v, "old=>", t[n], t, v === p_target);//, Object.getOwnPropertyDescriptor(t, n) && Object.getOwnPropertyDescriptor(t, n).value);
 		if (Array.isArray(t) && n === "length") {
 			const oVal = t[n];
@@ -214,7 +214,7 @@ const proxyHandler = {
 //		}
 //		return false;
 	},
-	deleteProperty(t, n) {
+	deleteProperty(t, n, r) {
 //console.log("del", t, n, "old=>", getTarget(t[n]));
 		if (n in t) {
 			const oldV = getTarget(t[n]);
@@ -543,9 +543,10 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 			varIdByVarIdByProp.delete(tId);
 		}
 	}
-	_setVal(t, n, oldV, srcIdsByVarId.get(oId || tId), oId);
-}
-function _setVal(t, n, oldV, s, oId) {
+//	_setVal(t, n, oldV, srcIdsByVarId.get(oId || tId), oId);
+//}
+//function _setVal(t, n, oldV, s, oId) {
+	const s = srcIdsByVarId.get(oId || tId);
 	if (!s) {
 //!!todo
 //console.error("!S!", t, n, oldV, s, oId);

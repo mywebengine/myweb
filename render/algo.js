@@ -20,13 +20,13 @@ export function render($src = mw_$src, delay, scope, isLinking = false) {
 	renderParams.add(type_renderParam(sId, scope || null, null, isLinking));
 	return tryRender(delay, sId);
 }
-export function renderBySrcIds(srcs, delay) {
+export function renderBySrcIds(srcs) {
 	for (const sId of srcs) {
 		if ($srcById.has(sId)) {//!! это тогда, когда мы удалили элемент, но еще не успели очистить его ссылки
 			renderParams.add(type_renderParam(sId, null, null, false));
 		}
 	}
-	tryRender(delay, 0);
+	tryRender(mw_delay, 0);
 }
 export function setDelay(t, cb) {
 	if (!cb) {
@@ -162,25 +162,25 @@ function _tryRender(delayP) {
 }
 function _render(byD, delayP) {
 	if (self.mw_debugLevel !== 0) {
-		debugInfo(byD);
+		console.info("render =>", infoBySrcIds(new Set(Array.from(byD.values()).map(i => i.sId))));
 	}
 	const syncInThisRender = new Set(),
 //		renderPack = [],
 		pSet = new Set();
 	for (const [dId, r] of byD) {
-		const sync = type_sync(++mw_syncId, r);
+		const sync = type_sync(++mw_syncId, r),
+			$sync = $srcById.get(r.sId),
+			arrLen = r.srcIds.size;
 		syncInRender.add(sync);
 		syncInThisRender.add(sync);
 		if (r.attr === null) {
 			r.attr = descrById.get(dId).attr;
 		}
-		const $sync = $srcById.get(r.sId);
 //todo
-if ($sync === undefined) {
-	console.warn("_render !", r.sId, sync);
-	continue;
-}
-		const arrLen = r.srcIds.size;
+//if ($sync === undefined) {
+//	console.warn("_render !", r.sId, sync);
+//	continue;
+//}
 		if (arrLen === 1) {
 //			renderPack.push({$src: $sync, renderParam: r, sync});
 			pSet.add(renderTag($sync, r.scope, r.attr, sync));
@@ -863,13 +863,6 @@ function type_sync(syncId, renderParam) {
 		promise,
 		resolve
 	};
-}
-function debugInfo(byD) {
-	const s = new Set();
-	for (const r of byD.values()) {
-		s.add(r.sId);
-	}
-	console.info("render =>", infoBySrcIds(s));
 }
 function infoBySrcIds(sIds) {
 	const i = {};

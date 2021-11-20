@@ -606,45 +606,43 @@ function cloneIncFragment(req, include, oldVal, loading) {
 	return $fr;
 }
 function makeSlots(req, $fr) {
-	const $slots = $fr.querySelectorAll("slot[name]"),
-		$slotsLen = $slots.length;//,
-//		$freeSlot = $fr.firstElementChild || $fr/*<-!!какой в этом резон?*/;
-//		$freeSlot = isRenderdInc(req.$src, req.str) ? null : ($fr.firstElementChild || $fr/*<-!!какой в этом резон?*/);//!!если ранее уже рендерели inc, значит у нас в старой вставке теги и они попадут в дефолтный слот - по этому дефолтного слота нет!
-	let $freeSlot;
+	const $slots = $fr.querySelectorAll("slot"),
+		$slotsLen = $slots.length;
+	let $freeSlot = null;
 	for (let i = 0; i < $slotsLen; i++) {
-		const $s = $slots[i];
-		if (!$s.name && !$freeSlot) {
-			$freeSlot = $s;
+		const $i = $slots[i],
+			n = $i.name;
+		if (n === "" && !$freeSlot) {
+			$freeSlot = $i;
 			continue;
 		}
-		const $v = req.$src.querySelectorAll(`[slot="${$s.name}"]`),
+		const $v = req.$src.querySelectorAll(`[slot="${n}"]`),
 			$vLen = $v.length;
 		for (let j = 0; j < $vLen; j++) {
-			const jSrc = srcBy$src.get($v[j]);
-			if (jSrc !== undefined) {
-				const get$elsByStr = jSrc.descr.get$elsByStr;
-				if (get$elsByStr !== null) {
-					const $els = get$els($v[j], get$elsByStr, ""),
-						$elsLen = $els.length;
-					for (let k = 0; k < $elsLen; k++) {
-//--						removeChild($els[k], true);
-						$s.appendChild($els[k]);
-//--						req.sync.animations.add(type_animation(() => $s.appendChild($els[k]), req.sync.local, 0));
-					}
-					continue;
-				}
+//			const jSrc = srcBy$src.get($v[j]);
+//			if (jSrc === undefined) {
+//				$s.appendChild($v[j]);
+//				continue;
+//			}
+//			const get$elsByStr = jSrc.descr.get$elsByStr;
+			const $j = $v[j],
+				get$elsByStr = srcBy$src.get($j).descr.get$elsByStr;
+			if (get$elsByStr === null) {
+				$i.appendChild($j);
+				continue;
 			}
-//--			removeChild($v[j], true);
-			$s.appendChild($v[j]);
-//--			req.sync.animations.add(type_animation(() => $s.appendChild($v[j]), req.sync.local, 0));
+			const $els = get$els($j, get$elsByStr, ""),
+				$elsLen = $els.length;
+			for (let k = 0; k < $elsLen; k++) {
+				$i.appendChild($els[k]);
+			}
 		}
 	}
-	if ($freeSlot) {
-		for (let $i = req.$src.firstChild; $i !== null;) {
-//--			removeChild($i, true);
-			$freeSlot.appendChild($i);
-//--			req.sync.animations.add(type_animation(() => $freeSlot.appendChild($i), req.sync.local, 0));
-		}
+	if ($freeSlot === null) {
+		return;
+	}
+	for (let $i = req.$src.firstChild; $i !== null; $i = req.$src.firstChild) {
+		$freeSlot.appendChild($i);
 	}
 }
 function inc_get$els($src, str, expr, pos) {

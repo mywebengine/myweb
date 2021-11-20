@@ -28,7 +28,7 @@ function on_render(req, $src) {
 		throw getErr(new Error(">>>mw on:render:01: Need set action name"), $src, req);
 	}
 	const src = srcBy$src.get($src);
-	if (src !== undefined) {
+//	if (src !== undefined) {
 //		const c = getCacheBySrcId($src[p_srcId]);
 		const c = src.cache;
 		if (c.isInits.has(req.str)) {// || ($src._isInit !== undefined && $src._isInit.has(req.str))) {
@@ -40,6 +40,7 @@ function on_render(req, $src) {
 			ii.delete(req.str);
 			return;
 		}
+/*
 //todo
 	} else {
 console.warn(32423423, req);
@@ -48,7 +49,7 @@ console.warn(32423423, req);
 			return;
 		}
 		isInit.set($src, new Set([req.str]));
-	}
+	}*/
 	const opt = type_listenerOptions();
 	for (let i = req.reqCmd.args.length - 1; i > 0; i--) {
 		switch (req.reqCmd.args[i]) {

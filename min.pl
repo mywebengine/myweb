@@ -22,7 +22,8 @@ print $fh '/*!
  * Released under the MIT License.
  * https://github.com/mywebengine/myweb
  */
-await Promise.all(self.__import__=new Map(['.join(",\n", @imports).']));
+self.__p=new Set;self.__i=new Map([
+'.join(",\n", @imports).']);self.__imports=Promise.all(self.__i.values()).then(() => Promise.all(self.__p))
 '.$index;
 close($fh);
 
@@ -35,10 +36,10 @@ sub go {
 		my $ff = "$in/$f";
 		$ff =~ s!/+!/!g;
 		if (-d $ff) {
-print "dir => $f\n";
 			if ($ff ne './cmd' && $ff ne './render') {
 				next;
 			}
+print "dir => $f\n";
 			go($f);
 			next;
 		}
@@ -59,7 +60,7 @@ print "file => $f\n";
 		my @n;
 		while ($cnt =~ s/import\s*([`'"])(.+?)\1(;|\r*\n|$)//) {
 			my $url = normalize_url($2, $top);
-			push(@p, sprintf('self.__import__.get("%s")', $url));
+			push(@p, sprintf('self.__i.get("%s")', $url));
 			push(@d, undef);
 			push(@n, []);
 		}
@@ -69,7 +70,7 @@ print "file => $f\n";
 				@names = split(/\s*,\s*/, $1);
 			}
 			$name =~ s/(^\s+|\s+$)//g;
-			push(@p, sprintf('self.__import__.get("%s")', $url));
+			push(@p, sprintf('self.__i.get("%s")', $url));
 			push(@d, $name);
 			push(@n, \@names);
 		}
@@ -90,26 +91,12 @@ print "file => $f\n";
 					$dcnt .= sprintf('m=arr[%d];%s', $i, join('', @v));
 				}
 			}
-			$cnt = sprintf('let %s;import.meta.__imports__=Promise.all([%s]).then(arr=>{%s});%s', join(',', @lets), join(',', @p), $dcnt, $cnt);
-=sdfdsf
-			my $dcnt = 'const ret=[];let m;';
-			my @lets;
-			for (my $i = 0; $i < @p; $i++) {
-				my @v;
-				if ($d[$i]) {
-					push(@v, 'ret.push(m.default);');
-					push(@lets, $d[$i]);
-				}
-				foreach my $p (@{$n[$i]}) {
-					push(@v, sprintf('ret.push(m.%s);', $p));#todo AS
-					push(@lets, $p);
-				}
-				if (@v) {
-					$dcnt .= sprintf('m=arr[%d];%s', $i, join('', @v));
-				}
+			$dcnt = sprintf('let %s;self.__p.add(import.meta.__imports=Promise.all([%s]).then(arr=>{%s}));', join(',', @lets), join(',', @p), $dcnt);
+			if ($f eq '/myweb.js') {
+				$cnt = $dcnt.'await self.__imports.then(()=>{delete self.__i;delete self.__p;delete self.__imports});'.$cnt;
+			} else {
+				$cnt = $dcnt.$cnt;
 			}
-			$cnt = sprintf('const [%s]=await Promise.all([%s]).then(arr=>{%sreturn ret});%s', join(',', @lets), join(',', @p), $dcnt, $cnt);
-=cut
 		}
 		if ($f eq '/myweb.js') {
 			$index = $cnt;

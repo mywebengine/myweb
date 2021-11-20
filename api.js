@@ -11,14 +11,16 @@ import {dispatchCustomEvent} from "./evt.js";
 //todo close
 //	, loadingCount
 //	} from "./loading.js";
-import {getLoc, setLoc} from "./loc.js";
+import {setLoc} from "./loc.js";
 import {getProxy
 //todo close--
 //	, varIdByVar, varById, varIdByVarIdByProp, srcIdsByVarId
 	} from "./proxy.js";
 import {oset, del} from "./oset.js";
 import {copyToClipboard} from "./str.js";
-import {getUrl, isUri, normalizeUrl} from "./url.js";
+import {getUrl
+//	, isUri, normalizeUrl
+	} from "./url.js";
 
 function begin() {
 	self.mw_incCache = incCache;
@@ -32,7 +34,6 @@ function begin() {
 
 	self.mw_removeChild = removeChild;
 
-	self.mw_getLoc = getLoc;
 	self.mw_setLoc = setLoc;
 
 	self.mw_getProxy = getProxy;
@@ -43,11 +44,10 @@ function begin() {
 	self.mw_copyToClipboard	= copyToClipboard;
 
 	self.mw_getUrl = getUrl;
-	self.mw_isUri = isUri;
-	self.mw_normalizeUrl = normalizeUrl;
+//	self.mw_isUri = isUri;
+//	self.mw_normalizeUrl = normalizeUrl;
 
 	self.mw_dispatchCustomEvent = dispatchCustomEvent;
-
 //todo close
 //	self.mw_syncInRender = syncInRender;
 //
@@ -64,9 +64,9 @@ function begin() {
 //	self.mw_varIdByVarIdByProp = varIdByVarIdByProp;
 //	self.mw_srcIdsByVarId = srcIdsByVarId;
 }
-if (import.meta.__imports__ === undefined) {
+if (self.__imports === undefined) {
 	begin();
 } else {
-	import.meta.__imports__
+	self.__imports
 		.then(begin);
 }

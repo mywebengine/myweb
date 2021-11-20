@@ -33,11 +33,11 @@ export function getUrl(url, topUrl = location.pathname) {
 	}
 	return url.search(reHost) === -1 ? location.origin + url : url;
 }
-export function isUri(url) {
+function isUri(url) {
 	url = url.trimLeft();
 	return url.search(reHost) !== 0 && url[0] !== "/";
 }
-export function normalizeUrl(url) {
+function normalizeUrl(url) {
 	url = url.trim();
 //	if (url.search(reHost) === 0) {
 //		return new URL(url).href;

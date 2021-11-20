@@ -2,6 +2,9 @@
 
 //const trimSlashRe = new RegExp("(^/|/$)", "g");
 
+export function setLoc(url) {
+	oset(self, "loc", getLoc(url));
+}
 export function getLoc(url) {//, defPageName = "") {
 	url = new URL(url);
 
@@ -13,9 +16,6 @@ export function getLoc(url) {//, defPageName = "") {
 		query.set(n, v);
 	}
 	return type_loc(url.href, url.pathname, query, url.hash);
-}
-export function setLoc(url) {
-	oset(self, "loc", getLoc(url));
 }
 //function parsePath(href, path, defPageName) {
 //	const args = path.replace(trimSlashRe, "").split("/"),
