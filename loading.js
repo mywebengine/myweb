@@ -57,7 +57,8 @@ function getLoadingKey($src) {
 	}
 	const l = loadingCount.get($src);
 	if (l === undefined) {
-		return $src;
+//		return $src;
+		return src.id;
 	}
 	loadingCount.delete($src);
 	loadingCount.set(src.id, l);

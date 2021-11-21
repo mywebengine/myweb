@@ -137,17 +137,6 @@ function setClick(req, $src, n) {
 		}
 		document.scrollingElement.scrollTop = 0;
 		setLoc(location.href);
-		if (location.hash === "") {
-			return;
-		}
-		curRender
-			.then(() => setTimeout(() => curRender
-				.then(() => {
-					const $id = document.getElementById(location.hash.substr(1));
-					if ($id) {
-						$id.scrollIntoView();
-					}
-				}), 200));
 	});
 }
 function getName(req) {

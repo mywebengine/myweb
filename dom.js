@@ -11,7 +11,7 @@ import {varIdByVar, varById, srcIdsByVarId, varIdByVarIdByProp} from "./proxy.js
 export function preRender($i, isLinking) {// = mw_$src) {//todo это не будет работать если после фора идет вставка на много тегов
 	const $parent = $i.parentNode,
 		$p = [],
-		descrAlias = new Map();
+		idAlias = new Map();//todo разнотипный мап!?
 	do {
 //////////////////////
 		if ($i.firstChild !== null) {
@@ -30,7 +30,7 @@ export function preRender($i, isLinking) {// = mw_$src) {//todo это не бу
 			$i = $i.content.firstChild;
 			continue;
 		}
-		$i = _preRenderCreate($i, descrAlias, isLinking);
+		$i = _preRenderCreate($i, idAlias, isLinking);
 		if ($i.parentNode === $parent) {//если мы не ушли вглубь - значит и вправо двигаться нельзя
 			break;
 		}
@@ -41,19 +41,19 @@ export function preRender($i, isLinking) {// = mw_$src) {//todo это не бу
 		do {
 			$i = $i.parentNode;
 			if ($i.parentNode === $parent) {
-				_preRenderCreate($i, descrAlias, isLinking);
+				_preRenderCreate($i, idAlias, isLinking);
 				$i = null;
 				break;
 			}
 			if ($i.parentNode.nodeType === 11) {
 				$i = $p.pop();
 				if ($i.parentNode === $parent) {
-					_preRenderCreate($i, descrAlias, isLinking);
+					_preRenderCreate($i, idAlias, isLinking);
 					$i = null;
 					break;
 				}
 			}
-			$i = _preRenderCreate($i, descrAlias, isLinking);
+			$i = _preRenderCreate($i, idAlias, isLinking);
 			if ($i.nextSibling !== null) {
 				$i = $i.nextSibling;
 				break;
@@ -61,13 +61,13 @@ export function preRender($i, isLinking) {// = mw_$src) {//todo это не бу
 		} while (true);
 	} while ($i !== null);
 }
-function _preRenderCreate($e, descrAlias, isLinking) {
+function _preRenderCreate($e, idAlias, isLinking) {
 	if ($e.nodeType === 1) {
 		if (!isLinking) {
 			createSrc($e);
 			return $e;
 		}
-		const src = _preRenderGetSrc($e, descrAlias);
+		const src = _preRenderGetSrc($e, idAlias);
 		if (!src.isCmd) {
 			return $e;
 		}
@@ -75,10 +75,19 @@ function _preRenderCreate($e, descrAlias, isLinking) {
 			const asOneIdx = $e.getAttribute(asOneIdxName + str),
 				idx = $e.getAttribute(idxName + str);
 			if (asOneIdx !== null) {
-				if (src.asOneIdx === null) {
-					src.asOneIdx = type_asOneIdx([[str, !isNaN(asOneIdx) ? Number(asOneIdx) : asOneIdx]]);
+				const aIdx = idAlias.get(asOneIdx);
+				if (aIdx === undefined) {
+					const nIdx = getNewId();
+					idAlias.set(asOneIdx, nIdx);
+					if (src.asOneIdx === null) {
+						src.asOneIdx = type_asOneIdx([[str, nIdx]]);
+					} else {
+						src.asOneIdx.set(str, nIdx);
+					}
+				} else if (src.asOneIdx === null) {
+					src.asOneIdx = type_asOneIdx([[str, aIdx]]);
 				} else {
-					src.asOneIdx.set(str, !isNaN(asOneIdx) ? Number(asOneIdx) : asOneIdx);
+					src.asOneIdx.set(str, aIdx);
 				}
 			}
 			if (idx !== null) {
@@ -108,18 +117,18 @@ function _preRenderCreate($e, descrAlias, isLinking) {
 	}
 	return $e.nodeType === 3 ? replaceTextBlocks($e) : $e;
 }
-function _preRenderGetSrc($e, descrAlias) {
+function _preRenderGetSrc($e, idAlias) {
 	const dId = $e.getAttribute(descrIdName);
 	if (dId === null) {
 		return createSrc($e);
 	}
-	const descr = descrAlias.get(dId);
+	const descr = idAlias.get(dId);
 	if (descr !== undefined) {
 		return createSrc($e, descr, null, null);
 	}
 	const src = createSrc($e, createDescr($e, 0), null, null);
 	src.descr.sId = src.id;
-	descrAlias.set(dId, src.descr);
+	idAlias.set(dId, src.descr);
 	return src;
 }
 /*

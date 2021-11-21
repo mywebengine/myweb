@@ -239,6 +239,14 @@ function _render(byD, delayP) {
 					break;
 				}
 			}
+			//todo
+			if (location.hash === "") {
+				return;
+			}
+			const $id = document.getElementById(location.hash.substr(1));
+			if ($id) {
+				$id.scrollIntoView();
+			}
 		})
 		.catch(err => {
 			for (const d of delayP) {

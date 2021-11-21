@@ -125,6 +125,9 @@ function getIncude(req, val) {
 		incCache.set(inc.key, inc);
 		return inc;
 	}
+	if (val === "") {
+		return null;
+	}
 	const r = getRequest(val, getTopUrl(srcBy$src.get(req.$src), req.str)),
 		include = incCache.get(r.url);
 	if (include !== undefined) {
