@@ -7,23 +7,30 @@ import {kebabToCamelCase} from "../str.js";
 export default {
 	render(req) {
 		return eval2(req, req.$src, true)
-			.then(val => watch_render(req, req.scope, val));
+			.then(val => watch_render(req, req.scope, getName(req), val));
 	},
 	q_render(req, arr, isLast) {
 		return q_eval2(req, arr, isLast)
 			.then(vals => {
-				const arrLen = arr.length,
+				const n = getName(req),
+					arrLen = arr.length,
 					res = new Array(arrLen);
 				for (let i = 0; i < arrLen; i++) {
 					if (!isLast.has(i)) {
-						res[i] = watch_render(req, arr[i].scope, vals[i]);
+						res[i] = watch_render(req, arr[i].scope, n, vals[i]);
 					}
 				}
 				return res;
 			});
 	}
 };
-function watch_render(req, scope, val) {
+function getName(req) {
+	const n = req.reqCmd.args[0];
+	if (n !== undefined && n !== "") {
+		return kebabToCamelCase(n);
+	}
+}
+function watch_render(req, scope, n, val) {
 //	const c = getCacheBySrcId(req.$src[p_srcId]),
 	const c = srcBy$src.get(req.$src).cache;
 	if (!c.current.has(req.str)) {
@@ -48,9 +55,8 @@ function watch_render(req, scope, val) {
 			cur.watch = val;
 		});
 	}
-	const n = req.reqCmd.args[0];
-	if (n) {
-		scope[p_target][kebabToCamelCase(n)] = val;
+	if (n !== undefined) {
+		scope[p_target][n] = val;
 	}
 	return null;
 }

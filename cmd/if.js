@@ -105,16 +105,16 @@ async function if_render(req, val, ifCmdName, elseifCmdName, elseCmdName, testFu
 	let isTrue = testFunc(val);
 	if (isTrue) {
 		const valName = reqI.reqCmd.args[0];
-		if (valName) {
+		if (valName !== undefined && valName !== "") {
 			reqI.scope[p_target][kebabToCamelCase(valName)] = val;
 		}
 	}
-	let [$last, $attr, attr] = makeShow(reqI, reqI.$src, reqI.str, isTrue);
-	const beforeAttrCount = isSingle(srcBy$src.get(reqI.$src), reqI.str);
-//console.log(1, isTrue, $last, $attr, attr, beforeAttrCount, req, ifCmdName, elseifCmdName, elseCmdName);
+	let [$last, $attr, attrStr] = makeShow(reqI, reqI.$src, reqI.str, isTrue);
+	const beforeAttrCount = isSingle(reqI.$src, srcBy$src.get(reqI.$src), reqI.str);
+//console.log(1, isTrue, $last, $attr, str, beforeAttrCount, req, ifCmdName, elseifCmdName, elseCmdName);
 	if (beforeAttrCount === -1) {
 //		return type_renderRes(!isTrue, $attr, $last);
-		return type_renderRes(attr === null, $attr, $last, $attr, attr);//если attr === null - это значит, что что-то не показывается, а если нужно рендереить вглубь, то был запщен рендер в афтерАнимации
+		return type_renderRes(attrStr === "", $attr, $last, $attr, attrStr);//если attrStr === "" - это значит, что что-то не показывается, а если нужно рендереить вглубь, то был запщен рендер в афтерАнимации
 	}
 	for (let $i = $last.nextSibling; $i !== null; $i = $i.nextSibling) {
 //		if ($i.nodeType !== 1) {
@@ -148,13 +148,13 @@ async function if_render(req, val, ifCmdName, elseifCmdName, elseCmdName, testFu
 //					break;
 //				}
 				[$last] = makeShow(reqI, $i, n, false);
-//console.log(2, $last, $attr, attr);
+//console.log(2, $last, $attr, attrStr);
 				$i = $last;
 				break;
 			}
 			if (rc.cmdName === elseCmdName) {
-				[$last, $attr, attr] = makeShow(reqI, $i, n, true);
-//console.log(3, $last, $attr, attr);
+				[$last, $attr, attrStr] = makeShow(reqI, $i, n, true);
+//console.log(3, $last, $attr, attrStr);
 				$i = $last;
 				break;
 			}
@@ -162,17 +162,17 @@ async function if_render(req, val, ifCmdName, elseifCmdName, elseCmdName, testFu
 			val = await eval2(reqI, $i, true);
 			if (isTrue = testFunc(val)) {
 				const valName = reqI.reqCmd.args[0];
-				if (valName) {
+				if (valName !== undefined && valName !== "") {
 					reqI.scope[p_target][kebabToCamelCase(valName)] = val;
 				}
-				[$last, $attr, attr] = makeShow(reqI, $i, n, true);
-//console.log(4, $last, $attr, attr);
+				[$last, $attr, attrStr] = makeShow(reqI, $i, n, true);
+//console.log(4, $last, $attr, attrStr);
 				$i = $last;
 				val = true;
 				break;
 			}
-			[$last, $attr, attr] = makeShow(reqI, $i, n, false);
-//console.log(5, f, $i, $last, $attr, attr);
+			[$last, $attr, attrStr] = makeShow(reqI, $i, n, false);
+//console.log(5, f, $i, $last, $attr, attrStr);
 			$i = $last;
 //			val = false;
 			break;
@@ -181,7 +181,7 @@ async function if_render(req, val, ifCmdName, elseifCmdName, elseCmdName, testFu
 			break;
 		}
 	}
-	return type_renderRes(attr === null, $attr, $last, $attr, attr);//если attr === null - это значит, что что-то не показывается, а если нужно рендереить вглубь, то был запщен рендер в афтерАнимации
+	return type_renderRes(attrStr === "", $attr, $last, $attr, attrStr);//если attrStr === "" - это значит, что что-то не показывается, а если нужно рендереить вглубь, то был запщен рендер в афтерАнимации
 }
 function make$first(req, ifCmdName, elseifCmdName, elseCmdName) {
 	let pos = 0;
@@ -344,7 +344,7 @@ function if_get$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos)
 	const iSrc = srcBy$src.get($i),
 		nStr = if_getNextStr(iSrc, firstStr.str),
 		$els = nStr !== "" ? get$els($i, iSrc.descr.get$elsByStr, nStr) : [$i],
-		beforeAttrCount = isSingle(iSrc, firstStr.str);
+		beforeAttrCount = isSingle($i, iSrc, firstStr.str);
 	if (beforeAttrCount === -1) {
 		return $els;
 	}
@@ -421,13 +421,14 @@ function if_get$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos)
 	}
 	return $els;
 }
-function isSingle(src, str) {//проверка на то что этот иф входит в конструккцию типа: <div _elseif="*" _if="эотот иф"
+function isSingle($src, src, str) {//проверка на то что этот иф входит в конструккцию типа: <div _elseif="*" _if="эотот иф"
 	let beforeAttrCount = 0,
 		f = false;
 	for (const n of src.descr.attr.keys()) {
 		if (n === str) {
 			break;
 		}
+		beforeAttrCount++;
 		switch (reqCmd.get(n).cmdName) {
 			case ifCmdName:
 			case elseifCmdName:
@@ -436,23 +437,24 @@ function isSingle(src, str) {//проверка на то что этот иф �
 //			case switchCmdName:
 			case caseCmdName:
 			case defaultCmdName:
-				beforeAttrCount++;
+//				beforeAttrCount++;
 				f = true;
 //console.log(333333, $src, str, n, descrById.get($src[p_descrId]).attr);
 			break;
 			case incCmdName:
 /*
-//todo осмыслить про это
-				const $els = get$els($src, descrById.get($src[p_descrId]).get$elsByStr, n);
-				let $i = $els[$els.length - 2];
-				while (!$i[p_isCmd]) {
-					$i = $i.previousSibling;
-				}
-				if (descrById.get($i[p_descrId]).attr.has(str)) {
-console.log(1111111, $src, str);
-					return -1;
+				const $els = get$els($src, src.descr.get$elsByStr, n);
+				for (let $i = $els[$els.length - 2];; $i = $i.previousSibling) {
+					const iSrc = srcBy$src.get($i);
+					if (!iSrc.isCmd) {
+						continue;
+					}
+					if (iSrc.descr.attr.has(str)) {
+						return -1;
+					}
+					break;
 				}*/
-				beforeAttrCount++;
+//				beforeAttrCount++;
 				f = false;
 			break;
 		}
@@ -472,10 +474,10 @@ function makeShow(req, $i, str, isShow) {
 				hide(req, $i);
 			}
 		}
-		return [$last, null, null];
+		return [$last, null, ""];
 	}
 	let $attr = null,
-		attr = null,
+		attrStr = "",
 		isNotAnimations = true;
 	for (let i = 0; i < $elsLen; i++) {
 		$i = $els[i];
@@ -487,7 +489,7 @@ function makeShow(req, $i, str, isShow) {
 			const iSrc = srcBy$src.get($i);
 			if (iSrc !== undefined && iSrc.isCmd) {
 				$attr = $i;
-				attr = getAttrAfter(iSrc.descr.attr, str);
+				attrStr = str;
 			}
 		}
 		//todo а что если это просто тег?
@@ -497,11 +499,11 @@ function makeShow(req, $i, str, isShow) {
 		}
 	}
 	if (isNotAnimations) {
-		return [$last, $attr, attr];
+		return [$last, $attr, attrStr];
 	}
 	const sId = srcBy$src.get($attr).id;
-	req.sync.afterAnimations.add(type_animation(() => renderTag($srcById.get(sId), req.scope, attr, req.sync), req.sync.local, 0));
-	return [$last, null, null];
+	req.sync.afterAnimations.add(type_animation(() => renderTag($srcById.get(sId), req.scope, str, req.sync), req.sync.local, 0));
+	return [$last, null, ""];
 }
 function if_getNextStr(src, str) {
 	return str !== switchCmdName ? getNextStr(src, str) : getNextStr(src, getNextStr(src, str));

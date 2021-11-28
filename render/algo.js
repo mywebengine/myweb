@@ -1,6 +1,6 @@
 import {renderTag, q_renderTag, dispatchLocalEvents, type_isLast, type_q_arr, type_animation} from "./render.js";
 import {mw_$src, renderPackSize, lazyRenderName, defIdleCallbackOpt} from "../config.js";
-import {$srcById, srcById, srcBy$src, descrById, get$els} from "../descr.js";
+import {$srcById, srcById, srcBy$src, descrById, getSrcId, get$els} from "../descr.js";
 import {preRender, is$hide, is$visible, isAnimationVisible} from "../dom.js";
 import {loadingCount} from "../loading.js";
 
@@ -11,19 +11,22 @@ let mw_delay = 0,
 const delayParams = new Set();
 export const syncInRender = new Set();
 export let curRender = Promise.resolve();
+export function getCurRender() {
+	return curRender;
+}
 
 export function render($src = mw_$src, delay, scope, isLinking = false) {
 	if (!srcBy$src.has($src)) {
 		preRender($src, isLinking);
 	}
 	const sId = srcBy$src.get($src).id;
-	renderParams.add(type_renderParam(sId, scope || null, null, isLinking));
+	renderParams.add(type_renderParam(sId, scope || null, "", isLinking));
 	return tryRender(delay, sId);
 }
 export function renderBySrcIds(srcs) {
 	for (const sId of srcs) {
 		if ($srcById.has(sId)) {//!! это тогда, когда мы удалили элемент, но еще не успели очистить его ссылки
-			renderParams.add(type_renderParam(sId, null, null, false));
+			renderParams.add(type_renderParam(sId, null, "", false));
 		}
 	}
 	tryRender(mw_delay, 0);
@@ -101,7 +104,7 @@ function _tryRender(delayP) {
 					//повторить + новый
 					renderParams.add(sync.renderParam);
 					for (const sId of r.srcIds) {
-						renderParams.add(type_renderParam(sId, null, null, false));
+						renderParams.add(type_renderParam(sId, null, "", false));
 					}
 					continue;
 				}
@@ -128,12 +131,12 @@ function _tryRender(delayP) {
 		}
 	}
 //console.log("_R", byD, repeatByD, toCancleSync);
-	if (toCancleSync.size !== 0) {
-		for (const sync of toCancleSync) {
-			syncInRender.delete(sync);
-			sync.resolve();
-		}
-	}
+//	if (toCancleSync.size !== 0) {
+//		for (const sync of toCancleSync) {
+//			syncInRender.delete(sync);
+//			sync.resolve();
+//		}
+//	}
 	if (byD.size !== 0) {
 		const p = _render(byD, delayP);
 		if (repeatByD.size === 0) {
@@ -173,9 +176,9 @@ function _render(byD, delayP) {
 			arrLen = r.srcIds.size;
 		syncInRender.add(sync);
 		syncInThisRender.add(sync);
-		if (r.attr === null) {
-			r.attr = descrById.get(dId).attr;
-		}
+//--		if (r.attr === null) {
+//--			r.attr = descrById.get(dId).attr;
+//--		}
 //todo
 //if ($sync === undefined) {
 //	console.warn("_render !", r.sId, sync);
@@ -183,7 +186,7 @@ function _render(byD, delayP) {
 //}
 		if (arrLen === 1) {
 //			renderPack.push({$src: $sync, renderParam: r, sync});
-			pSet.add(renderTag($sync, r.scope, r.attr, sync));
+			pSet.add(renderTag($sync, r.scope, r.str, sync));
 			continue;
 		}
 		const arr = new Array(arrLen);
@@ -194,9 +197,9 @@ function _render(byD, delayP) {
 //todo не могу сообразить, почему этот (1) вариант быстрее! неужелди выполняется в нескольких потоках?
 //console.time(111);
 		pSet.add(_q_renderPack(r, sync, arr));
-//		pSet.add(q_renderTag(arr, r.attr, type_isLast(), sync)
+//		pSet.add(q_renderTag(arr, "", type_isLast(), sync)
 //.then(() => console.timeEnd(111)));
-//была проблема с с() из-за потери ид для обновлении при отмене				.then(() => !console.log(123, srcIdsByVarId.get(varIdByVarIdByProp[55].get("green")), arr) && q_renderTag(arr, r.attr, type_isLast(), sync)));
+//была проблема с с() из-за потери ид для обновлении при отмене				.then(() => !console.log(123, srcIdsByVarId.get(varIdByVarIdByProp[55].get("green")), arr) && q_renderTag(arr, "", type_isLast(), sync)));
 	}
 //	if (renderPack.length !== 0) {
 //		pSet.add(_renderPack(renderPack));
@@ -229,14 +232,14 @@ function _render(byD, delayP) {
 			for (const d of delayP) {
 				for (const sync of syncInThisRender) {
 					let l = sync.local.get(d.sId);
-					if (l === undefined) {
-						continue;
+					if (l !== undefined) {
+//						for (; l !== undefined && l.newSrcId !== 0; l = sync.local.get(d.sId)) {
+//							d.sId = l.newSrcId;
+//						}
+//						d.sId = getSrcId(sync.local, d.sId);
+						d.resolve(sync);
+						break;
 					}
-					for (; l.newSrcId !== 0; l = sync.local.get(d.sId)) {
-						d.sId = l.newSrcId;
-					}
-					d.resolve(sync);
-					break;
 				}
 			}
 			//todo
@@ -274,7 +277,7 @@ console.log(1, nows)
 			l = nows.length;
 		for (let i = 0; i < l; i++) {
 			const e = nows[i];
-			pSet.add(renderTag(e.$src, e.renderParam.scope, e.renderParam.attr, e.sync));
+			pSet.add(renderTag(e.$src, e.renderParam.scope, e.renderParam.str, e.sync));
 		}
 		return Promise.all(pSet)
 			.then(() => deferreds.length !== 0 && _renderPack(deferreds));
@@ -289,7 +292,7 @@ console.log(2, deferreds)
 			const ricId = requestIdleCallback(() => {
 alert(1)
 				e.sync.idleCallback.delete(ricId);
-				renderTag(e.$src, e.renderParam.scope, e.renderParam.attr, e.sync)
+				renderTag(e.$src, e.renderParam.scope, e.renderParam.str, e.sync)
 					.then(ricResolve);
 			});
 			e.sync.idleCallback.set(ricId, ricResolve);
@@ -311,14 +314,14 @@ function _q_renderPack(renderParam, sync, arr) {
 	}
 	if (nows.length !== 0) {
 //console.log(1, nows)
-		return q_renderTag(nows, renderParam.attr, type_isLast(), sync)
+		return q_renderTag(nows, renderParam.str, type_isLast(), sync)
 			.then(() => deferreds.length !== 0 && sync.afterAnimations.add(type_animation(() => _q_renderPack(renderParam, sync, deferreds), sync.local, 0)));
 	}
 //console.log(2, deferreds)
 	return new Promise(ricResolve => {
 		const ricId = requestIdleCallback(() => {
 			sync.idleCallback.delete(ricId);
-			q_renderTag(deferreds.splice(0, renderPackSize), renderParam.attr, type_isLast(), sync)
+			q_renderTag(deferreds.splice(0, renderPackSize), renderParam.str, type_isLast(), sync)
 				.then(() => {
 					if (deferreds.length !== 0) {
 						return _q_renderPack(renderParam, sync, deferreds)
@@ -549,7 +552,7 @@ function prepareRenderParam(toCancleSync) {
 	}
 //console.timeEnd("p1")
 //console.time("p2")
-	for (const [dId, r] of byD) {//вычисляем когда мнго элементов типа: if-else or inc и оставляем только первый dId
+	for (const [dId, r] of byD) {//вычисляем когда много элементов типа: if-else or inc и оставляем только первый dId
 		const $i = $srcById.get(r.sId);
 		if (is$hide($i)) {//если элеменит скрыт template-ом
 			prpDeleteDescrId(byD, dId, toCancleSync);
@@ -564,8 +567,8 @@ function prepareRenderParam(toCancleSync) {
 		if ($elsLen === 1) {
 			continue;
 		}
-		//if-else
-		for (let i = 0; i < $elsLen; i++) {
+		//if-else, inc
+		for (let f = true, i = 0; i < $elsLen; i++) {
 			const iSrc = srcBy$src.get($els[i]);
 			if (iSrc === undefined) {
 				continue;
@@ -574,6 +577,14 @@ function prepareRenderParam(toCancleSync) {
 			if (iDId !== dId) {// && byD.has(iDId)) {
 				prpDeleteDescrId(byD, iDId, toCancleSync);
 			}
+/*
+			if (f && iSrc.isCmd) {//!!эта оптимизация не имеет особого приемущества
+				f = false;
+				r.sId = iSrc.id;
+				byD.set(iSrc.descr.id, r);
+				continue;
+			}
+			prpDeleteDescrId(byD, iSrc.descr.id, toCancleSync);*/
 		}
 		r.$els = $els;//нужен для getPosStat() при проверке на отмену
 	}
@@ -716,9 +727,9 @@ alert(222);
 		}
 	}
 //console.timeEnd("p4")
-	renderParams.clear();
 //console.log(2, new Map(byD), toCancleSync);
 //alert(1);
+	renderParams.clear();
 	return byD;
 }
 function prpDeleteDescrId(byD, dId, toCancleSync) {
@@ -732,11 +743,13 @@ function prpDeleteDescrId(byD, dId, toCancleSync) {
 //		for (let l = sync.local.get(sId); l.newSrcId !== 0; l = sync.local.get(sId)) {
 //			sId = l.newSrcId;
 //		}
+//		sId = getSrcId(sync.local, sync.renderParam.sId);
 		if (s.has(sync.renderParam.sId)) {
 			sync.stat = 4;
 			toCancleSync.add(sync);
 		}
 	}
+//console.error(dId);
 	byD.delete(dId);
 }
 function checkSync(sync, newRenderParam) {
@@ -747,14 +760,18 @@ function checkSync(sync, newRenderParam) {
 //4 - by prepare
 //5 - not found sync.renderParam.sId
 //7 - ready
+//8 - cancel
 //console.log("cancel", sync.stat, sync, p);
 	if (sync.stat !== 0) {
 		return getPosStat(sync, newRenderParam);
 	}
 	const stat = getPosStat(sync, newRenderParam);
-	if (stat === 0) {
-		return stat;
+	if (stat !== 0) {
+		cancelSync(sync, stat);
 	}
+	return stat;
+}
+export function cancelSync(sync, stat) {
 	sync.stat = stat;
 	for (const [id, r] of sync.idleCallback) {
 		cancelIdleCallback(id);
@@ -764,16 +781,19 @@ function checkSync(sync, newRenderParam) {
 		cancelAnimationFrame(id);
 		r();
 	}
+	syncInRender.delete(sync);
+	sync.resolve();
 	return stat;
 }
 function getPosStat(sync, newRenderParam) {
-	let syncSrcId = sync.renderParam.sId;
-	if (!srcById.has(syncSrcId)) {
-		for (let l = sync.local.get(syncSrcId); l.newSrcId !== 0; l = sync.local.get(syncSrcId)) {
-			syncSrcId = l.newSrcId;
-		}
-	}
-	const $sync = $srcById.get(syncSrcId);
+//	let syncSrcId = sync.renderParam.sId;
+//	if (!srcById.has(syncSrcId)) {
+//		for (let l = sync.local.get(syncSrcId); l.newSrcId !== 0; l = sync.local.get(syncSrcId)) {
+//			syncSrcId = l.newSrcId;
+//		}
+//	}
+	const syncSrcId = getSrcId(sync.local, sync.renderParam.sId),
+		$sync = $srcById.get(syncSrcId);
 //todo--
 	if ($sync === undefined) {
 //		throw new Error("!!! checkSync - hz " + syncSrcId);
@@ -823,11 +843,11 @@ function type_delayParam(sId, resolve, reject) {
 		reject
 	};
 }
-function type_renderParam(sId, scope, attr, isLinking) {
+function type_renderParam(sId, scope, str, isLinking) {
 	return {
 		sId,
 		scope,
-		attr,
+		str,
 		isLinking,
 		isLazyRender: false,
 		srcIds: new Set(),

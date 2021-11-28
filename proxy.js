@@ -9,6 +9,11 @@ export const varById = new Map();
 export const varIdByVarIdByProp = new Map();
 export const srcIdsByVarId = new Map();
 
+//self.mw_varIdByVar = varIdByVar;
+//self.mw_varById = varById;
+//self.mw_varIdByVarIdByProp = varIdByVarIdByProp;
+//self.mw_srcIdsByVarId = srcIdsByVarId;
+
 //todo--
 self._testVars = function() {
 	const v = new Set(Array.from(varIdByVar.values()));
@@ -558,54 +563,10 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 		toClear = new Set();//s);
 	for (const sId of s) {
 		const $i = $srcById.get(sId);
-		if (!$i || toClear.has(sId)) {//похоже это при удалении элементов
+		if ($i === undefined || toClear.has(sId)) {//похоже это при удалении элементов
 //			console.warn(2, sId);
 			continue;
 		}
-/*2021-06-16 - ниже проще
-		setInnerSrcIdSetBy$src(toClear, $i);
-		const d = descrById.get($i[p_descrId]);
-		if (!d.isAsOne) {
-			continue;
-		}
-		for (const str of d.attr.keys()) {
-			if (!reqCmd.get(str).cmd.isAsOne) {
-				continue;
-			}
-			const idx = getIdx($i, str);
-console.log(idx, d);
-			for (let $j = $i.nextSibling; $j !== null; $j = $j.nextSibling) {
-console.log(1, $j);
-//				if ($j.nodeType === 1) {
-				if ($j[p_isCmd]) {
-					if (getIdx($j, str) !== idx) {
-console.log(11, $j);
-						break;
-					}
-					toClear.add($j[p_srcId]);
-					setInnerSrcIdSetBy$src(toClear, $j);
-				}
-			}
-			break;
-		}*/
-/*
-//2021-06-18
-		const d = descrById.get($i[p_descrId]);
-		if (!d.isAsOne) {
-			setInnerSrcIdSetBy$src(toClear, $i);
-			continue;
-		}
-console.log(1111, d.srcIds, n, t[n], s);
-//if (t[n] === undefined) {
-//	debugger;
-//}
-		for (const sId of d.srcIds) {
-			if (!toClear.has(sId)) {
-				toClear.add(sId);
-console.log(1, sId, $srcById[sId]);
-				setInnerSrcIdSetBy$src(toClear, $srcById[sId]);
-			}
-		}*/
 //2021-07-20 - data.arr[2] = 1111 - не очитит data.arr, но и не нужно - так как в кэше ссылка на arr
 		const iDescr = srcBy$src.get($i).descr;
 		if (iDescr.asOnes === null) {
@@ -617,57 +578,11 @@ console.log(1, sId, $srcById[sId]);
 		for (let j = $els.length - 1; j > -1; j--) {
 			const $j = $els[j],
 				jSrc = srcBy$src.get($j);
-			if (jSrc === undefined) {
-				continue;
+			if (jSrc !== undefined) {
+				toClear.add(jSrc.id);
+				setInnerSrcIdSetBy$src(toClear, $j);
 			}
-			toClear.add(jSrc.id);
-			setInnerSrcIdSetBy$src(toClear, $j);
 		}
-//todo--
-/*
-		const attrIt = descr.attr.keys();
-		for (let i = attrIt.next(); !i.done; i = attrIt.next()) {
-			const str = i.value;
-			if (!reqCmd.get(str).cmd.isAsOne) {
-				continue;
-			}
-			const idx = getIdx(src, str);
-//todo leto zima local
-//!! в случаи когда обновление прилось только на один элемент (это что-то типа _for="f ? arr1 : arr2"), сейчас очищаем кэш для всех элементов, только в случаи когда обновление пришлось на нулевой элемент (когда все нули) - этобедет коректно работать если _for* будет добавлять новые элементы в конец (сецчас это так - и должно остаться так, по пичине отложенного рендера в скроле)
-// - это не совсем то что хочется, но работать будет, всё из-за _for="f ? arr1 : arr2", когда меням f
-// --- это не так работает, сейчас когда вычислялся  фор - привязка идет тольтко к базовому элементу, все остальные не привязаны в выражению у фор
-			if (idx === 0) {
-				let isFirst = true;
-				for (i = attrIt.next(); !i.done; i = attrIt.next()) {
-					if (reqCmd.get(i.value).cmd.isAsOne && getIdx(src, i.value) !== 0) {
-						isFirst = false;
-						break;
-					}
-				}
-				if (isFirst) {
-					for (const iId of descr.srcIds) {//можно взять все на этом уровне по фыЩтуШвч
-						if (iId !== sId) {
-							toClear.add(iId);
-							setInnerSrcIdSetBy$src(toClear, $srcById[iId]);
-						}
-					}
-					continue;
-				}
-			}
-//--			setInnerSrcIdSetBy$src(toClear, $i);
-			for (let $j = $i.nextSibling; $j !== null; $j = $j.nextSibling) {
-//				if ($j.nodeType === 1) {
-				const jSrc = srcBy$src.get($j);
-				if (jSrc !== undefined && jSrc.isCmd) {
-					if (getIdx(jSrc, str) !== idx) {
-						break;
-					}
-					toClear.add(jSrc.id);
-					setInnerSrcIdSetBy$src(toClear, $j);
-				}
-			}
-			break;
-		}*/
 	}
 //console.log(1, toClear, n);
 /*
@@ -682,6 +597,7 @@ for (const sId of toClear) {
 //				continue;
 //			}
 			c.value = type_cacheValue();
+//console.log(61, sId)
 /*todo
 			if (!t[p_isUnshift]) {
 				c.current = type_cacheCurrent();
@@ -705,13 +621,14 @@ console.log(11111111, sId);
 			}, defIdleCallbackOpt);
 		}
 	} else {
-//console.log(1111, n, oldV);
+//console.log(1111, n, oldV, toClear);
 		for (const sId of toClear) {
 			const c = srcById.get(sId).cache;
 //			if (c === null) {
 //				continue;
 //			}
 			c.value = type_cacheValue();//<-если это новый элемент массива
+//console.log(62, sId)
 //todo c.current нужен для храниения текущего значения команды, удаляя его мы нарушаем идею его использования
 //			c.current = type_cacheCurrent();
 //--			decVar(t, n, oldV, sId, oId);

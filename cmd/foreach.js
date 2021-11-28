@@ -1,6 +1,6 @@
 import {q_renderTag, type_req, type_isLast, type_q_arr, type_animation, type_renderRes} from "../render/render.js";
 import {mw_doc, p_target, visibleScreenSize, defIdleCallbackOpt, foreachCmdName, renderPackSize} from "../config.js";
-import {srcBy$src, $srcById, getNewId, type_asOneIdx, getAttrAfter, get$els, get$first, getNextStr} from "../descr.js";
+import {srcBy$src, $srcById, getNewId, type_asOneIdx, getSrcId, get$els, get$first, getNextStr} from "../descr.js";
 import {show, hide, is$visible, removeChild, q_cloneNode, type_q$i, setAsOneIdx, getIdx, setIdx} from "../dom.js";
 import {eval2, q_eval2} from "../eval2.js";
 import {ocopy} from "../oset.js";
@@ -135,11 +135,10 @@ function getCtx(req, val) {
 	const pos = -1,//нужно было бы запускать с нулевого элемента для получения кэша - эта задача режается в функции получения кэша
 		$first = foreach_get$first(req.$src, req.str, req.expr, pos),
 		$els = foreach_get$els($first, req.str, req.expr, pos),
-		attrsAfter = getAttrAfter(srcBy$src.get(req.$src).descr.attr, req.str),
 		valName = kebabToCamelCase(req.reqCmd.args[0]),
 		keyName = kebabToCamelCase(req.reqCmd.args[1]);
 	if (!val) {
-		return type_ctx([], [], attrsAfter, $els, valName, keyName);
+		return type_ctx([], [], $els, valName, keyName);
 	}
 	if (Array.isArray(val)) {
 		const len = val.length,
@@ -147,7 +146,7 @@ function getCtx(req, val) {
 		for (let i = 0; i < len; i++) {
 			keys[i] = i;
 		}
-		return type_ctx(keys, val, attrsAfter, $els, valName, keyName);
+		return type_ctx(keys, val, $els, valName, keyName);
 	}
 	if (val instanceof Set || val instanceof Map) {
 		const keys = new Array(val.size),
@@ -157,7 +156,7 @@ function getCtx(req, val) {
 			keys[i] = k;
 			arr[i++] = v;
 		}
-		return type_ctx(keys, arr, attrsAfter, $els, valName, keyName);
+		return type_ctx(keys, arr, $els, valName, keyName);
 	}
 	const keys = [],
 		arr = [];
@@ -165,9 +164,9 @@ function getCtx(req, val) {
 		keys.push(key);
 		arr.push(val[key]);
 	}
-	return type_ctx(keys, arr, attrsAfter, $els, valName, keyName);
+	return type_ctx(keys, arr, $els, valName, keyName);
 }
-function type_ctx(keys, value, attrsAfter, $els, valName, keyName) {
+function type_ctx(keys, value, $els, valName, keyName) {
 	const $elsLen = $els.length,
 		els = new Array($elsLen);
 	for (let i = 0; i < $elsLen; i++) {
@@ -176,7 +175,6 @@ function type_ctx(keys, value, attrsAfter, $els, valName, keyName) {
 	return {
 		keys,
 		value,
-		attrsAfter,
 		els,
 		valName,
 		keyName
@@ -255,7 +253,7 @@ function q_add(req, ctx) {
 		keysLen = ctx.keys.length,
 		from = ctx.els[elsLen - 1],
 		from$elsLen = from.$els.length,
-		from$last = from.$els[from$elsLen - 1],
+//		from$last = from.$els[from$elsLen - 1],
 		idx = elsLen;
 	let viewSize = 0,//todo расположение можжет быть и горизонтальным, тогда будем рендерить по одной* штуке
 		sId = 0;
@@ -271,8 +269,9 @@ function q_add(req, ctx) {
 //		throw new Error("foreach.js");
 //	}
 	const step = viewSize !== 0 ? Math.ceil(document.scrollingElement.clientHeight * visibleScreenSize / viewSize) : renderPackSize;
-	if (is$visible(from$last)) {
-		req.sync.animations.add(type_animation(() => q_addInsert(req, ctx, sId, keysLen, idx, step, from$last), req.sync.local, 0));//!! нельзя не вставить этот элементи двигасться дальше, так что если даже на момент отрисовки его не будет видно, его всё рано нужно вставить
+//	if (is$visible(from$last)) {
+	if (is$visible(from.$els[from$elsLen - 1])) {
+		req.sync.animations.add(type_animation(() => q_addInsert(req, ctx, getSrcId(req.sync.local, sId), keysLen, idx, step), req.sync.local, 0));//!! нельзя не вставить этот элементи двигасться дальше, так что если даже на момент отрисовки его не будет видно, его всё рано нужно вставить
 		return;
 	}
 	req.sync.afterAnimations.add(type_animation(() => q_addDeferred(req, ctx, sId, keysLen, idx, step), req.sync.local, 0));
@@ -281,24 +280,18 @@ function q_addDeferred(req, ctx, sId, keysLen, idx, step) {
 	return new Promise(ricResolve => {//обязательно нужден проимс
 		const ricId = requestIdleCallback(() => {
 			req.sync.idleCallback.delete(ricId);
-			req.sync.animations.add(type_animation(() => {
-				for (let l = req.sync.local.get(sId); l.newSrcId !== 0; l = req.sync.local.get(sId)) {
-					sId = l.newSrcId;
-				}
-				q_addInsert(req, ctx, sId, keysLen, idx, step, $srcById.get(sId));
-//			}, req.sync.local, $from[$fromLen - 1][p_srcId]));//!!если передаь элемент для скрола, то получается штука: если прокручиваем быстро то можем (вставилось много, но неотрендерелось еще, мы прокрутим на конеч вставки и получим что первые теги взтавки $from[$fromLen - 1][p_srcId] не видны - добавиться скролл анимация - а в ней дальнейшая вставка блоков - и на этом рендер оставнавливается, пока не докрутим до неё)// - да, и такая логика рендера неестественна - на сервере всё равно все будет отрендерено
-//			}, req.sync.local, 0));
-			}, req.sync.local, sId));
+			req.sync.animations.add(type_animation(() => q_addInsert(req, ctx, getSrcId(req.sync.local, sId), keysLen, idx, step), req.sync.local, sId));
 			ricResolve();
 		}, defIdleCallbackOpt);
 		req.sync.idleCallback.set(ricId, ricResolve);
 	});
 }
-function q_addInsert(req, ctx, sId, keysLen, idx, step, from$last) {
+function q_addInsert(req, ctx, sId, keysLen, idx, step) {
 	const $fr = mw_doc.createDocumentFragment(),
 		newEls = q_addI(req, sId, $fr, keysLen, idx, step),//!!перенесли в аницации, что бы дать возможнасть отрисовать всё перед клонированием
 		newElsLen = newEls.length,
-		$last = get$last(req, from$last, idx - 1);
+//		$last = get$last(req, from$last, idx - 1);
+		$last = get$last(req, $srcById.get(sId), idx - 1);
 	idx += newElsLen;
 	if (idx >= keysLen) {
 		$last.parentNode.insertBefore($fr, $last.nextSibling);
@@ -320,6 +313,24 @@ function q_addInsert(req, ctx, sId, keysLen, idx, step, from$last) {
 	throw new Error("foreach.js");
 }
 function get$last(req, $last, lastIdx) {
+	const asOneIdx = srcBy$src.get($last).asOneIdx.get(req.str),
+		$els = get$els($last, srcBy$src.get($last).descr.get$elsByStr, req.str);
+	$last = $els[$els.length - 1];
+	for (let $i = $last.nextSibling; $i !== null; $i = $i.nextSibling) {
+		const iSrc = srcBy$src.get($i);
+		if (iSrc === undefined || !iSrc.isCmd) {
+			continue;
+		}
+		if (iSrc.asOneIdx === null || iSrc.asOneIdx.get(req.str) !== asOneIdx || getIdx(iSrc, req.str) !== lastIdx) {
+			return $last;
+		}
+		const $els = get$els($i, srcBy$src.get($i).descr.get$elsByStr, req.str);
+		$last = $els[$els.length - 1];
+	}
+	return $last;
+}
+/*
+function get$last(req, $last, lastIdx) {
 	const asOneIdx = srcBy$src.get($last).asOneIdx.get(req.str);
 	for (let $i = $last.nextSibling; $i !== null; $i = $i.nextSibling) {
 		const iSrc = srcBy$src.get($i);
@@ -332,7 +343,7 @@ function get$last(req, $last, lastIdx) {
 		$last = $i;
 	}
 	return $last;
-}
+}*/
 function q_addI(req, sId, $fr, keysLen, idx, step) {
 	const len = idx + step > keysLen ? keysLen - idx : step,
 		newEls = q_cloneNode(req, sId, idx, len),
@@ -488,7 +499,7 @@ function q_forRenderI(req, ctx, els) {//!!idxs необходим для раз�
 		}
 		arr[i] = type_q_arr($i, scopeI);
 	}
-//console.log(555, arr, ctx.attrsAfter);
+//console.log(555, arr, req.str);
 //todo  нужно переносить на стр - атрибуты мешаю рендерить фор->инк (1)
-	return q_renderTag(arr, ctx.attrsAfter, type_isLast(), req.sync);
+	return q_renderTag(arr, req.str, type_isLast(), req.sync);
 }

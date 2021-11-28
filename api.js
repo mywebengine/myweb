@@ -1,11 +1,8 @@
 import {incCache} from "./cmd/inc.js";
-import {render, curRender, setDelay
-//todo close
-//	, syncInRender
-	} from "./render/algo.js";
+import {render, getCurRender, setDelay, syncInRender, cancelSync} from "./render/algo.js";
 import {p_target, p_topUrl} from "./config.js";
 //import {$srcById, srcById, srcBy$src, descrById} from "./descr.js";
-import {removeChild} from "./dom.js";
+import {preRender, removeChild} from "./dom.js";
 import {dispatchCustomEvent} from "./evt.js";
 //import {showLoading
 //todo close
@@ -26,12 +23,15 @@ function begin() {
 	self.mw_incCache = incCache;
 
 	self.mw_render = render;
-	self.mw_curRender = curRender;
+	self.mw_getCurRender = getCurRender;
 	self.mw_setDelay = setDelay;
+	self.mw_syncInRender = syncInRender;
+	self.mw_cancelSync = cancelSync;
 
 	self.mw_p_target = p_target;
 	self.mw_p_topUrl = p_topUrl;
 
+	self.mw_preRender = preRender;
 	self.mw_removeChild = removeChild;
 
 	self.mw_setLoc = setLoc;

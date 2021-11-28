@@ -117,9 +117,9 @@ function begin() {
 	addCommand(fillingCmdName, fillingCmd);
 	addCommand(watchCmdName, watchCmd);
 //ssr
-	for (const [str, r] of reqCmd) {
-		r.cmd = mw_cmd.get(str.substr(0, str.indexOf(cmdArgsDiv)));
-	}
+//	for (const [str, r] of reqCmd) {
+//		r.cmd = mw_cmd.get(str.substr(0, str.indexOf(cmdArgsDiv)));
+//	}
 }
 if (self.__imports === undefined) {
 	begin();

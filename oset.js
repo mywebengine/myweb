@@ -1,3 +1,4 @@
+//import {type_cacheValue} from "./cache.js";
 import {p_target} from "./config.js";
 
 export function oset(t, n, v) {
@@ -117,14 +118,14 @@ export function ocopy(val) {
 	return cpy;
 }
 export function srcSetScope(src, scope) {
-	const s = src.scopeCache,
-		ss = s[p_target],
-		sst = scope[p_target],
-		sss = sst !== undefined ? sst : scope;
-	for (const i in sss) {
-		ss[i] = sss[i];
+	const srcScope = src.scopeCache,
+		srcScopeT = srcScope[p_target],
+		scopeT = scope[p_target],
+		s = scopeT !== undefined ? scopeT : scope;
+	for (const i in s) {
+		srcScopeT[i] = s[i];
 	}
-	return s;
+	return srcScope;
 }
 /*
 export function copy(val) {

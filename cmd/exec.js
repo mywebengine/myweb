@@ -6,26 +6,33 @@ export default {
 	render(req) {
 		return eval2(req, req.$src, true)
 			.then(val => {
-				exec_render(req, req.scope, val);
+				const n = getName(req);
+				if (n !== undefined) {
+					req.scope[p_target][n] = val;
+				}
 				return null;
 			});
 	},
 	q_render(req, arr, isLast) {
 		return q_eval2(req, arr, isLast)
 			.then(vals => {
+				const n = getName(req);
+				if (n === undefined) {
+					return null;
+				}
 				const arrLen = arr.length;
 				for (let i = 0; i < arrLen; i++) {
 					if (!isLast.has(i)) {
-						exec_render(req, arr[i].scope, vals[i]);
+						arr[i].scope[p_target][n] = vals[i];
 					}
 				}
 				return null;
 			});
 	}
 };
-function exec_render(req, scope, val) {
+function getName(req) {
 	const n = req.reqCmd.args[0];
 	if (n !== undefined && n !== "") {
-		scope[p_target][kebabToCamelCase(n)] = val;
+		return kebabToCamelCase(n);
 	}
 }

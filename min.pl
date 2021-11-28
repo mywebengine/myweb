@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-my $v = '0.9.03';
+my $v = '0.9.04';
 my $in = "./";
 
 my %import;
@@ -22,8 +22,7 @@ print $fh '/*!
  * Released under the MIT License.
  * https://github.com/mywebengine/myweb
  */
-self.__p=new Set;self.__i=new Map([
-'.join(",\n", @imports).']);self.__imports=Promise.all(self.__i.values()).then(() => Promise.all(self.__p))
+self.__p=new Set;self.__i=new Map(['.join(",\n", @imports).']);self.__imports=Promise.all(self.__i.values()).then(()=>Promise.all(self.__p)).then(()=>{for(const u of self.__i.keys()) URL.revokeObjectURL(u)})
 '.$index;
 close($fh);
 
@@ -93,7 +92,7 @@ print "file => $f\n";
 			}
 			$dcnt = sprintf('let %s;self.__p.add(import.meta.__imports=Promise.all([%s]).then(arr=>{%s}));', join(',', @lets), join(',', @p), $dcnt);
 			if ($f eq '/myweb.js') {
-				$cnt = $dcnt.'await self.__imports.then(()=>{delete self.__i;delete self.__p;delete self.__imports});'.$cnt;
+				$cnt = $dcnt.'self.__imports.then(()=>{delete self.__i;delete self.__p;delete self.__imports;setTimeout(()=>{'.$cnt.'}, 0)})';
 			} else {
 				$cnt = $dcnt.$cnt;
 			}

@@ -12,9 +12,9 @@ export const srcBy$src = new WeakMap();
 export const descrById = self.mw_descrById || new Map();
 export let idCurVal = self.mw_idCurVal || 0;
 
-//self.mw_$srcById = $srcById;
-//self.mw_srcById = srcById;
-//self.mw_srcBy$src = srcBy$src;
+self.mw_$srcById = $srcById;
+self.mw_srcById = srcById;
+self.mw_srcBy$src = srcBy$src;
 //self.mw_descrById = descrById;
 
 export function getNewId() {
@@ -123,8 +123,18 @@ export function type_asOneIdx(idx) {
 export function type_idx(idx) {
 	return new Map(idx);
 }
-export function type_save() {
-	return new Map();
+export function type_save(save) {
+	if (save === undefined) {
+		return new Map();
+	}
+	const s = new Map();
+	for (const [n, v] of save) {
+		s.set(n, type_saveI(v));
+	}
+	return s;
+}
+export function type_saveI(save) {
+	return new Map(save);
 }
 function type_descr(id, sId, attr, varIds) {
 	return {
@@ -162,6 +172,15 @@ export function createAttr($e) {
 		}
 	}
 	return attr;
+}
+export function getSrcId(local, sId) {
+	if (srcById.has(sId)) {
+		return sId;
+	}
+	for (let l = local.get(sId); l !== undefined && l.newSrcId !== 0; l = local.get(sId)) {
+		sId = l.newSrcId;
+	}
+	return sId;
 }
 export function get$els($e, get$elsByStr, str) {
 	const attrIt = srcBy$src.get($e).descr.attr.keys();

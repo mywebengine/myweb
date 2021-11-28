@@ -4,26 +4,24 @@ import {kebabToCamelCase} from "../str.js";
 
 export default {
 	render(req) {
-		scope_render(req, req.scope);
+		req.scope[p_target][getName(req)] = req.scope;
 		return null;
 	},
 	q_render(req, arr, isLast) {
-		return q_eval2(req, arr, isLast)
-			.then(vals => {
-				const arrLen = arr.length;
-				for (let i = 0; i < arrLen; i++) {
-					if (!isLast.has(i)) {
-						scope_render(req, arr[i].scope);
-					}
-				}
-				return null;
-			});
+		const n = getName(req),
+			arrLen = arr.length;
+		for (let i = 0; i < arrLen; i++) {
+			if (!isLast.has(i)) {
+				arr[i].scope[p_target][n] = arr[i].scope;
+			}
+		}
+		return null;
 	}
 };
-function scope_render(req, scope) {
+function getName(req) {
 	const n = req.reqCmd.args[0];
-	if (n === undefined || n === "") {
-		throw getErr(new Error(">>>mw scope:render: Need set scope name"), req.$src, req);
+	if (n !== undefined && n !== "") {
+		return kebabToCamelCase(n);
 	}
-	scope[p_target][kebabToCamelCase(n)] = scope;
+	throw getErr(new Error(">>>mw scope:render: Need set scope name"), req.$src, req);
 }

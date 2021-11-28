@@ -3,7 +3,7 @@ import {renderTag, type_req, setReqCmd, type_localCounter, type_animation, type_
 //import createArrFragment from "../arrfr.js";
 import {mw_doc, p_target, cmdPref, cmdArgsDiv, cmdArgsDivLen, incCmdName, fetchCmdName, foreachCmdName, elseCmdName, defaultCmdName, onCmdName, isFillingName, isFillingDiv, asOneIdxName, idxName, defRequestInit,
 	reqCmd} from "../config.js";
-import {srcById, srcBy$src, getAttrAfter, getAttrItAfter, get$els, type_asOneIdx, type_idx, type_save} from "../descr.js";
+import {srcById, srcBy$src, getAttrItAfter, get$els, type_asOneIdx, type_idx, type_save, type_saveI} from "../descr.js";
 import {preRender, joinText, removeChild, cloneNode, getIdx, setIdx, getTopUrl} from "../dom.js";
 import {getErr} from "../err.js";
 import {eval2, q_eval2} from "../eval2.js";
@@ -57,7 +57,6 @@ export default {
 };
 function inc_render(req, val) {
 //console.info("inc", req);
-//alert(1);
 	const include = getIncude(req, val);
 	if (include === null) {
 		return type_renderRes(true);
@@ -69,10 +68,8 @@ function inc_render(req, val) {
 //todo
 	for (let i = 0; i < $elsLen; i++) {
 		const iSrc = srcBy$src.get($els[i]);
-		if (iSrc !== undefined) {
-			if (!req.sync.local.has(iSrc.id)) {
-				req.sync.local.set(iSrc.id, type_localCounter());
-			}
+		if (iSrc !== undefined && !req.sync.local.has(iSrc.id)) {
+			req.sync.local.set(iSrc.id, type_localCounter());
 		}
 	}
 //console.log(111, req, $els, oldVal, srcBy$src.get(req.$src), include);
@@ -191,7 +188,7 @@ async function createIncFragment(req, include, html) {
 			if (include.$tags[0].parentNode === mw_doc.head) {
 //todo такого не долждно быть - можно удалять
 console.warn("applyIncFragment", include.$tags, req);
-alert(1);
+//alert(1);
 			}
 			for (const $i of include.$tags) {
 				mw_doc.head.appendChild($i);
@@ -233,15 +230,15 @@ function createIncScript(req, include, $e) {
 //			return pimport(uurl);
 			return import(uurl)
 				.then(m => {
-					if (self.mw_debugLevel !== 0) {//todo
+//					if (self.mw_debugLevel !== 0) {//todo
 						URL.revokeObjectURL(uurl);
-					}
+//					}
 					incToScope(m, include);
 				});
 		} catch (err) {
-			if (self.mw_debugLevel !== 0) {//todo
+//			if (self.mw_debugLevel !== 0) {//todo
 				URL.revokeObjectURL(uurl);
-			}
+//			}
 			throw checkScript(err, $e, req);
 		}
 		return;
@@ -303,20 +300,27 @@ function checkScript(err, $e, req, url) {
 }
 //new
 function getNewInc(req, include, oldVal, $els, $elsLen, loading) {
+	req.sync.animations.add(type_animation(() => {
+		const $new = cloneIncFragment(req, include, oldVal, loading),
+			$src = $new.firstChild,
+			$last = $new.lastChild;
+		getNewIncInsert(req, oldVal, $els, $elsLen, $new, $src);
+		req.sync.afterAnimations.add(type_animation(() => {
+			scopeToInc(include, req);
+			return renderI(req, $src, $last, renderNewInc)
+				.then($last => readyInc(req, include, $last));
+		}, req.sync.local, 0))
+	}, req.sync.local, 0));
+/*//!!этот вариант плох тем, что если после анимации произойдёт отмена, то последующие рендеры будут считать что вставка уже отрендерена - это плохо для слотов
 	const $new = cloneIncFragment(req, include, oldVal, loading),
 		$src = $new.firstChild,
 		$last = $new.lastChild;
-//	req.sync.animations.add(type_animation(() => {
-//		getNewIncInsert(req, oldVal, $els, $elsLen, $new, $src);
-//		req.sync.afterAnimations.add(type_animation(() => getNewIncRender(req, include, $src, $last), req.sync.local, 0));
-//	}, req.sync.local, 0));
 	req.sync.animations.add(type_animation(() => getNewIncInsert(req, oldVal, $els, $elsLen, $new, $src), req.sync.local, 0));
-//	req.sync.afterAnimations.add(type_animation(() => getNewIncRender(req, include, $src, $last), req.sync.local, 0));
 	req.sync.afterAnimations.add(type_animation(() => {
 		scopeToInc(include, req);
 		return renderI(req, $src, $last, renderNewInc)
 			.then($last => readyInc(req, include, $last));
-	}, req.sync.local, 0))
+	}, req.sync.local, 0));*/
 }
 function getNewIncInsert(req, oldVal, $els, $elsLen, $new, $src) {
 	let newSrcId = 0;
@@ -333,13 +337,15 @@ function getNewIncInsert(req, oldVal, $els, $elsLen, $new, $src) {
 	for (let iSrc, i = 0;; i++) {
 		iSrc = srcBy$src.get($els[i]);
 		if (iSrc === undefined) {
-			removeChild($els[i]);
+			removeChild($els[i], req);
 			continue;
 		}
-		if (newSrcId !== 0) {
+//		if (newSrcId !== 0) {
 			const vIds = srcById.get(newSrcId).descr.varIds;
 			for (const vId of iSrc.descr.varIds) {
 				vIds.add(vId);
+				srcIdsByVarId.get(vId).add(newSrcId);
+/*
 				const sIds = srcIdsByVarId.get(vId);
 if (sIds === undefined) {
 //todo
@@ -347,9 +353,9 @@ console.warn("inc.js");
 alert(1)
 //					continue;
 }
-				sIds.add(newSrcId);
+				sIds.add(newSrcId);*/
 			}
-		}
+//		}
 		do {
 			if (iSrc !== undefined) {
 				const l = req.sync.local.get(iSrc.id);
@@ -433,7 +439,7 @@ console.warn(n, v);
 		return renderTag($e, req.scope, afterAttr, req.sync);
 	}
 	throw new Error("inc.js");*/
-	return renderTag($e, req.scope, getAttrAfter(srcBy$src.get($e).descr.attr, req.str), req.sync);
+	return renderTag($e, req.scope, req.str, req.sync);
 }
 //current
 //function getInc(req, include, $els, $elsLen) {
@@ -441,7 +447,7 @@ console.warn(n, v);
 //		.then($last => readyInc(req, include, $last));
 //}
 function renderInc(req, $e) {
-	return renderTag($e, req.scope, getAttrAfter(srcBy$src.get($e).descr.attr, req.str), req.sync);
+	return renderTag($e, req.scope, req.str, req.sync);
 }
 async function renderI(req, $e, $last, h) {
 	do {
@@ -487,14 +493,16 @@ function cloneIncFragment(req, include, oldVal, loading) {
 		attrs = req.$src.attributes,
 		attrsLen = attrs.length,
 		curAttr = new Map(),
-		isR = oldVal !== undefined;
-	const [asOneIdx, idx, save] = isR ? [type_asOneIdx(src.asOneIdx), src.idx, src.save] : [type_asOneIdx(src.asOneIdx), type_idx(src.idx), type_save()];//todo понаблюдать
+		isR = oldVal !== undefined,
+		asOneIdx = src.asOneIdx !== null ? src.asOneIdx : type_asOneIdx(),
+		idx = src.idx !== null ? src.idx : type_idx(),
+		save = src.save !== null ? src.save : type_save();
 	for (const n of getAttrItAfter(descr.attr.keys(), req.str, false)) {
 		asOneIdx.delete(n);
 		idx.delete(n);
 	}
 	if (isR) {
-		for (const [n, v] of save) {
+		for (const [n, v] of save.get(req.str)) {
 			curAttr.set(n, v);
 		}
 	} else {
@@ -515,14 +523,17 @@ function cloneIncFragment(req, include, oldVal, loading) {
 				}
 			}
 		}
+		const saveI = type_saveI();
+		save.set(req.str, saveI);
 		for (let i = 0; i < attrsLen; i++) {
 			const a = attrs[i];
 			if (skipAttrs.has(a.name)) {
 				continue;
 			}
 			curAttr.set(a.name, a.value);
+			//todo
 			if ((self.mw_debugLevel !== 0 || a.name.indexOf(idxName) !== 0 && a.name.indexOf(asOneIdxName) !== 0) && a.name.indexOf(isFillingName) !== 0) {
-				save.set(a.name, a.value);
+				saveI.set(a.name, a.value);
 			}
 		}
 	}
@@ -584,7 +595,7 @@ function cloneIncFragment(req, include, oldVal, loading) {
 			iSrc.asOneIdx = type_asOneIdx(asOneIdx);
 		}
 		iSrc.idx = type_idx(idx);
-		iSrc.save = save;//!!у всех один и тот же сэйв - но это не должно мешить - в теории можно было бы указать только у первого (что сэйв, что индекс)
+		iSrc.save = type_save(save);
 //!!2
 		if (self.mw_debugLevel !== 0) {
 			for (const [n, v] of asOneIdx) {

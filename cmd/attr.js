@@ -36,6 +36,7 @@ export default {
 	}
 };
 function attr_render(req, $src, n, v) {
+//console.log(1111, req, $src, n, v);
 	const toggleVal = req.reqCmd.args[1],
 //		c = getCacheBySrcId($src[p_srcId]),
 		c = srcBy$src.get($src).cache,

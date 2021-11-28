@@ -54,7 +54,6 @@ if (c === null) {
 	return val;
 }
 export function q_eval2(req, arr, isLast) {
-//console.log("q_eval2", req, arr, isLast);
 	return q_getEval2Func(req, req.expr)
 		.apply(null, [req, arr, isLast, req.str, setCur$src, proxyStat, srcBy$src])
 		.then(vals => Promise.all(vals))
@@ -62,7 +61,7 @@ export function q_eval2(req, arr, isLast) {
 			throw getErr(err, req.$src, req);
 		});
 }
-//const commentRe = new RegExp("//.+?(\n|$)", "g");
+//const commentRe = /\/\/.+?(\n|$)/g;
 export function getEval2Func(req, expr) {
 	expr = expr.trim();
 	const cacheKey = expr,
@@ -130,6 +129,7 @@ for (let i = 0; i < _tpl_len; i++) {
 		c = src.cache;
 	if (c.value.has(_tpl_str)) {
 		_tpl_val[i] = c.value.get(_tpl_str);
+//console.log(7777, "q", _tpl_val[i]);
 		continue;
 	}
 	_tpl_proxyStat.value = 0;

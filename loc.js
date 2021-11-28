@@ -1,6 +1,6 @@
 ﻿import {oset} from "./oset.js";
 
-//const trimSlashRe = new RegExp("(^/|/$)", "g");
+//const trimSlashRe = /(^\/|\/$)/g;
 
 export function setLoc(url) {
 	oset(self, "loc", getLoc(url));

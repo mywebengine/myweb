@@ -7,10 +7,10 @@ export function getRequest(val, topUrl) {
 	return val instanceof Request || val instanceof Response ? val : null;
 }
 
-const reHost = new RegExp("^(\\w+\\://|//)");//.+?(\/|$)/;
-const reSlash = new RegExp("//+");
-const reUp = new RegExp("[^/]+/+\\.\\./");
-const reThis = new RegExp("/+\\./");
+const reHost = /^(\w+\:\/\/|\/\/)/;//.+?(\/|$)/;
+const reSlash = /\/\/+/;
+const reUp = /[^\/]+\/+\.\.\//;
+const reThis = /\/+\.\//;
 
 export function getUrl(url, topUrl = location.pathname) {
 	if (isUri(url)) {

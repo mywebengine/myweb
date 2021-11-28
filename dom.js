@@ -3,7 +3,7 @@ import {type_req, type_animation} from "./render/render.js";
 import {type_cacheValue, type_cacheCurrent} from "./cache.js";
 import {mw_doc, mw_$src, p_topUrl, visibleScreenSize, defIdleCallbackOpt, incCmdName, onCmdName, textCmdName, descrIdName, asOneIdxName, idxName, removeEventName, defEventInit,
 	reqCmd} from "./config.js";
-import {$srcById, srcById, srcBy$src, descrById, getNewId, createSrc, type_asOneIdx, type_idx, get$els, getNextStr} from "./descr.js";
+import {$srcById, srcById, srcBy$src, descrById, getNewId, createSrc, type_asOneIdx, type_idx, getSrcId, get$els, getNextStr} from "./descr.js";
 import {getErr} from "./err.js";
 import {loadingCount} from "./loading.js";
 import {varIdByVar, varById, srcIdsByVarId, varIdByVarIdByProp} from "./proxy.js";
@@ -277,13 +277,13 @@ function type_mustacheBlock(begin, end, expr) {
 		expr
 	};
 }*/
-export function removeChild($e) {
+export function removeChild($e, req) {
 //console.error("remC", srcBy$src.get($e), $e);
 //todo
-//if (!$e.parentNode) {
-//	console.error($e);
-//	alert(11)
-//}
+if (!$e.parentNode) {
+	console.error(req.sync, $e);
+	alert(11)
+}
 	$e.parentNode.removeChild($e);
 	$e.dispatchEvent(new CustomEvent(removeEventName, defEventInit));
 	const rem = new Map();
@@ -520,9 +520,7 @@ export function cloneNode(req, $e) {//во время клонирования �
 	return $n;
 }
 export function q_cloneNode(req, sId, beginIdx, len) {//во время клонирования будут созданы описания
-	for (let l = req.sync.local.get(sId); l.newSrcId !== 0; l = req.sync.local.get(sId)) {
-		sId = l.newSrcId;
-	}
+	sId = getSrcId(req.sync.local, sId);
 	const $src = $srcById.get(sId),
 		src = srcById.get(sId),
 		nStr = getNextStr(src, req.str),
@@ -535,8 +533,8 @@ export function q_cloneNode(req, sId, beginIdx, len) {//во время клон
 		const $i = $els[i];
 		fSrc = srcBy$src.get($i);
 		if (fSrc === undefined || !fSrc.isCmd) {
-//todo
-console.warn($i)
+//todo--
+//console.warn($i)
 			continue;
 		}
 		break;
@@ -677,24 +675,24 @@ function q_cloneNodeCreate($e, isNotTemplate, $arr, $arrLen, asOneVal, type, bas
 			for (let i = 0; i < $arrLen; i++) {
 				$arr[i] = $arr[i].parentNode.appendChild($e.cloneNode());
 			}
-			return $e;
+			return;
 		}
 		if (type === 1) {
 			if (isNotTemplate) {
 				for (let i = 0; i < $arrLen; i++) {
 					$arr[i] = $arr[i].appendChild($e.cloneNode());
 				}
-				return $e;
+				return;
 			}
 			for (let i = 0; i < $arrLen; i++) {
 				$arr[i] = $arr[i].content.appendChild($e.cloneNode());
 			}
-			return $e;
+			return;
 		}
 		for (let i = 0; i < $arrLen; i++) {
 			$arr[i] = $e.cloneNode();
 		}
-		return $e;
+		return;
 	}
 	const descr = src.descr,
 		idx = src.idx,
@@ -706,31 +704,31 @@ function q_cloneNodeCreate($e, isNotTemplate, $arr, $arrLen, asOneVal, type, bas
 			for (let i = 0; i < $arrLen; i++) {
 				createSrc($arr[i] = $arr[i].parentNode.appendChild($e.cloneNode()), descr, null, idx === null ? null : type_idx(idx)).save = save;
 			}
-			return $e;
+			return;
 		}
 		if (type === 1) {
 			if (isNotTemplate) {
 				for (let i = 0; i < $arrLen; i++) {
 					createSrc($arr[i] = $arr[i].appendChild($e.cloneNode()), descr, null, idx === null ? null : type_idx(idx)).save = save;
 				}
-				return $e;
+				return;
 			}
 			for (let i = 0; i < $arrLen; i++) {
 				createSrc($arr[i] = $arr[i].content.appendChild($e.cloneNode()), descr, null, idx === null ? null : type_idx(idx)).save = save;
 			}
-			return $e;
+			return;
 		}
 		for (let i = 0; i < $arrLen; i++) {
 			createSrc($arr[i] = $e.cloneNode(), descr, null, idx === null ? null : type_idx(idx)).save = save;
 		}
-		return $e;
+		return;
 	}
 	if (type === 2) {
 		for (let i = 0; i < $arrLen; i++) {
 			createSrc($arr[i] = $arr[i].parentNode.appendChild($e.cloneNode()), descr, type_asOneIdx(asOneIdx), type_idx(src.idx)).save = save;
 		}
 		q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, asOneIdx);
-		return $e;
+		return;
 	}
 	if (type === 1) {
 		if (isNotTemplate) {
@@ -738,19 +736,18 @@ function q_cloneNodeCreate($e, isNotTemplate, $arr, $arrLen, asOneVal, type, bas
 				createSrc($arr[i] = $arr[i].appendChild($e.cloneNode()), descr, type_asOneIdx(asOneIdx), type_idx(src.idx)).save = save;
 			}
 			q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, asOneIdx);
-			return $e;
+			return;
 		}
 		for (let i = 0; i < $arrLen; i++) {
 			createSrc($arr[i] = $arr[i].content.appendChild($e.cloneNode()), descr, type_asOneIdx(asOneIdx), type_idx(src.idx)).save = save;
 		}
 		q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, asOneIdx);
-		return $e;
+		return;
 	}
 	for (let i = 0; i < $arrLen; i++) {
 		createSrc($arr[i] = $e.cloneNode(), descr, type_asOneIdx(asOneIdx), type_idx(src.idx)).save = save;
 	}
 	q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, baseAsOne);
-	return $e;
 }
 function q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, asOneIdx) {
 	for (let i = 0; i < $arrLen; i++) {
@@ -798,7 +795,7 @@ function q_cloneNodeCreateChildren($i, $arr, $arrLen, asOneVal) {
 			}
 		}*/
 		if ($i.firstChild !== null) {
-			$i = q_cloneNodeCreate($i.firstChild, true, $arr, $arrLen, asOneVal, 1, null);
+			q_cloneNodeCreate($i = $i.firstChild, true, $arr, $arrLen, asOneVal, 1, null);
 			continue;
 		}
 		//todo а что если это просто тег?
@@ -807,14 +804,14 @@ function q_cloneNodeCreateChildren($i, $arr, $arrLen, asOneVal) {
 			for (let i = 0; i < $arrLen; i++) {
 				$tP[i].push($arr[i]);
 			}
-			$i = q_cloneNodeCreate($i.content.firstChild, false, $arr, $arrLen, asOneVal, 1, null);
+			q_cloneNodeCreate($i = $i.content.firstChild, false, $arr, $arrLen, asOneVal, 1, null);
 			continue;
 		}
 		if ($i.parentNode === $parent) {//если мы не ушли вглубь - значит и вправо двигаться нельзя
 			break;
 		}
 		if ($i.nextSibling !== null) {
-			$i = q_cloneNodeCreate($i.nextSibling, true, $arr, $arrLen, asOneVal, 2, null);
+			q_cloneNodeCreate($i = $i.nextSibling, true, $arr, $arrLen, asOneVal, 2, null);
 			continue;
 		}
 		do {
@@ -838,7 +835,7 @@ function q_cloneNodeCreateChildren($i, $arr, $arrLen, asOneVal) {
 				}
 			}
 			if ($i.nextSibling !== null) {
-				$i = q_cloneNodeCreate($i.nextSibling, true, $arr, $arrLen, asOneVal, 2, null);
+				q_cloneNodeCreate($i = $i.nextSibling, true, $arr, $arrLen, asOneVal, 2, null);
 				break;
 			}
 		} while (true);
@@ -1028,7 +1025,7 @@ export function is$hide($i) {
 	return true;
 }
 export function isAnimationVisible(animate) {
-	return animate.viewedSrcId === 0 ? true : is$visible($srcById.get(animate.viewedSrcId));
+	return animate.viewedSrcId === 0 ? true : is$visible($srcById.get(getSrcId(animate.local, animate.viewedSrcId)));
 /*
 	}
 	for (const sId in animate.viewedSrcId) {
@@ -1071,7 +1068,7 @@ export function setAsOneIdx(src, str, idx) {
 	const $src = $srcById.get(src.id),
 		n = asOneIdxName + str;
 	$src.setAttribute(n, idx);
-	if ($src.nodeName === "TEMPLATE") {
+	if ($src.nodeName === "TEMPLATE" && $src.content.firstChild !== null) {//при q_cloneNode мы клонируем не рекурсивно, а это значит что нет внутренностей - они появятся позже
 		$src.content.firstChild.setAttribute(n, idx);
 	}
 }

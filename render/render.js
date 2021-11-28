@@ -1,43 +1,30 @@
 import {lazyRenderName, mountEventName, renderEventName, defEventInit,
-	cmdArgsDiv, cmdArgsDivLen,
+	p_target, cmdArgsDiv, cmdArgsDivLen,
 		mw_cmd, reqCmd} from "../config.js";
-import {srcById, $srcById, srcBy$src} from "../descr.js";
+import {srcById, $srcById, srcBy$src, getAttrAfter} from "../descr.js";
 import {srcSetScope} from "../oset.js";
 
 //export const mw_cmd = {};//self.mw_cmd || {};
 //export const reqCmd = self.mw_reqCmd || {};
 
-export function renderTag($src, scope, attr, sync) {
+export function renderTag($src, scope, str, sync) {
 	if (sync.stat !== 0) {
 //console.log("isCancel", sync.stat, 1);
 		return $src;
 	}
-//console.error("render", sync.syncId, $src, srcBy$src.get($src).id, srcBy$src.get($src).descrId, scope, attr);
+//console.error("render", sync.syncId, $src, srcBy$src.get($src).id, srcBy$src.get($src).descrId, scope, str);
 //alert(1)
 	const src = srcBy$src.get($src),
 		sId = src.id;
-//--	local = new Map(local);
 	if (!sync.local.has(sId)) {
-//todo если тег изменится в процессе???? - так то это не страшно - события этого элемента не должны нас возлновать (надо их исключить) а новый будет жить свое жизнью
 		sync.local.set(sId, type_localCounter());
-//!! проблема в событии на старт в том, что при первом рендере еще ни один on неотрендерился
-//		$src.dispatchEvent(new CustomEvent(renderStartEventName, defEventInit));
-//console.log("rend - local create", $src);
 	}
-//todo ? ocopy
-//	[scope, scopeCache[sId]] = ocopy2(scope);
-	if (scope === null) {
-		scope = src.scopeCache;
-	} else {
-//		const s = src.scopeCache,
-//			ss = s[p_target],
-//			sss = scope[p_target] || scope;
-//		for (const i in sss) {
-//			ss[i] = sss[i];
-//		}
-//		scope = s;
-		scope = srcSetScope(src, scope);
-	}
+	//todo со скопом есть проблема: если первый тег уже отрендереной динамической вставки добавляет в скоп что-то своё, то после смены значения - этот скоп будет раскопирован на все новые элементы
+	scope = scope === null ? src.scopeCache : srcSetScope(src, scope);
+//	if (scope !== null) {
+//		scope = srcSetScope(src, scope);
+//	}
+	const attr = str === "" ? src.descr.attr : getAttrAfter(src.descr.attr, str);
 	if (attr === null || attr.size === 0) {
 		return renderChildren($src, scope, sync, sId, $src);
 	}
@@ -73,16 +60,16 @@ async function attrRender($src, scope, attr, sync) {
 		if (!res) {
 			continue;
 		}
-		if (res.attr !== null) {
+		if (res.attrStr !== "") {
 //todo res.$attr в этой схеме линий - хватит .$src
-			const $attr = res.$attr || res.$src || $src,
+			const $attr = res.$attr,// || res.$src || $src,
 				$ret = res.$last || res.$src || res.$attr || $src;//поидеи глупо не возвращать $last, так как attr бы не имела смысла
-			$src = await renderTag($attr, scope, res.attr, sync);
+			$src = await renderTag($attr, scope, res.attrStr, sync);
 			res.isLast = true;
-			res.$src = $attr === $ret && $src || $ret;
+			res.$src = $attr === $ret ? $src : $ret;
 			res.$last = null;
 			res.$attr = null;
-			res.attr = null;
+			res.attrStr = "";
 			return res;
 		}
 		if (res.isLast) {
@@ -111,7 +98,7 @@ async function renderChildren($i, scope, sync, sId, $ret) {
 		if (iSrc === undefined) {
 			continue;
 		}
-		$i = await renderTag($i, scope, iSrc.descr.attr, sync);
+		$i = await renderTag($i, scope, "", sync);
 		if (sync.stat !== 0) {
 			return;
 		}
@@ -121,8 +108,8 @@ async function renderChildren($i, scope, sync, sId, $ret) {
 //	}
 	return $ret;
 }
-export function q_renderTag(arr, attr, isLast, sync) {
-//console.log("q_render", arr.map(i => [i.$src, i.scope]), attr);
+export function q_renderTag(arr, str, isLast, sync) {
+//console.log("q_render", arr.map(i => [i.$src, i.scope]), str);
 //alert(1);
 	if (sync.stat !== 0) {
 //		return arr;
@@ -141,19 +128,13 @@ export function q_renderTag(arr, attr, isLast, sync) {
 //!!см выше		$i.dispatchEvent(new CustomEvent(renderStartEventName, defEventInit));
 //console.log("q_rend - local create", $i);
 		}
-		if (aI.scope === null) {
-			aI.scope = iSrc.scopeCache;
-		} else {
-//			const s = iSrc.scopeCache,
-//				ss = s[p_target],
-//				sss = aI.scope[p_target] || aI.scope;
-//			for (const i in sss) {
-//				ss[i] = sss[i];
-//			}
-//			aI.scope = s;
-			aI.scope = srcSetScope(iSrc, aI.scope);
-		}
+		aI.scope = aI.scope === null ? iSrc.scopeCache : srcSetScope(iSrc, aI.scope);
+//		if (aI.scope !== null) {//todo условия можно оптимизировать
+//			aI.scope = srcSetScope(iSrc, aI.scope);
+//		}
 	}
+	const src = srcBy$src.get(arr[0].$src),
+		attr = str === "" ? src.descr.attr : getAttrAfter(src.descr.attr, str);
 	if (attr !== null && attr.size !== 0) {
 		return q_attrRender(arr, attr, isLast, type_q_renderCtx(), sync)
 			.then(lastCount => lastCount === arrLen ? arr : _q_renderTag(arr, isLast, sync, arrLen));
@@ -185,12 +166,14 @@ async function q_attrRender(arr, attr, isLast, ctx, sync) {
 				continue;
 			}
 			const resI = await res[i];
-			if (!resI) {
+//			if (!resI) {
+			if (resI === null) {
 				continue;
 			}
-			if (resI.attr !== null) {
+			if (resI.attrStr !== "") {
 				const arrI = arr[i];
-				q_addAfterAttr(resI.$attr || resI.$src || arrI.$src, arrI.scope, resI.attr, ctx);
+//				q_addAfterAttr(resI.$attr || resI.$src || arrI.$src, arrI.scope, resI.attrStr, ctx);
+				q_addAfterAttr(resI.$attr, arrI.scope, resI.attrStr, ctx);
 				arrI.$src = resI.$last || resI.$src || resI.$attr || arrI.$src;
 				isLast.add(i);
 				ctx.lastCount++;
@@ -209,8 +192,8 @@ async function q_attrRender(arr, attr, isLast, ctx, sync) {
 //	const pArr = [];
 	for (const byAttr of ctx.afterByDescrByAttr.values()) {
 		for (const [attrKey, arr] of byAttr) {
-//			pArr.push(q_renderTag(arr, ctx.afterAttrKey[attrKey], type_isLast(), sync));
-			await q_renderTag(arr, ctx.afterAttrKey.get(attrKey), type_isLast(), sync);
+//			pArr.push(q_renderTag(arr, ctx.strByAttrKey[attrKey], type_isLast(), sync));
+			await q_renderTag(arr, ctx.strByAttrKey.get(attrKey), type_isLast(), sync);
 		}
 	}
 //	if (pArr.length) {
@@ -218,13 +201,14 @@ async function q_attrRender(arr, attr, isLast, ctx, sync) {
 //	}
 	return ctx.lastCount;
 }
-function q_addAfterAttr($src, scope, attr, ctx) {
-	const attrKey = getAttrKey(attr),
+//todo
+function q_addAfterAttr($src, scope, str, ctx) {
+	const attrKey = getAttrKey(getAttrAfter(srcBy$src.get($src).descr.attr, str)),
 		dId = srcBy$src.get($src).descr.id,
 		byD = ctx.afterByDescrByAttr.get(dId),
 		arrI = type_q_arr($src, scope);
-	if (!ctx.afterAttrKey.has(attrKey)) {
-		ctx.afterAttrKey.set(attrKey, attr);
+	if (!ctx.strByAttrKey.has(attrKey)) {
+		ctx.strByAttrKey.set(attrKey, str);
 	}
 	if (byD !== undefined) {
 		const arr = byD.get(attrKey);
@@ -271,9 +255,10 @@ function q_renderFlow(arr, isFirst, sync) {
 //todo	
 	const pSet = new Set();
 	for (const dArr of byDescr.values()) {
-		const $i = dArr[0].$src,
-			iSrc = srcBy$src.get($i);
-		pSet.add(q_renderTag(dArr, iSrc !== undefined ? iSrc.descr.attr : null, type_isLast(), sync)
+//		const $i = dArr[0].$src,
+//			iSrc = srcBy$src.get($i);
+//		pSet.add(q_renderTag(dArr, iSrc !== undefined ? iSrc.descr.attr : null, type_isLast(), sync)
+		pSet.add(q_renderTag(dArr, "", type_isLast(), sync)
 			.then(() => sync.stat === 0 && q_renderFlow(dArr, false, sync)));
 //0922
 //		await q_renderTag(dArr, $i[p_isCmd] && descrById.get($i[p_descrId]).attr || null, type_isLast(), sync)
@@ -412,7 +397,7 @@ function type_q_renderCtx() {
 	return {
 		lastCount: 0,
 		afterByDescrByAttr: new Map(),
-		afterAttrKey:new Map()
+		strByAttrKey: new Map()
 	};
 }
 export function type_isLast() {
@@ -443,15 +428,16 @@ export function type_animation(handler, local, viewedSrcId) {
 			}
 			return handler();
 		},
+		local,
 		viewedSrcId
 	};
 }
-export function type_renderRes(isLast, $src = null, $last = null, $attr = null, attr = null) {
+export function type_renderRes(isLast, $src = null, $last = null, $attr = null, attrStr = "") {
 	return {
 		isLast,
 		$src,
 		$last,
 		$attr,
-		attr
+		attrStr
 	};
 }
