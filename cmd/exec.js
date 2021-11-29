@@ -1,5 +1,6 @@
 ﻿import {p_target} from "../config.js";
 import {eval2, q_eval2} from "../eval2.js";
+import {getProxy} from "../proxy.js";
 import {kebabToCamelCase} from "../str.js";
 
 export default {
@@ -8,7 +9,7 @@ export default {
 			.then(val => {
 				const n = getName(req);
 				if (n !== undefined) {
-					req.scope[p_target][n] = val;
+					req.scope[p_target][n] = getProxy(val);
 				}
 				return null;
 			});
@@ -23,7 +24,7 @@ export default {
 				const arrLen = arr.length;
 				for (let i = 0; i < arrLen; i++) {
 					if (!isLast.has(i)) {
-						arr[i].scope[p_target][n] = vals[i];
+						arr[i].scope[p_target][n] = getProxy(vals[i]);
 					}
 				}
 				return null;

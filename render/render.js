@@ -62,11 +62,13 @@ async function attrRender($src, scope, attr, sync) {
 		}
 		if (res.attrStr !== "") {
 //todo res.$attr в этой схеме линий - хватит .$src
-			const $attr = res.$attr,// || res.$src || $src,
-				$ret = res.$last || res.$src || res.$attr || $src;//поидеи глупо не возвращать $last, так как attr бы не имела смысла
-			$src = await renderTag($attr, scope, res.attrStr, sync);
+//			const $attr = res.$attr,// || res.$src || $src,
+//				$ret = res.$last || res.$src || $attr || $src;//поидеи глупо не возвращать $last, так как attr бы не имела смысла
+////				$ret = res.$last || res.$src || res.$attr || $src;//поидеи глупо не возвращать $last, так как attr бы не имела смысла
+			$src = await renderTag(res.$attr, scope, res.attrStr, sync);
 			res.isLast = true;
-			res.$src = $attr === $ret ? $src : $ret;
+			res.$src = res.$last;
+//			res.$src = res.$attr === $ret ? $src : $ret;
 			res.$last = null;
 			res.$attr = null;
 			res.attrStr = "";

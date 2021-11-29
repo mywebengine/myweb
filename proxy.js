@@ -185,7 +185,7 @@ const proxyHandler = {
 			addVar(t, n, getTarget(v), cur$src);
 			return v;
 		}
-		return n !== Symbol.iterator ? v : t.entries;
+		return n !== Symbol.iterator ? v : (t instanceof Map ? t.entries : t.values);
 	},
 	set(t, n, v, r) {
 //console.log("set", n, v, "old=>", t[n], t, v === p_target);//, Object.getOwnPropertyDescriptor(t, n) && Object.getOwnPropertyDescriptor(t, n).value);

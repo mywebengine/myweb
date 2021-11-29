@@ -8,7 +8,9 @@ my $index = "";
 
 go("");
 
-open(my $fh, ">./myweb.min.js") || die;
+my $out = './myweb.min.js';
+
+open(my $fh, ">$out") || die;
 my @imports;
 while (my ($url, $data) = each(%import)) {
 	$data =~ s!\\!\\\\!g;
@@ -25,6 +27,8 @@ print $fh '/*!
 self.__p=new Set;self.__i=new Map(['.join(",\n", @imports).']);self.__imports=Promise.all(self.__i.values()).then(()=>Promise.all(self.__p)).then(()=>{for(const u of self.__i.keys()) URL.revokeObjectURL(u)})
 '.$index;
 close($fh);
+
+#`npx uglifyjs --mangle $out -o $out.min` || die;
 
 sub go {
 	my ($dir) = @_;

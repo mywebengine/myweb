@@ -2,6 +2,7 @@
 import {p_target} from "../config.js";
 import {srcBy$src} from "../descr.js";
 import {eval2, q_eval2} from "../eval2.js";
+import {getProxy} from "../proxy.js";
 import {kebabToCamelCase} from "../str.js";
 
 export default {
@@ -56,7 +57,7 @@ function watch_render(req, scope, n, val) {
 		});
 	}
 	if (n !== undefined) {
-		scope[p_target][n] = val;
+		scope[p_target][n] = getProxy(val);
 	}
 	return null;
 }

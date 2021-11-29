@@ -5,6 +5,7 @@ import {show, hide, getIdx} from "../dom.js";
 import {getErr} from "../err.js";
 import {eval2, q_eval2} from "../eval2.js";
 import {ocopy, srcSetScope} from "../oset.js";
+import {getProxy} from "../proxy.js";
 import {kebabToCamelCase} from "../str.js";
 
 export const ifCmd = {
@@ -21,7 +22,7 @@ export const ifCmd = {
 		return eval2(req, req.$src, true)
 			.then(val => if_render(req, val, ifCmdName, elseifCmdName, elseCmdName));
 /*
-.then(val => {
+.then(async val => {
 	const r = await if_render(req, val, ifCmdName, elseifCmdName, elseCmdName);
 	console.log("ifres", req.str, req.expr, val, r, req);
 	alert(1);
@@ -62,7 +63,6 @@ export const switchCmd = {
 	},
 	render(req) {
 //console.log("switch", req);
-//		return switchGet(req);
 		make$first(req, switchCmdName, caseCmdName, defaultCmdName);
 		let f = true;
 		for (const [n, v] of srcBy$src.get(req.$src).descr.attr) {
@@ -83,17 +83,17 @@ export const switchCmd = {
 					req.expr = v;
 					return eval2(req, req.$src, true)
 						.then(val => if_render(req, val, switchCmdName, caseCmdName, defaultCmdName, f => f === expression));
-/*
-.then(val => {
-	const r = if_render(req, val, switchCmdName, caseCmdName, defaultCmdName, f => f === expression);
-	console.log("ifres", expression, req.str, req.expr, val, r, req);
-	alert(1);
-	return r;
-});*/
+//.then(async val => {
+//	const r = await if_render(req, val, switchCmdName, caseCmdName, defaultCmdName, f => f === expression);
+//	console.log("witch-res", expression, req.str, req.expr, val, r, req);
+//	alert(1);
+//	return r;
+//});
 				});
 		}
 		throw getErr(new Error(">>>mw switch:01:Invalide structure: case-cmmand not found"), req.$src, req);
-	}
+	}//,
+//todo	q_render(req, arr, isLast) {}
 };
 //1) прдполагается что если первый скрыт то и все такие же скрыты - и наоборот
 //2) !!: !$i[p_descrId] - это коммент, текст или когда template  и в нем скрыта тектовая нода
@@ -106,11 +106,11 @@ async function if_render(req, val, ifCmdName, elseifCmdName, elseCmdName, testFu
 	if (isTrue) {
 		const valName = reqI.reqCmd.args[0];
 		if (valName !== undefined && valName !== "") {
-			reqI.scope[p_target][kebabToCamelCase(valName)] = val;
+			reqI.scope[p_target][kebabToCamelCase(valName)] = getProxy(val);
 		}
 	}
 	let [$last, $attr, attrStr] = makeShow(reqI, reqI.$src, reqI.str, isTrue);
-	const beforeAttrCount = isSingle(reqI.$src, srcBy$src.get(reqI.$src), reqI.str);
+	const beforeAttrCount = isSingle(reqI.$src, srcBy$src.get(reqI.$src), reqI.str, ifCmdName);
 //console.log(1, isTrue, $last, $attr, str, beforeAttrCount, req, ifCmdName, elseifCmdName, elseCmdName);
 	if (beforeAttrCount === -1) {
 //		return type_renderRes(!isTrue, $attr, $last);
@@ -133,6 +133,7 @@ async function if_render(req, val, ifCmdName, elseifCmdName, elseCmdName, testFu
 				continue;
 			}
 			const rc = reqCmd.get(n);
+//console.log(req.str, iSrc, $i, n, rc.cmdName, elseifCmdName, elseCmdName)
 			if (rc.cmdName !== elseifCmdName && rc.cmdName !== elseCmdName) {
 				break;
 			}
@@ -163,7 +164,7 @@ async function if_render(req, val, ifCmdName, elseifCmdName, elseCmdName, testFu
 			if (isTrue = testFunc(val)) {
 				const valName = reqI.reqCmd.args[0];
 				if (valName !== undefined && valName !== "") {
-					reqI.scope[p_target][kebabToCamelCase(valName)] = val;
+					reqI.scope[p_target][kebabToCamelCase(valName)] = getProxy(val);
 				}
 				[$last, $attr, attrStr] = makeShow(reqI, $i, n, true);
 //console.log(4, $last, $attr, attrStr);
@@ -194,7 +195,6 @@ function make$first(req, ifCmdName, elseifCmdName, elseCmdName) {
 	const $first = if_get$first(ifCmdName, elseifCmdName, elseCmdName, req.$src, req.str, req.expr, pos);
 	if (reqCmd.get(req.str).cmdName === ifCmdName) {
 		req.$src = $first;
-//		$first;
 		return;
 	}
 	for (const [n, v] of srcBy$src.get($first).descr.attr) {
@@ -204,7 +204,6 @@ function make$first(req, ifCmdName, elseifCmdName, elseCmdName) {
 			req.str = n;
 			req.expr = v;
 			req.$src = $first;
-			$first;
 			return;
 		}
 	}
@@ -344,7 +343,7 @@ function if_get$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos)
 	const iSrc = srcBy$src.get($i),
 		nStr = if_getNextStr(iSrc, firstStr.str),
 		$els = nStr !== "" ? get$els($i, iSrc.descr.get$elsByStr, nStr) : [$i],
-		beforeAttrCount = isSingle($i, iSrc, firstStr.str);
+		beforeAttrCount = isSingle($i, iSrc, firstStr.str, ifCmdName);
 	if (beforeAttrCount === -1) {
 		return $els;
 	}
@@ -421,15 +420,19 @@ function if_get$els(ifCmdName, elseifCmdName, elseCmdName, $src, str, expr, pos)
 	}
 	return $els;
 }
-function isSingle($src, src, str) {//проверка на то что этот иф входит в конструккцию типа: <div _elseif="*" _if="эотот иф"
+function isSingle($src, src, str, ifCmdName) {//проверка на то что этот иф входит в конструккцию типа: <div _elseif="*" _if="эотот иф"
 	let beforeAttrCount = 0,
 		f = false;
 	for (const n of src.descr.attr.keys()) {
 		if (n === str) {
 			break;
 		}
+		const nn = reqCmd.get(n).cmdName;
+		if (ifCmdName === switchCmdName && nn === switchCmdName) {
+			continue;
+		}
 		beforeAttrCount++;
-		switch (reqCmd.get(n).cmdName) {
+		switch (nn) {
 			case ifCmdName:
 			case elseifCmdName:
 			case elseCmdName:

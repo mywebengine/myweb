@@ -6,11 +6,11 @@
 		<script src="../myweb.js?debug=1" type="module" async="async"></script>
 		<link href="../myweb.css" type="text/css" rel="stylesheet" />
 		<script>
-			if (!self.data) {
-				data = {};
+			if (!self.glob) {
+				glob = {};
 			}
 			const h1 = "fetch command";
-			data.red = "red";
+			glob.red = "red";
 			function getRes(res) {
 				if (res.ok) {
 					return res.headers.get('content-type').toLowerCase().indexOf("json") !== -1 ? res.json() : res.text();
@@ -43,7 +43,7 @@
 	</head>
 	<body>
 		<h1>${h1} - example</h1>
-		<section scope="ex">
+		<section scope.ex="">
 			<h2>Ex1</h2>
 			<p>В этом примере запрос идёт 3-и раза, так как после первго пришедшего ответа и сета ex.val* чистится кэш всех кто связан с ex</p>
 			<p>Если сделать так: if="ex.val === undefined" exec="ex.aa = 1" то мы отменим текущий рендер, а фетчи будут то же отменены и мы нпчего не получим</p>
@@ -60,7 +60,7 @@
 				}" /-->
 			<p if="ex.val">Result: ${JSON.stringify(ex.val)}, ${JSON.stringify(ex.val2)}</p>
 		</section>
-		<section scope="ex">
+		<section scope.ex="">
 			<h2>POST</h2>
 			<link if="ex.val === undefined"
 				fetch="new Request(`./fetch/ex1.json`, {method: `post`})"
@@ -68,7 +68,7 @@
 				on.error="getErr(evt.detail.err)" />
 			<p if="ex.val">Result: ${JSON.stringify(ex.val)}</p>
 		</section>
-		<section scope="ex">
+		<section scope.ex="">
 			<h2>404</h2>
 			<link if="ex.val === undefined"
 				fetch="fetch(404)
@@ -79,7 +79,7 @@
 		</section>
 		<section>
 			<h2>Form</h2>
-			<form scope="formScope"
+			<form scope.form-scope=""
 				on.submit.prevent="
 					formScope.isDisabled = true;
 					try {
@@ -92,11 +92,11 @@
 					}
 					formScope.isDisabled = false;"
 
-				_on.submit.prevent="formScope.fdata = new FormData(this)">
-				<link watch="formScope.fdata"
-					fetch="formScope.fdata && new Request(`./fetch/ex1.json`, {
+				_on.submit.prevent="formScope.fglob = new FormData(this)">
+				<link watch="formScope.fglob"
+					fetch="formScope.fglob && new Request(`./fetch/ex1.json`, {
 							method: `post`,
-							body: formScope.fdata
+							body: formScope.fglob
 						})"
 					on.load="formScope.val = await evt.detail.res.json()"
 					on.error="onError(evt.detail.res)" />

@@ -3,44 +3,44 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
-		<script src="../myweb.js?debug" type="module" async="async"></script>
+		<script src="../myweb.js?debug=1" type="module" async="async"></script>
 		<link href="../myweb.css" type="text/css" rel="stylesheet" />
 		<script>
-			if (!self.data) {
-				data = {};
+			if (!self.glob) {
+				glob = {};
 			}
 			const h1 = "html command";
-			data.text = "row1<br />\n<b>row2</b>";
+			glob.text = "row1<br />\n<b>row2</b>";
 		</script>
 		<title>${h1} - myweb</title>
 	</head>
 	<body>
 		<h1>${h1} - example</h1>
 		<fieldset>
-			<label for="text">data.text</label>
+			<label for="text">glob.text</label>
 			<textarea id="text" style="width: 100%; height: 100px;"
-				attr.value="data.text"
-				oninput="data.text = this.value"></textarea>
+				attr.value="glob.text"
+				oninput="glob.text = this.value"></textarea>
 		</fieldset>
 		<section>
 			<h2>HTML format</h2>
-			<div html="data.text"></div>
+			<div html="glob.text"></div>
 		</section>
 		<section>
 			<h2>Text format</h2>
-			<div html.t="data.text"></div>
+			<div html.t="glob.text"></div>
 		</section>
 		<section>
 			<h2>$<span>{...}</span> format</h2>
-			<div>${data.text}</div>
+			<div>${glob.text}</div>
 		</section>
 		<section>
 			<h2>Pre HTML</h2>
-			<pre html="data.text"></pre>
+			<pre html="glob.text"></pre>
 		</section>
 		<section>
 			<h2>Pre text</h2>
-			<pre html.t="data.text"></pre>
+			<pre html.t="glob.text"></pre>
 		</section>
 	</body>
 </html>

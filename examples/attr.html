@@ -10,7 +10,7 @@
 				glob = {};
 			}
 			const h1 = "attr command";
-			data.color = "red";
+			glob.color = "red";
 		</script>
 		<title>${h1} - myweb</title>
 	</head>
@@ -19,22 +19,22 @@
 		<section>
 			<h2>Set attribute value</h2>
 			<fieldset>
-				<label for="red">data.color</label>
+				<label for="red">glob.color</label>
 				<select id="red"
-					attr.value="data.color.toLowerCase()"
-					onchange="data.color = this.value">
+					attr.value="glob.color.toLowerCase()"
+					onchange="glob.color = this.value">
 					<option value="red">Red</option>
 					<option value="green">Green</option>
 					<option value="blue">Blue</option>
 				</select>
 			</fieldset>
 			<fieldset>
-				<label for="color">data.color</label>
+				<label for="color">glob.color</label>
 				<input id="color" type="text"
-					attr.value="data.color"
-					oninput="data.color = this.value" />
+					attr.value="glob.color"
+					oninput="glob.color = this.value" />
 			</fieldset>
-			<p attr.style="`color: ${data.color}`">Color: ${data.color}</p>
+			<p attr.style="`color: ${glob.color}`">Color: ${glob.color}</p>
 		</section>
 		<section>
 			<h2>Toggle attribute value</h2>

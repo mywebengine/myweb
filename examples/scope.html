@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
-		<script src="../myweb.js?debug" type="module" async="async"></script>
+		<script src="../myweb.js?debug=1" type="module" async="async"></script>
 		<link href="../myweb.css" type="text/css" rel="stylesheet" />
 		<script>
 			if (!self.data) {
@@ -18,9 +18,9 @@
 		<h1>${h1} - example</h1>
 		<ul>
 			<li foreach.val.key="location.pathname.substr(1).split(`/`)"
-				scope="liScope">
+				scope.li-scope="">
 				<p>${key} == ${liScope.key} => ${val} == ${liScope.val}</p>
-				<link inc.u="./scope/scope_inc.html"
+				<link inc.u="`./scope/scope_inc.html`"
 					exec.param1="key"
 					exec.param2="val" />
 			</li>

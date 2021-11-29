@@ -7,14 +7,15 @@ import {loadingCount} from "../loading.js";
 const renderParams = new Set();
 let mw_delay = 0,
 	mw_delayId = 0,
-	mw_syncId = 0;
+	mw_syncId = 0,
+	__oldLocHash = "";
 const delayParams = new Set();
 export const syncInRender = new Set();
 export let curRender = Promise.resolve();
+
 export function getCurRender() {
 	return curRender;
 }
-
 export function render($src = mw_$src, delay, scope, isLinking = false) {
 	if (!srcBy$src.has($src)) {
 		preRender($src, isLinking);
@@ -243,12 +244,14 @@ function _render(byD, delayP) {
 				}
 			}
 			//todo
-			if (location.hash === "") {
+			const h = location.hash;
+			if (h === __oldLocHash) {
 				return;
 			}
-			const $id = document.getElementById(location.hash.substr(1));
-			if ($id) {
-				$id.scrollIntoView();
+			const $h = document.getElementById(h.substr(1));
+			if ($h) {
+				__oldLocHash = h;
+				$h.scrollIntoView();
 			}
 		})
 		.catch(err => {

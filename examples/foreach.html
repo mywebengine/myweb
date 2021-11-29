@@ -43,7 +43,7 @@
 				<input id="push" type="text"
 					oninput="glob.arr.push(this.value)" />
 			</fieldset>
-			<ul ___if="glob.arr.length > 0">
+			<ul if="glob.arr.length > 0">
 				<li foreach.i="[1, 2]">
 					<ul>
 						<li attr.style="`color: ${glob.color || 'red'}`"
@@ -54,7 +54,7 @@
 				</li>
 			</ul>
 		</section>
-		<!--section>
+		<section>
 			<h2>Chain</h2>
 			<ul if="glob.arr.length > 0">
 				<li foreach.foo.idx="glob.arr"
@@ -64,6 +64,6 @@
 							${idx} => ${"bar".toUpperCase()}
 				</li>
 			</ul>
-		</section-->
+		</section>
 	</body>
 </html>

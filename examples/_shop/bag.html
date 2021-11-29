@@ -1,6 +1,0 @@
-﻿<div>
-	<div :if="data.bag && data.bag.length" class="bag">
-		Bag: {{data.bag.length}} p, <span :html.text="data.bag.reduce((sum, p) => sum + p.price * (p.amount || 1), 0)" class="price"></span> <a href="#/order">Get order</a>
-	</div>
-	<div :else="" class="bag">Bag: yuor bag is empty</div>
-</div>
