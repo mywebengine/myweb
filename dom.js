@@ -395,7 +395,7 @@ function clearVars(rem) {
 //		skipDelBySrcId = {};
 	for (const [dId, s] of rem) {
 		const d = descrById.get(dId);
-		if (!d) {//todo REM!
+		if (d === undefined) {//todo REM!
 			continue;
 		}
 		for (const vId of d.varIds) {
@@ -428,12 +428,12 @@ function clearVars(rem) {
 //alert(1);
 				s.delete(sId);
 			}
-			if (!vIdByProp) {
+			if (vIdByProp === undefined) {
 				continue;
 			}
 			for (const [pName, pId] of vIdByProp) {
 				const propS = srcIdsByVarId.get(pId);
-				if (propS && propS.has(sId)) {
+				if (propS !== undefined && propS.has(sId)) {
 //console.log(vIdByProp, sId, pId);
 					s.delete(sId);
 					propS.delete(sId);
@@ -454,7 +454,7 @@ function clearVars(rem) {
 			srcIdsByVarId.delete(vId);
 			varIdByVar.delete(varById.get(vId));
 			varById.delete(vId);
-			if (vIdByProp) {
+			if (vIdByProp !== undefined) {
 				varIdByVarIdByProp.delete(vId);
 //todo
 				if (vIdByProp.size !== 0) {
@@ -464,14 +464,13 @@ function clearVars(rem) {
 //					srcIdsByVarId.delete(pId);
 //				}
 			}
-		} else if (vIdByProp && vIdByProp.size === 0) {
-//console.warn(11111, vId, vIdByProp);
+		} else if (vIdByProp !== undefined && vIdByProp.size === 0) {
 			varIdByVarIdByProp.delete(vId);
 		}
 	}
 	for (const [dId, s] of rem) {
 		const d = descrById.get(dId);
-		if (!d) {//todo REM!
+		if (d === undefined) {//todo REM!
 			continue;
 		}
 		for (const vId of deletedVarId) {

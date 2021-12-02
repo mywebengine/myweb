@@ -28,6 +28,7 @@ export const defIdleCallbackOpt = {
 
 export const globVarName = "glob";
 export const locVarName = "loc";
+export const viewVarName = "view";
 
 //export const renderStartEventName = "renderstart";
 export const mountEventName = "mount";

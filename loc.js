@@ -1,9 +1,11 @@
-﻿import {oset} from "./oset.js";
+﻿import {locVarName} from "./config.js";
+import {oset} from "./oset.js";
+import {getProxy} from "./proxy.js";
 
 //const trimSlashRe = /(^\/|\/$)/g;
 
 export function setLoc(url) {
-	oset(self, "loc", getLoc(url));
+	oset(self, locVarName, getLoc(url));
 }
 export function getLoc(url) {//, defPageName = "") {
 	url = new URL(url);

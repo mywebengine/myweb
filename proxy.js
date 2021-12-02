@@ -80,20 +80,9 @@ self._testVars = function() {
 }
 
 
-const isSkipNameType = {
-//todo
-//	"undefined": true,
-	"symbol": true
-},
-isSkipValueType = {
-	"function": true
-},
-isScalarType = {
-	"boolean": true,
-	"number": true,
-	"string": true,
-	"undefined": true
-};
+const isSkipNameType = new Set([/*todo "undefined", */"symbol"]),
+	isSkipValueType = new Set(["function"]),
+	isScalarType = new Set(["boolean", "number", "string", "undefined"]);
 let cur$src;
 export function setCur$src($src) {
 	cur$src = $src;
@@ -180,8 +169,8 @@ const proxyHandler = {
 		}
 		const v = t[n],
 			vType = typeof v;
-//		if (cur$src && !isSkipNameType[typeof n] && (Array.isArray(t) || !isSkipValueType[vType])) {
-		if (cur$src && !isSkipNameType[typeof n] && !isSkipValueType[vType]) {
+//		if (cur$src && !isSkipNameType.has(typeof n) && (Array.isArray(t) || !isSkipValueType.has(vType))) {
+		if (cur$src && !isSkipNameType.has(typeof n) && !isSkipValueType.has(vType)) {
 			addVar(t, n, getTarget(v), cur$src);
 			return v;
 		}
@@ -390,17 +379,20 @@ function addVar(t, n, v, $src) {
 //debugger;
 //		return;
 //	}
-	if (isScalarType[typeof v] || v === null) {
+	if (isScalarType.has(typeof v) || v === null) {
+/*todo может быть нужно так делать
 		if (Array.isArray(t) && !isNaN(n)) {
+console.warn(445435345, n, typeof n, t, n, v, $src);
 			n = Number(n);
-		}
+		}*/
 		if (tId) {
 			const s = srcIdsByVarId.get(tId);
-			if (s) {
+			if (s !== undefined) {
 				s.add(sId);
 			} else {
 				srcIdsByVarId.set(tId, new Set([sId]));
-//console.log(1, tId);
+//todo
+//console.warn(-1, tId);
 			}
 //1
 			descr.varIds.add(tId);
@@ -408,31 +400,34 @@ function addVar(t, n, v, $src) {
 			const vIdByProp = varIdByVarIdByProp.get(tId);
 			if (vIdByProp !== undefined) {
 				const propId = vIdByProp.get(n);
-				if (propId) {
+				if (propId !== undefined) {
 //1
 					descr.varIds.add(propId);//<--100%
 
 					const s = srcIdsByVarId.get(propId);
-					if (s) {
+					if (s !== undefined) {
 						s.add(sId);
 						return;
 					}
 					srcIdsByVarId.set(propId, new Set([sId]));
-//console.log(2, propId);
+//console.log(-2, propId, tId, n, v);
 					return;
 				}
 				const newPropId = getNewId();
+//console.log(-33, varIdByVarIdByProp.get(tId));
+//console.log(-3, newPropId, tId, n, v);
+//alert(1);
+//1
 				vIdByProp.set(n, newPropId);
 				srcIdsByVarId.set(newPropId, new Set([sId]));
-//console.log(3, newPropId);
-//1
 				descr.varIds.add(newPropId);
 				return;
 			}
 			const newPropId = getNewId();
 			varIdByVarIdByProp.set(tId, new Map([[n, newPropId]]));
 			srcIdsByVarId.set(newPropId, new Set([sId]));
-//console.log(4, newPropId);
+//console.log(-44, new Set(varIdByVarIdByProp.get(tId)));
+//console.log(-4, newPropId, tId, n, v);
 //1
 			descr.varIds.add(newPropId);
 			return;
@@ -441,25 +436,26 @@ function addVar(t, n, v, $src) {
 		varIdByVar.set(t, nId);
 		varById.set(nId, t);
 		srcIdsByVarId.set(nId, new Set([sId]));
-//console.log(5, nId);
+//console.log(-5, nId);
 //1
 		descr.varIds.add(nId);
 
 		const newPropId = getNewId();
 		varIdByVarIdByProp.set(nId, new Map([[n, newPropId]]));
 		srcIdsByVarId.set(newPropId, new Set([sId]));
-//console.log(6, newPropId, t, n, v, $src);
+//console.log(-6, newPropId, nId, t, n, v, $src);
+//alert(1)
 //1
 		descr.varIds.add(newPropId);
 		return;
 	}
 	if (tId) {
 		const s = srcIdsByVarId.get(tId);
-		if (s) {
+		if (s !== undefined) {
 			s.add(sId);
 		} else {
 			srcIdsByVarId.set(tId, new Set([sId]));
-//console.log(7, tId);
+//console.log(-7, tId);
 		}
 //1
 		descr.varIds.add(tId);
@@ -468,18 +464,18 @@ function addVar(t, n, v, $src) {
 		varIdByVar.set(t, nId);
 		varById.set(nId, t);
 		srcIdsByVarId.set(nId, new Set([sId]));
-//console.log(8, sId);
+//console.log(-8, sId);
 //1
 		descr.varIds.add(nId);
 	}
 	const vId = varIdByVar.get(v);
 	if (vId) {
 		const s = srcIdsByVarId.get(vId);
-		if (s) {
+		if (s !== undefined) {
 			s.add(sId);
 		} else {
 			srcIdsByVarId.set(vId, new Set([sId]));
-//console.log(9, sId);
+//console.log(-9, sId);
 		}
 //1
 		descr.varIds.add(vId);
@@ -489,22 +485,27 @@ function addVar(t, n, v, $src) {
 	varIdByVar.set(v, newValId);
 	varById.set(newValId, v);
 	srcIdsByVarId.set(newValId, new Set([sId]));
-//console.log(10, sId);
+//console.log(-10, sId);
 //1
 	descr.varIds.add(newValId);
 }
 function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); - если так сделалть, то после первого - будут удалены varIdByVar.get(oldId), что приведет к тому что все пойдет по ветке !oldId - непонятно нужно ли что-то с этим делать??
 	const tId = varIdByVar.get(t);
-//console.info("setVar", "name=>", n, "\nvalue=>", v, "\ntarget=>", t, "\ntId=>", tId, "\noldVal=>", oldV);
+//console.info("setVar", "name=>", n, typeof n, "\nvalue=>", v, "\ntarget=>", t, "\ntId=>", tId, "\noldVal=>", oldV);
 	if (!tId) {//!tId - такое получается когда данные изменяются, а отрисовки ещё небыло - первая загрузка странцы и добавление данных на старте - это корректно
 		return;
 	}
+/*todo может быть нужно так делать
 	if (Array.isArray(t) && !isNaN(n)) {
+//todo
+console.warn(423423, n, typeof n, t, n, v, oldV)
 		n = Number(n);
-	}
+	}*/
 	const vIdByProp = varIdByVarIdByProp.get(tId),
-		oldScalarId = vIdByProp !== undefined ? vIdByProp.get(n) : 0,
-		oId = oldScalarId ? varIdByVar.get(oldV) : 0;
+//		oldScalarId = vIdByProp !== undefined ? vIdByProp.get(n) : 0,
+//		oId = oldScalarId ? varIdByVar.get(oldV) : 0;
+		oldScalarId = vIdByProp !== undefined && vIdByProp.get(n) || 0,
+		oId = oldScalarId !== 0 && varIdByVar.get(oldV) || 0;
 	if (self.mw_debugLevel === 2) {
 		console.info("mw_proxy => setVar", "\n\tname=>", n, "\n\tvalue=>", v, "\n\toldVal=>", oldV, "\n\ttId=>", tId, "\n\ttarget=>", t, "\n\toldId=>", oId, "\n\toldScalarId=>", oldScalarId);
 	}
@@ -515,7 +516,7 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 	}
 /*!!нет в этом смысла
 	if (!oId) {//если в разметке нет этого свойства, а оно используется в расчётах - для того чтобы на следующем круге понять что оно уже использовалось и не нужно чистить кэш по условию !oId
-		if (isScalarType[typeof v] || v === null) {
+		if (isScalarType.has(typeof v) || v === null) {
 			const newPropId = getNewId();
 			if (vIdByProp) {
 				vIdByProp.set(n, newPropId);
@@ -541,7 +542,7 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 		}
 		return;
 	}*/
-	if (oldScalarId && !isScalarType[typeof v] && v !== null) {//это нужно для того: Изначально data.filter в proxy.get (при рендере) установится как скаляр (undef), - если новое значение объект, то нужно удалить ид из свойств
+	if (oldScalarId && !isScalarType.has(typeof v) && v !== null) {//это нужно для того: Изначально data.filter в proxy.get (при рендере) установится как скаляр (undef), - если новое значение объект, то нужно удалить ид из свойств
 		vIdByProp.delete(n);
 //!!todo GC
 		if (vIdByProp.size === 0) {
@@ -552,7 +553,7 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 //}
 //function _setVal(t, n, oldV, s, oId) {
 	const s = srcIdsByVarId.get(oId || tId);
-	if (!s) {
+	if (s === undefined) {
 //!!todo
 //console.error("!S!", t, n, oldV, s, oId);
 //alert(1);
@@ -672,7 +673,7 @@ function setInnerSrcIdSetBy$src(toClear, $i) {
 }
 function decVar(t, n, v, sId, vId, deletedVarId) {
 	if (vId === 0) {
-		if (isScalarType[typeof v] || v === null) {
+		if (isScalarType.has(typeof v) || v === null) {
 			const vIdByProp = varIdByVarIdByProp.get(varIdByVar.get(t));
 			if (vIdByProp !== undefined) {
 				vId = vIdByProp.get(n);
@@ -689,7 +690,7 @@ function decVar(t, n, v, sId, vId, deletedVarId) {
 	}
 	if (vId !== 0) {
 		const s = srcIdsByVarId.get(vId);
-		if (!s || !s.has(sId)) {
+		if (s === undefined || !s.has(sId)) {
 			delVar(vId, v, t, n, deletedVarId);
 			return;
 		}
@@ -717,7 +718,7 @@ function delVar(vId, v, t, n, deletedVarId) {
 //console.log("DEL", vId);
 	deletedVarId.add(vId);
 	srcIdsByVarId.delete(vId);
-	if (isScalarType[typeof v] || v === null) {
+	if (isScalarType.has(typeof v) || v === null) {
 		const vIdByProp = varIdByVarIdByProp.get(vId = varIdByVar.get(t));
 		if (vIdByProp === undefined) {
 			return;
