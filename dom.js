@@ -883,7 +883,10 @@ export function setAttributeValue($e, name, value) {
 			if ($e === document.activeElement && typeof $e.setSelectionRange === "function") {
 				const pos = $e.selectionStart;
 				$e.value = value;
-				$e.setSelectionRange(pos, pos);
+//todo input type number console.log($e)
+				if ($e.type !== "number") {
+					$e.setSelectionRange(pos, pos);
+				}
 			} else {
 				$e.value = value;
 			}

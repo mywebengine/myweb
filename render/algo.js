@@ -513,6 +513,49 @@ a.promise = 1;
 		sync.idleCallback.set(ricId, ricResolve);
 	});
 }
+export function checkScrollAnimations() {
+	const pSet = new Set(),
+		scrollSync = new Set();
+	for (const sync of syncInRender) {
+		if (sync.stat !== 0 || sync.scrollAnimations.size === 0) {
+			continue;
+		}
+		const animation = new Set();
+		for (const a of sync.scrollAnimations) {
+			if (!$srcById.has(a.viewedSrcId)) {
+				sync.scrollAnimations.delete(a);
+				if (sync.scrollAnimations.size === 0) {
+					scrollSync.add(sync);
+				}
+				continue;
+			}
+			if (isAnimationVisible(a)) {
+				sync.scrollAnimations.delete(a);
+				animation.add(a);
+			}
+		}
+		if (animation.size !== 0) {
+			pSet.add(addAnimation(sync, animation, true));
+			scrollSync.add(sync);
+		}
+	}
+	if (pSet.size !== 0) {
+//console.log("animation")
+		Promise.all(pSet)
+			.then(() => renderLoop(scrollSync));
+		return;
+	}
+//todo--
+	if (scrollSync.size !== 0) {
+console.warn("2animation")
+		renderLoop(scrollSync);
+	}
+}
+export function addScrollAnimationsEvent($e) {
+	$e.addEventListener("scroll", checkScrollAnimations, {
+		passive: true
+	});
+}
 function prepareRenderParam(toCancleSync) {
 //	const renderParamByDescrId = new Map(),
 	const byD = new Map();
@@ -622,6 +665,8 @@ alert(222);
 			mI.len++;
 			if ($i.getAttribute(lazyRenderName) !== null) {
 				r.isLazyRender = true;
+				//todo
+				addScrollAnimationsEvent($i);
 			}
                         const iDescr = iSrc.descr;
 			if (iSrc.asOneIdx !== null || iDescr.get$elsByStr === null) {

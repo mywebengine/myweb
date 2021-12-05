@@ -178,6 +178,8 @@ const proxyHandler = {
 	},
 	set(t, n, v, r) {
 //console.log("set", n, v, "old=>", t[n], t, v === p_target);//, Object.getOwnPropertyDescriptor(t, n) && Object.getOwnPropertyDescriptor(t, n).value);
+//todo ---
+/*
 		if (Array.isArray(t) && n === "length") {
 			const oVal = t[n];
 			t[n] = v;
@@ -186,7 +188,7 @@ const proxyHandler = {
 //			}
 			setVal(t, n, v, oVal);
 			return true;
-		}
+		}*/
 		const vTarget = getTarget(v);
 		if (n in t) {
 			const oldVTarget = getTarget(t[n]);
@@ -366,7 +368,7 @@ const clearFuncHandler = {
 	}
 };
 function getTarget(v) {
-	return typeof v === "object" && v !== null ? v[p_target] : v;
+	return typeof v === "object" && v !== null ? v[p_target] || v : v;
 }
 //export 
 function addVar(t, n, v, $src) {

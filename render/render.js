@@ -3,6 +3,7 @@ import {lazyRenderName, mountEventName, renderEventName, defEventInit,
 		mw_cmd, reqCmd} from "../config.js";
 import {srcById, $srcById, srcBy$src, getAttrAfter} from "../descr.js";
 import {srcSetScope} from "../oset.js";
+import {addScrollAnimationsEvent} from "./algo.js";
 
 //export const mw_cmd = {};//self.mw_cmd || {};
 //export const reqCmd = self.mw_reqCmd || {};
@@ -93,6 +94,8 @@ async function renderChildren($i, scope, sync, sId, $ret) {
 	}
 	if (!sync.renderParam.isLazyRender && $i.getAttribute(lazyRenderName) !== null) {
 		sync.renderParam.isLazyRender = true;
+		//todo
+		addScrollAnimationsEvent($i);
 	}
 	for ($i = $i.firstChild; $i !== null; $i = $i.nextSibling) {
 //		if ($i.nodeType === 1 && 
@@ -233,14 +236,18 @@ function q_renderChildren(arr, isLast, sync) {
 		sync.renderParam.isLazyRender = true;
 	}
 	const iArr = [],
-		arrLen = arr.length;
+		arrLen = arr.length,
+		isLazyRender = sync.renderParam.isLazyRender;
 	for (let i = 0; i < arrLen; i++) {
 //		if (!isLast[i] && arr[i].$src.nodeType === 1) {//?? бывает ли в арр не элемент? - проверил, может. --- бывает <!-inc_end
-		if (!isLast.has(i)) {//?? бывает ли в арр не элемент? - проверил, может. --- бывает <!-inc_end ---- Должен быть ЛАСТ
-//todo проанализировать еще раз
-//			iArr.push(ocopy(arr[i]));
-			const aI = arr[i];
-			iArr.push(type_q_arr(aI.$src, aI.scope));
+		if (isLast.has(i)) {//?? бывает ли в арр не элемент? - проверил, может. --- бывает <!-inc_end ---- Должен быть ЛАСТ
+			continue;
+		}
+		const aI = arr[i];
+		iArr.push(type_q_arr(aI.$src, aI.scope));
+		if (isLazyRender) {
+			//todo
+			addScrollAnimationsEvent(aI.$src);
 		}
 	}
 	if (iArr.length === 0) {

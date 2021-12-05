@@ -1,6 +1,6 @@
 ﻿import {type_renderRes} from "../render/render.js";
 import {p_target} from "../config.js";
-import {srcBy$src} from "../descr.js";
+import {srcBy$src, get$els} from "../descr.js";
 import {eval2, q_eval2} from "../eval2.js";
 import {getProxy} from "../proxy.js";
 import {kebabToCamelCase} from "../str.js";
@@ -33,7 +33,8 @@ function getName(req) {
 }
 function watch_render(req, scope, n, val) {
 //	const c = getCacheBySrcId(req.$src[p_srcId]),
-	const c = srcBy$src.get(req.$src).cache;
+	const src = srcBy$src.get(req.$src),
+		c = src.cache;
 	if (!c.current.has(req.str)) {
 		c.current.set(req.str, type_watchCur());
 	}
@@ -45,7 +46,12 @@ function watch_render(req, scope, n, val) {
 	}
 	if (c.isInits.has(req.str)) {
 		if (val === cur.watch) {
-			return type_renderRes(true);
+			const get$elsByStr = src.descr.get$elsByStr;
+			if (get$elsByStr === null) {
+				return type_renderRes(true);
+			}
+			const $els = get$els(req.$src, src.descr.get$elsByStr, req.str);
+			return type_renderRes(true, $els[$els.length - 1]);
 		}
 		req.sync.onreadies.add(() => {
 			cur.watch = val;
