@@ -66,14 +66,14 @@ if ($scroll.clientWidth === 980) {
 }
 self.addEventListener("scroll", () => {
 	checkScrollAnimations();
-	setDelay(100, () => {
+	setDelay(10, () => {
 		view.scrollTop = $scroll.scrollTop;
 		view.scrollLeft = $scroll.scrollLeft;
 	});
 }, evtOpt);
 self.addEventListener("resize", () => {
 //console.log("resize");
-	setDelay(100, () => setView(document));
+	setDelay(10, () => setView(document));
 }, evtOpt);
 self.addEventListener("popstate", () => {
 //console.log("popstate", location.href, location.hash);
