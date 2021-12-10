@@ -1,6 +1,4 @@
 import {renderTag, type_req, setReqCmd, type_localCounter, type_animation, type_renderRes} from "../render/render.js";
-//import pimport from "../_pimport.js";
-//import createArrFragment from "../arrfr.js";
 import {mw_doc, p_target, cmdPref, cmdArgsDiv, cmdArgsDivLen, incCmdName, fetchCmdName, foreachCmdName, elseCmdName, defaultCmdName, onCmdName, isFillingName, isFillingDiv, asOneIdxName, idxName, defRequestInit,
 	reqCmd} from "../config.js";
 import {srcById, srcBy$src, getAttrItAfter, get$els, type_asOneIdx, type_idx, type_save, type_saveI} from "../descr.js";
@@ -215,33 +213,40 @@ function createIncScript(req, include, $e) {
 	}
 	if ($e.type === "module") {
 		if (url !== null) {
-			try {
-//				return pimport(url);
+//			try {
 				return import(url)
-					.then(m => incToScope(m, include));
-			} catch (err) {
-				throw checkScript(err, $e, req, url);
-			}
+					.then(m => incToScope(m, include))
+					.catch(err => {
+						throw checkScript(err, $e, req, url);
+					});
+//			} catch (err) {
+//				throw checkScript(err, $e, req, url);
+//			}
 		}
 		const uurl = URL.createObjectURL(new Blob([$e.textContent], {
 			type: "text/javascript"
 		}));
-		try {
-//			return pimport(uurl);
+//		try {
 			return import(uurl)
 				.then(m => {
 //					if (self.mw_debugLevel !== 0) {//todo
 						URL.revokeObjectURL(uurl);
 //					}
 					incToScope(m, include);
+				})
+				.catch(err => {
+//					if (self.mw_debugLevel !== 0) {//todo
+						URL.revokeObjectURL(uurl);
+//					}
+					throw checkScript(err, $e, req);
 				});
-		} catch (err) {
-//			if (self.mw_debugLevel !== 0) {//todo
-				URL.revokeObjectURL(uurl);
-//			}
-			throw checkScript(err, $e, req);
-		}
-		return;
+//		} catch (err) {
+////			if (self.mw_debugLevel !== 0) {//todo
+//				URL.revokeObjectURL(uurl);
+////			}
+//			throw checkScript(err, $e, req);
+//		}
+//		return;
 	}
 	if (url === null) {
 		runIncScript(req, $e.textContent, $e, url);

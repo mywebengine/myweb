@@ -65,5 +65,16 @@
 				</li>
 			</ul>
 		</section>
+		<section>
+			<h2>if - foreach</h2>
+			<div foreach.foo.idx="glob.arr">
+				<div if="isNaN(foo)"
+					foreach.bar="foo + `-bar`"
+						attr.style="`color: ${idx % 2 ? 'red' : 'green'}`">
+						${idx} => ${"bar".toUpperCase()}
+				</div>
+				<div else="">Is num</div>
+			</div>
+		</section>
 	</body>
 </html>

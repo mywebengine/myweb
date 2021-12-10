@@ -223,6 +223,9 @@ function foreach_get$els($e, str, expr, pos) {
 		if (iSrc === undefined || !iSrc.isCmd) {
 			continue;
 		}
+		if (iSrc.asOneIdx === null) {//if foreach
+			break;
+		}
 		const nStr = getNextStr(iSrc, str),
 			asOneIdx = iSrc.asOneIdx.get(str),
 			$els = [];
