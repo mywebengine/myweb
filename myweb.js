@@ -27,7 +27,7 @@ import {getView, setView} from "./view.js";
 		return;
 	}
 	const ready = () => {
-		if (self.mw_debugLevel === 0) {
+		if (mwUrl.indexOf("line=1") === -1) {
 			render(undefined, undefined, undefined, mwUrl.indexOf("linking=1") !== -1);
 			return;
 		}

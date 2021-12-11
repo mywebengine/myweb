@@ -12,8 +12,8 @@ export const srcBy$src = new WeakMap();
 export const descrById = self.mw_descrById || new Map();
 export let idCurVal = self.mw_idCurVal || 0;
 
-//self.mw_$srcById = $srcById;
-//self.mw_srcById = srcById;
+self.mw_$srcById = $srcById;
+self.mw_srcById = srcById;
 //self.mw_srcBy$src = srcBy$src;
 //self.mw_descrById = descrById;
 

@@ -215,7 +215,7 @@ function foreach_get$first($first, str, expr, pos) {
 		}
 		return $first;
 	}
-	return $first;
+	throw new Error("foreach.js");
 }
 function foreach_get$els($e, str, expr, pos) {
 	for (let $i = $e; $i !== null; $i = $i.nextSibling) {
@@ -224,7 +224,7 @@ function foreach_get$els($e, str, expr, pos) {
 			continue;
 		}
 		if (iSrc.asOneIdx === null) {//if foreach
-			break;
+			return [[$e]];
 		}
 		const nStr = getNextStr(iSrc, str),
 			asOneIdx = iSrc.asOneIdx.get(str),
@@ -249,7 +249,7 @@ function foreach_get$els($e, str, expr, pos) {
 		} while ($i !== null);
 		return $els;
 	}
-	return [[$e]];
+	throw new Error("foreach.js");
 }
 function q_add(req, ctx) {
 	const elsLen = ctx.els.length,

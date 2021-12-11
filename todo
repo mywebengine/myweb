@@ -37,5 +37,4 @@
 14) сервер
 	+17) $i[p_topUrl]
 
-18) console.log(...glob.a)
-Array [ 0, 1 ] Array [ 1, 2 ] Array [ 2, 3 ]
+18) Написатиь в документации об особенностях рендера <option foraech selected

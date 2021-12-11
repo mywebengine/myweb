@@ -884,7 +884,7 @@ export function setAttributeValue($e, name, value) {
 				const pos = $e.selectionStart;
 				$e.value = value;
 //todo input type number console.log($e)
-				if ($e.type !== "number") {
+				if ($e.type === "text" || $e.type === "search") {
 					$e.setSelectionRange(pos, pos);
 				}
 			} else {

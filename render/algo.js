@@ -166,7 +166,18 @@ function _tryRender(delayP) {
 }
 function _render(byD, delayP) {
 	if (self.mw_debugLevel !== 0) {
-		console.info("render =>", infoBySrcIds(new Set(Array.from(byD.values()).map(i => i.sId))));
+		const sIds = new Set();
+		for (const r of byD.values()) {
+			if (r.srcIds.size === 0) {
+				sIds.add(r.sId);
+				continue;
+			}
+			for (const iId of r.srcIds) {
+				sIds.add(iId);
+			}
+		}
+		console.info("render =>", infoBySrcIds(sIds));
+//		console.info("render =>", infoBySrcIds(new Set(Array.from(byD.values()).map(i => i.srcIds.size === 0 ? i.sId : Array.from(i.srcIds)).flat())));
 	}
 	const syncInThisRender = new Set(),
 //		renderPack = [],
@@ -219,11 +230,12 @@ function _render(byD, delayP) {
 //todo
 							console.warn("0 0 sdfsdfsd");
 						}
+						const sIds = sync.renderParam.srcIds.size === 0 ? [sync.renderParam.sId] : sync.renderParam.srcIds;
 						if (sync.stat === 7) {
-							console.info("ready =>", infoBySrcIds([sync.renderParam.sId]));
+							console.info("ready =>", infoBySrcIds(sIds));
 							return;
 						}
-						console.info("cancel =>", infoBySrcIds([sync.renderParam.sId]));
+						console.info("cancel =>", infoBySrcIds(sIds));
 					});
 			}
 			renderLoop(syncInThisRender);
@@ -662,6 +674,7 @@ function prepareRenderParam(toCancleSync) {
 console.warn(2222, $i);
 alert(222);
 			}*/
+
 			mI.len++;
 			if ($i.getAttribute(lazyRenderName) !== null) {
 				r.isLazyRender = true;
@@ -688,14 +701,14 @@ alert(222);
 //console.time("p4")
 	const byDArr = Array.from(byD.keys()),
 		byDArrLen = byDArr.length;
-	for (let i = 0; i < byDArrLen; i++) {
+	for (let $l, l, j, i = 0; i < byDArrLen; i++) {
 		const iDId = byDArr[i];
 //		if (!byD.has(iDId)) {
 		if (iDId === 0) {
 			continue;
 		}
 		const mI = mergeByD.get(iDId);
-		for (let j = 0; j < byDArrLen; j++) {
+		for (j = 0; j < byDArrLen; j++) {
 			const jDId = byDArr[j];
 			if (jDId === 0 || iDId === jDId) {
 				continue;
@@ -706,8 +719,15 @@ alert(222);
 			}
 //			if (mI.len !== mJ.len && mJ.descrId.has(iDId)) {
 			if (mJ.descrId.has(iDId)) {
-				prpDeleteDescrId(byD, jDId, toCancleSync);
-				byDArr[j] = 0;
+				$l = $srcById.get(byD.get(jDId).sId)
+				for (l = mJ.len - mI.len; l !== 0; l--) {
+					$l = $l.parentNode;
+				}
+//console.log(444, mJ.len - mI.len, $l, $srcById.get(byD.get(iDId).sId));
+				if ($srcById.get(byD.get(iDId).sId).parentNode === $l.parentNode) {
+					prpDeleteDescrId(byD, jDId, toCancleSync);
+					byDArr[j] = 0;
+				}
 				continue;
 			}
 //console.log(444, mI.firstAsOneIdx, mJ.firstAsOneIdx, iDId, jDId)

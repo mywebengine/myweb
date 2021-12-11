@@ -16,11 +16,12 @@ export default new Promise(resolve => {
 			return res.text()
 				.then(html => {
 					createLineNo(url, html, document.documentElement);
-					if (document.readyState === "loading") {
-						document.addEventListener("DOMContentLoaded", resolve);
+					if (document.readyState === "interactive" || document.readyState === "complete") {
+						resolve();
 						return;
 					}
-					resolve();
+//					if (document.readyState === "loading") {
+					document.addEventListener("DOMContentLoaded", resolve);
 				});
 		});
 });
@@ -34,10 +35,30 @@ function createLineNo(url, html, $src) {
 		if ($i.nodeType === 1) {
 			const idx = html.indexOf("<" + $i.localName);
 			if (idx === -1) {
-//				console.error(`Mark lines error: index <${$i.localName} = -1`, $i, ctx);
+				console.warn(`Mark lines error: index <${$i.localName} = -1`, $i, html.substr(0, 40));
+/*
+				if ($i.nextSibling !== null) {
+					$i = $i.nextSibling;
+					continue;
+				}
+				do {
+					$i = $i.parentNode;
+					if ($i.parentNode === $parent) {
+						$i = null;
+						break;
+					}
+					if ($i.nextSibling !== null) {
+						$i = $i.nextSibling;
+						break;
+					}
+				} while (true);
+				continue;*/
 				return;
 			}
 			line += html.substr(0, idx).split("\n").length - 1;
+//console.log(1, html.substr(0, 40), idx, line, html.substr(0, idx), $i);
+//console.log(1, line);
+//alert(1)
 			$i.setAttribute(lineNoAttrName, `${url}:${line}`);
 			html = html.substr(idx + 1);
 		}

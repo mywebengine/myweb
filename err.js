@@ -3,7 +3,7 @@
 export function getErr(err, $src, req, scope, fileName, lineNum, colNum) {
         let errMsg = ">>>mw error";
         if (self.mw_getLineNo !== undefined) {
-        	const pos = self.mw_getLineNo($src) || self.mw_getLineNo($src.parentNode);//todo зачем смотреть родителя?
+        	const pos = self.mw_getLineNo($src);// || self.mw_getLineNo($src.parentNode);//todo зачем смотреть родителя?
         	if (pos) {
 	        	errMsg += ` in ${pos}`;
 	        }

@@ -88,15 +88,18 @@ function attr_render(req, $src, n, v) {
 		req.sync.renderParam.isLazyRender = f;
 	}
 	if (isInit && curVal === v) {
+//if (n == `selected`) console.log(111,$src, n, v);
 		setAttributeValue($src, n, v);
 		return;
 	}
 	req.sync.animations.add(type_animation(() => {
 		c.current.set(req.str, v);
 		if (f) {
+//if (n == `selected`) console.log(222,$src, n, v);
 			setAttribute($src, n, v);
 			return;
 		}
+//if (n == `selected`) console.log(333,$src, n);
 		removeAttribute($src, n);
 	}, req.sync.local, srcBy$src.get($src).id));
 /*
