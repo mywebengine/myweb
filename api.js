@@ -1,6 +1,6 @@
 import {incCache} from "./cmd/inc.js";
 import {render, getCurRender, setDelay, syncInRender, cancelSync} from "./render/algo.js";
-import {p_target, p_topUrl} from "./config.js";
+import {mw_$src, p_target, p_topUrl} from "./config.js";
 //import {$srcById, srcById, srcBy$src, descrById} from "./descr.js";
 import {preRender, removeChild} from "./dom.js";
 import {dispatchCustomEvent} from "./evt.js";
@@ -28,6 +28,7 @@ function begin() {
 	self.mw_syncInRender = syncInRender;
 	self.mw_cancelSync = cancelSync;
 
+	self.mw_$src = mw_$src;
 	self.mw_p_target = p_target;
 	self.mw_p_topUrl = p_topUrl;
 

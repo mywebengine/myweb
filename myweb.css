@@ -1,4 +1,4 @@
-﻿template,
+﻿template[_hide],
 *[is_filling] > * {
 	display: none !important;
 }

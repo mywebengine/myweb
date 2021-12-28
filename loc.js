@@ -17,7 +17,7 @@ export function getLoc(url) {//, defPageName = "") {
 	for (const [n, v] of url.searchParams) {
 		query.set(n, v);
 	}
-	return type_loc(url.pathname, query, url.hash);
+	return type_loc(url.origin, url.href, url.pathname, query, url.hash);
 }
 //function parsePath(href, path, defPageName) {
 //	const args = path.replace(trimSlashRe, "").split("/"),
@@ -27,10 +27,11 @@ export function getLoc(url) {//, defPageName = "") {
 //	}
 //	return loc;
 //}
-function type_loc(path, query, hash) {//, name, args) {
+function type_loc(origin, href, pathname, query, hash) {//, name, args) {
 	return {
-//		href,
-		path,
+		origin,
+		href,
+		pathname,
 //		name,
 //		args,
 //		param: {},

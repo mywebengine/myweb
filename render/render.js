@@ -372,7 +372,7 @@ function dispatchLocalEventsBySrcId(sId, l) {
 		return;
 	}
 	l.animationsCount = -1;
-//todo непонятно это команда или нет - но тут не важно: так кака на тимплэйт события не придут и так
+	//на тимплэйт события не придут и так
 	if ($src.nodeName === "TEMPLATE") {
 		return;
 	}

@@ -31,18 +31,21 @@
 				</li>
 			</ul>
 		</section>
-		<section>
-			<h2>Array</h2>
-			<fieldset>
+		<h2>Array</h2>
+		<fieldset>
+			<div>
 				<label for="unshift">Unshift to glob.arr</label>
 				<input id="unshift" type="text"
 					oninput="glob.arr.unshift(this.value)" />
-			</fieldset>
-			<fieldset>
+			</div>
+			<br />
+			<div>
 				<label for="push">Push to glob.arr</label>
 				<input id="push" type="text"
 					oninput="glob.arr.push(this.value)" />
-			</fieldset>
+			</div>
+		</fieldset>
+		<!--section>
 			<ul if="glob.arr.length > 0">
 				<li foreach.i="[1, 2]">
 					<ul>
@@ -53,7 +56,7 @@
 					</ul>
 				</li>
 			</ul>
-		</section>
+		</section-->
 		<section>
 			<h2>Chain</h2>
 			<ul if="glob.arr.length > 0">
@@ -75,6 +78,11 @@
 				</div>
 				<div else="">Is num</div>
 			</div>
+		</section>
+		<section>
+			<h2>foreach inc - example</h2>
+			<link foreach="glob.arr"
+				inc="!glob.ff ? `./inc/1.html` : `./inc/2.html`" />
 		</section>
 	</body>
 </html>

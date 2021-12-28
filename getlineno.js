@@ -5,6 +5,10 @@
  * https://github.com/mywebengine/myweb
  */
 
+import {hideName} from "./config.js";
+
+const lineNoAttrName = "debug:line";
+
 export default new Promise(resolve => {
 	const url = location.pathname;
 	fetch(url)
@@ -25,13 +29,13 @@ export default new Promise(resolve => {
 				});
 		});
 });
-const lineNoAttrName = "debug:line";
 function createLineNo(url, html, $src) {
 	let line = 1,
 		$i = $src;
 	const $parent = $i.parentNode,
 		$p = [];
 	do {
+//////////////////////
 		if ($i.nodeType === 1) {
 			const idx = html.indexOf("<" + $i.localName);
 			if (idx === -1) {
@@ -61,23 +65,15 @@ function createLineNo(url, html, $src) {
 //alert(1)
 			$i.setAttribute(lineNoAttrName, `${url}:${line}`);
 			html = html.substr(idx + 1);
-		}
-//////////////////////
-		if ($i.firstChild !== null) {
-			$i = $i.firstChild;
-			continue;
-		}
-/*
-		//todo а что если это просто тег?
-		if ($i.nodeName === "TEMPLATE" && $i.content.firstChild.firstChild !== null) {
-			$p.push($i);
-			$i = $i.content.firstChild.firstChild;
-			continue;
-		}*/
-		if ($i.nodeName === "TEMPLATE" && $i.content.firstChild !== null) {
-			$p.push($i);
-			$i = $i.content.firstChild;
-			continue;
+			if ($i.firstChild !== null) {
+				$i = $i.firstChild;
+				continue;
+			}
+			if ($i.nodeName === "TEMPLATE" && $i.getAttribute(hideName) !== null) {
+				$p.push($i);
+				$i = $i.content.firstChild;
+				continue;
+			}
 		}
 		if ($i.parentNode === $parent) {//если мы не ушли вглубь - значит и вправо двигаться нельзя
 			break;
@@ -88,16 +84,12 @@ function createLineNo(url, html, $src) {
 		}
 		do {
 			$i = $i.parentNode;
+			if ($i.nodeType === 11) {// && $i.parentNode !== $src) {
+				$i = $p.pop();
+			}
 			if ($i.parentNode === $parent) {
 				$i = null;
 				break;
-			}
-			if ($i.parentNode.nodeType === 11 && $i.parentNode !== $src) {
-				$i = $p.pop();
-				if ($i.parentNode === $parent) {
-					$i = null;
-					break;
-				}
 			}
 			if ($i.nextSibling !== null) {
 				$i = $i.nextSibling;

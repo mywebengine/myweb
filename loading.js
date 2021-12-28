@@ -99,7 +99,8 @@ alert(1);
 	const lName = type === "" ? isFillingName : isFillingName + isFillingDiv + type;
 	if (!f) {
 		$e.removeAttribute(lName, "");
-		if ($e.nodeName === "TEMPLATE") {
+//		if ($e.nodeName === "TEMPLATE" && $e.getAttribute(hideName) !== null) {
+		if (srcBy$src.get($e).isHide) {
 			$e.content.firstChild.removeAttribute(lName, "");
 		}
 		return;
@@ -116,7 +117,8 @@ alert(1);
 		}
 	}
 	$e.setAttribute(lName, "");
-	if ($e.nodeName === "TEMPLATE") {
+//	if ($e.nodeName === "TEMPLATE" && $e.getAttribute(hideName) !== null) {
+	if (srcBy$src.get($e).isHide) {
 		$e.content.firstChild.setAttribute(lName, "");
 	}
 }

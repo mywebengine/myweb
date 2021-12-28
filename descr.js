@@ -1,7 +1,7 @@
 //import {incCache} from "./cmd/inc.js";
 import {setReqCmd} from "./render/render.js";
 import {type_cache} from "./cache.js";
-import {reqCmd, incCmdName} from "./config.js";
+import {reqCmd, incCmdName, hideName} from "./config.js";
 import {setAsOneIdx, getIdx, setIdx} from "./dom.js";
 import {loadingCount} from "./loading.js";
 import {getProxy} from "./proxy.js";
@@ -14,19 +14,20 @@ export let idCurVal = self.mw_idCurVal || 0;
 
 self.mw_$srcById = $srcById;
 self.mw_srcById = srcById;
-//self.mw_srcBy$src = srcBy$src;
+self.mw_srcBy$src = srcBy$src;
 //self.mw_descrById = descrById;
 
 export function getNewId() {
 	return ++idCurVal;
 }
 export function createSrc($e, descr, asOneIdx, idx) {//вызов этой функции должен быть неприменнол на есть документ слева направо, если это фрагмент, то нужно обработать края
-	const sId = getNewId();
+	const sId = getNewId(),
+		isHide = $e.getAttribute(hideName) !== null;
 //!!!
 	if (descr === undefined) {
 //	if (1) {
 		descr = createDescr($e, sId);
-		const src = descr.attr !== null ? type_src(sId, descr, true, null, null, type_cache()) : type_src(sId, descr, false, null, null, null);
+		const src = descr.attr !== null ? type_src(sId, descr, true, isHide, null, null, type_cache()) : type_src(sId, descr, false, isHide, null, null, null);
 //if (descr.asOnes !== null && asOneIdx !== undefined) {src.asOneIdx = asOneIdx;}
 		$srcById.set(sId, $e);
 		srcById.set(sId, src);
@@ -43,7 +44,7 @@ export function createSrc($e, descr, asOneIdx, idx) {//вызов этой фу�
 		return src;
 	}
 	descr.srcIds.add(sId);//пока используется для получения .sId при удалении and prepareParam
-	const src = descr.attr !== null ? type_src(sId, descr, true, asOneIdx, idx, type_cache()) : type_src(sId, descr, false, null, null, null);
+	const src = descr.attr !== null ? type_src(sId, descr, true, isHide, asOneIdx, idx, type_cache()) : type_src(sId, descr, false, isHide, null, null, null);
 	$srcById.set(sId, $e);
 	srcById.set(sId, src);
 	srcBy$src.set($e, src);
@@ -103,12 +104,13 @@ function moveLoading($e, sId) {
 	loadingCount.set(sId, l);
 	loadingCount.delete($e);
 }
-function type_src(id, descr, isCmd, asOneIdx, idx, cache) {
+function type_src(id, descr, isCmd, isHide, asOneIdx, idx, cache) {
 	return {
 		id,
 //		descrId: 0,
 		descr,
 		isCmd,//: false,
+		isHide,
 		asOneIdx,
 		idx,
 		save: null,

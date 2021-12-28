@@ -472,10 +472,11 @@ function makeShow(req, $i, str, isShow) {
 		$last = $els[$elsLen - 1];
 	if (!isShow) {
 		for (let i = 0; i < $elsLen; i++) {
-			$i = $els[i];
-			if ($i.nodeType === 1) {
-				hide(req, $i);
-			}
+//			$i = $els[i];
+//			if ($i.nodeType === 1) {
+//				hide(req, $i);
+//			}
+			hide(req, $els[i]);
 		}
 		return [$last, null, ""];
 	}
@@ -484,10 +485,31 @@ function makeShow(req, $i, str, isShow) {
 		isNotAnimations = true;
 	for (let i = 0; i < $elsLen; i++) {
 		$i = $els[i];
+		const iSrc = srcBy$src.get($i);
+//		if ($i.nodeType !== 1) {
+		if (iSrc === undefined) {
+			if ($i.nodeType === 1) {
+				show(req, $i);
+				isNotAnimations = false;
+			}
+			continue;
+		}
+		if ($attr === null) {
+			$attr = $i;
+			attrStr = str;
+		}
+//		if ($i.nodeName === "TEMPLATE" && $i.getAttribute(hideName) !== null) {
+		if (iSrc.isHide) {
+			show(req, $i);
+			isNotAnimations = false;
+		}
+	}
+/*<==
+	for (let i = 0; i < $elsLen; i++) {
+		$i = $els[i];
 		if ($i.nodeType === 8) {
 			continue;
 		}
-//		if ($attr === null && $i[p_descrId]) {
 		if ($attr === null) {
 			const iSrc = srcBy$src.get($i);
 			if (iSrc !== undefined && iSrc.isCmd) {
@@ -495,12 +517,11 @@ function makeShow(req, $i, str, isShow) {
 				attrStr = str;
 			}
 		}
-		//todo а что если это просто тег?
-		if ($i.nodeName === "TEMPLATE") {
+		if ($i.nodeName === "TEMPLATE" && $i.getAttribute(hideName) !== null) {
 			show(req, $i);
 			isNotAnimations = false;
 		}
-	}
+	}*/
 	if (isNotAnimations) {
 		return [$last, $attr, attrStr];
 	}

@@ -48,6 +48,10 @@ export default {
 function foreach_render(req, val) {
 //console.error("_for", req.sync.syncId, req, req.$src);
 //alert(1);
+//if (self.a && req.expr === 'game.log') {
+//	console.log(req, val);
+//	alert(1);
+//}
 	const src = srcBy$src.get(req.$src);
 	if (src.asOneIdx === null) {
 		src.asOneIdx = type_asOneIdx();
@@ -77,18 +81,25 @@ function foreach_render(req, val) {
 //alert(2);
 	const res = type_renderRes(true, null, $last);
 	if (elsLen === 1) {//todo подумать об этом
-		const $ee = ctx.els[0].$els;
-		//todo а что если это просто тег?
-		if ($ee[0].nodeName === "TEMPLATE") {
-			const src0 = srcBy$src.get($ee[0]);
-			if (src0 !== undefined && src0.isCmd) {//если это был бы inc, то нулевой был бы коммент
-				show$first(req, ctx, show);
-				for (let j = $ee.length - 1; j > -1; j--) {
-					$ee[j] = $ee[j].content.firstChild;
-				}
-				req.sync.afterAnimations.add(type_animation(() => q_forRender(req, ctx, ctx.els, elsLen < keysLen ? () => q_add(req, ctx) : null), req.sync.local, 0));
-				return res;
+		const $e0 = ctx.els[0].$els;
+//		if ($e00.nodeName === "TEMPLATE" && $e00.getAttribute(hideName) !== null) {
+		for (let $j = $e0[0];; $j = $j.nextSibling) {
+//			if ($j.nodeType !== 1) {//впринципе можно и убрать
+//				break;
+//			}
+			const jSrc = srcBy$src.get($j);
+			if (jSrc === undefined) {
+				continue;
 			}
+			if (!jSrc.isHide) {
+				break;
+			}
+			show$first(req, ctx, show);
+			for (let j = $e0.length - 1; j > -1; j--) {
+				$e0[j] = $e0[j].content.firstChild;
+			}
+			req.sync.afterAnimations.add(type_animation(() => q_forRender(req, ctx, ctx.els, elsLen < keysLen ? () => q_add(req, ctx) : null), req.sync.local, 0));
+			return res;
 		}
 	}
 	if (elsLen === keysLen) {
@@ -183,7 +194,8 @@ function type_ctx(keys, value, $els, valName, keyName) {
 function show$first(req, ctx, showFunc) {
 	const first$els = ctx.els[0].$els,
 		first$elsLen = first$els.length;
-	for (let j = first$elsLen - 1; j > -1; j--) {
+//	for (let j = first$elsLen - 1; j > -1; j--) {
+	for (let j = 0; j < first$elsLen; j++) {
 		showFunc(req, first$els[j]);
 	}
 }
@@ -266,7 +278,9 @@ function q_add(req, ctx) {
 		if (sId === 0 && iSrc !== undefined) {
 			sId = iSrc.id;
 		}
-		viewSize += $j.offsetHeight;
+		if ($j.nodeType === 1) {
+			viewSize += $j.offsetHeight;
+		}
 	}
 //	if (sId === 0) {
 //		throw new Error("foreach.js");
@@ -297,6 +311,9 @@ function q_addInsert(req, ctx, sId, keysLen, idx, step) {
 		$last = get$last(req, $srcById.get(sId), idx - 1);
 	idx += newElsLen;
 	if (idx >= keysLen) {
+if (!$last.parentNode) {
+	console.error(req, ctx, sId, keysLen, idx, step, $last);
+}
 		$last.parentNode.insertBefore($fr, $last.nextSibling);
 		req.sync.afterAnimations.add(type_animation(() => q_forRenderI(req, ctx, newEls), req.sync.local, 0));
 		return;

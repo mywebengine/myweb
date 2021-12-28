@@ -1,7 +1,7 @@
 //import {incCache, incClearByKey} from "./cmd/inc.js";
 import {type_req, type_animation} from "./render/render.js";
 import {type_cacheValue, type_cacheCurrent} from "./cache.js";
-import {mw_doc, mw_$src, p_topUrl, visibleScreenSize, defIdleCallbackOpt, incCmdName, onCmdName, textCmdName, descrIdName, asOneIdxName, idxName, removeEventName, defEventInit,
+import {mw_doc, mw_$src, p_topUrl, visibleScreenSize, defIdleCallbackOpt, incCmdName, onCmdName, textCmdName, descrIdName, asOneIdxName, idxName, hideName, removeEventName, defEventInit,
 	reqCmd} from "./config.js";
 import {$srcById, srcById, srcBy$src, descrById, getNewId, createSrc, type_asOneIdx, type_idx, getSrcId, get$els, getNextStr} from "./descr.js";
 import {getErr} from "./err.js";
@@ -18,14 +18,7 @@ export function preRender($i, isLinking) {// = mw_$src) {//todo это не бу
 			$i = $i.firstChild;
 			continue;
 		}
-/*
-		//todo непонятно это команда или нет
-		if ($i.nodeName === "TEMPLATE" && $i.content.firstChild.firstChild !== null) {
-			$p.push($i);
-			$i = $i.content.firstChild.firstChild;
-			continue;
-		}*/
-		if ($i.nodeName === "TEMPLATE" && $i.content.firstChild !== null) {
+		if ($i.nodeName === "TEMPLATE" && $i.getAttribute(hideName) !== null) {
 			$p.push($i);
 			$i = $i.content.firstChild;
 			continue;
@@ -40,20 +33,14 @@ export function preRender($i, isLinking) {// = mw_$src) {//todo это не бу
 		}
 		do {
 			$i = $i.parentNode;
+			if ($i.nodeType === 11) {
+				$i = $p.pop();
+			}
+			$i = _preRenderCreate($i, idAlias, isLinking);
 			if ($i.parentNode === $parent) {
-				_preRenderCreate($i, idAlias, isLinking);
 				$i = null;
 				break;
 			}
-			if ($i.parentNode.nodeType === 11) {
-				$i = $p.pop();
-				if ($i.parentNode === $parent) {
-					_preRenderCreate($i, idAlias, isLinking);
-					$i = null;
-					break;
-				}
-			}
-			$i = _preRenderCreate($i, idAlias, isLinking);
 			if ($i.nextSibling !== null) {
 				$i = $i.nextSibling;
 				break;
@@ -62,60 +49,60 @@ export function preRender($i, isLinking) {// = mw_$src) {//todo это не бу
 	} while ($i !== null);
 }
 function _preRenderCreate($e, idAlias, isLinking) {
-	if ($e.nodeType === 1) {
-		if (!isLinking) {
-			createSrc($e);
-			return $e;
-		}
-		const src = _preRenderGetSrc($e, idAlias);
-		if (!src.isCmd) {
-			return $e;
-		}
-		for (const str of src.descr.attr.keys()) {
-			const asOneIdx = $e.getAttribute(asOneIdxName + str),
-				idx = $e.getAttribute(idxName + str);
-			if (asOneIdx !== null) {
-				const aIdx = idAlias.get(asOneIdx);
-				if (aIdx === undefined) {
-					const nIdx = getNewId();
-					idAlias.set(asOneIdx, nIdx);
-					if (src.asOneIdx === null) {
-						src.asOneIdx = type_asOneIdx([[str, nIdx]]);
-					} else {
-						src.asOneIdx.set(str, nIdx);
-					}
-				} else if (src.asOneIdx === null) {
-					src.asOneIdx = type_asOneIdx([[str, aIdx]]);
-				} else {
-					src.asOneIdx.set(str, aIdx);
-				}
-			}
-			if (idx !== null) {
-				if (src.idx === null) {
-					src.idx = type_idx([[!isNaN(idx) ? Number(idx) : idx]]);
-					continue;
-				}
-				src.idx.set(str, !isNaN(idx) ? Number(idx) : idx);
-			}
-/*!!!!!!!!!!!
-			if (!reqCmd.get(str).cmd.isAsOne) {
-				continue;
-			}
-			const $from = $i;
-			for (let $j = $i.nextSibling; $j !== null; $j = $j.nextSibling) {
-				if ($j.nodeType !== 1) {
-					continue;
-				}
-				if (get$asOneIdx($j, str) !== asOneIdx && !(get$Idx($j, str) > 0)) {
-					break;
-				}
-				_preRenderCopy($from, iDescr, $i = $j);
-			}
-			break;*/
-		}
+	if ($e.nodeType !== 1) {
+		return $e.nodeType === 3 ? replaceTextBlocks($e) : $e;
+	}
+	if (!isLinking) {
+		createSrc($e);
 		return $e;
 	}
-	return $e.nodeType === 3 ? replaceTextBlocks($e) : $e;
+	const src = _preRenderGetSrc($e, idAlias);
+	if (!src.isCmd) {
+		return $e;
+	}
+	for (const str of src.descr.attr.keys()) {
+		const asOneIdx = $e.getAttribute(asOneIdxName + str),
+			idx = $e.getAttribute(idxName + str);
+		if (asOneIdx !== null) {
+			const aIdx = idAlias.get(asOneIdx);
+			if (aIdx === undefined) {
+				const nIdx = getNewId();
+				idAlias.set(asOneIdx, nIdx);
+				if (src.asOneIdx === null) {
+					src.asOneIdx = type_asOneIdx([[str, nIdx]]);
+				} else {
+					src.asOneIdx.set(str, nIdx);
+				}
+			} else if (src.asOneIdx === null) {
+				src.asOneIdx = type_asOneIdx([[str, aIdx]]);
+			} else {
+				src.asOneIdx.set(str, aIdx);
+			}
+		}
+		if (idx !== null) {
+			if (src.idx === null) {
+				src.idx = type_idx([[!isNaN(idx) ? Number(idx) : idx]]);
+				continue;
+			}
+			src.idx.set(str, !isNaN(idx) ? Number(idx) : idx);
+		}
+/*!!!!!!
+		if (!reqCmd.get(str).cmd.isAsOne) {
+			continue;
+		}
+		const $from = $i;
+		for (let $j = $i.nextSibling; $j !== null; $j = $j.nextSibling) {
+			if ($j.nodeType !== 1) {
+				continue;
+			}
+			if (get$asOneIdx($j, str) !== asOneIdx && !(get$Idx($j, str) > 0)) {
+				break;
+			}
+			_preRenderCopy($from, iDescr, $i = $j);
+		}
+		break;*/
+	}
+	return $e;
 }
 function _preRenderGetSrc($e, idAlias) {
 	const dId = $e.getAttribute(descrIdName);
@@ -279,11 +266,12 @@ function type_mustacheBlock(begin, end, expr) {
 }*/
 export function removeChild($e, req) {
 //console.error("remC", srcBy$src.get($e), $e);
+/*
 //todo
 if (!$e.parentNode) {
 	console.error(req.sync, $e);
 	alert(11)
-}
+}*/
 	$e.parentNode.removeChild($e);
 	$e.dispatchEvent(new CustomEvent(removeEventName, defEventInit));
 	const rem = new Map();
@@ -291,27 +279,24 @@ if (!$e.parentNode) {
 	const $parent = null,
 		$p = [];
 	do {
+//////////////////////
 		const iSrc = srcBy$src.get($i);
+//		if (iSrc !== undefined && !iSrc.descr.isCustomHtml) {
 		if (iSrc !== undefined) {
 			clearTag($i, iSrc, rem);
-		}
-//////////////////////
-		if ($i.firstChild !== null) {
-			$i = $i.firstChild;
-			continue;
-		}
-/*
-		//todo а что если это просто тег?
-//		if ($i.nodeName === "TEMPLATE" && iSrc.isCmd && $i.content.firstChild.firstChild !== null) {//проверку на кастом не делается из соображений экономичности
-		if ($i.nodeName === "TEMPLATE" && iSrc.isCmd && !iSrc.descr.isCustomHtml && $i.content.firstChild.firstChild !== null) {
-			$p.push($i);
-			$i = $i.content.firstChild.firstChild;
-			continue;
-		}*/
-		if ($i.nodeName === "TEMPLATE" && $i.content.firstChild !== null) {
-			$p.push($i);
-			$i = $i.content.firstChild;
-			continue;
+			if (iSrc.descr.isCustomHtml) {
+				continue;
+			}
+			if ($i.firstChild !== null) {
+				$i = $i.firstChild;
+				continue;
+			}
+//			if (iSrc.isCmd && $i.nodeName === "TEMPLATE" && $i.getAttribute(hideName) !== null) {
+			if (iSrc.isHide && iSrc.isCmd && $i.content.firstChild.firstChild !== null) {
+				$p.push($i);
+				$i = $i.content.firstChild.firstChild;
+				continue;
+			}
 		}
 		if ($i.parentNode === $parent) {//если мы не ушли вглубь - значит и вправо двигаться нельзя
 			break;
@@ -322,16 +307,12 @@ if (!$e.parentNode) {
 		}
 		do {
 			$i = $i.parentNode;
+			if ($i.nodeType === 11) {
+				$i = $p.pop();
+			}
 			if ($i.parentNode === $parent) {
 				$i = null;
 				break;
-			}
-			if ($i.parentNode.nodeType === 11) {
-				$i = $p.pop();
-				if ($i.parentNode === $parent) {
-					$i = null;
-					break;
-				}
 			}
 			if ($i.nextSibling !== null) {
 				$i = $i.nextSibling;
@@ -496,12 +477,12 @@ export function cloneNode(req, $e) {//во время клонирования �
 		}
 		return $fr;
 	}
-	const $n = $e.cloneNode(true);
-	if ($n.nodeType !== 1) {
-		return $n;
+	if ($e.nodeType !== 1) {
+		return $e.cloneNode();
 	}
-	const $on = $n.nodeName !== "TEMPLATE" ? $n : $n.content.firstChild,
-		src = srcBy$src.get(req.$src);//todo а что если это просто тег?
+	const $n = $e.cloneNode(true),
+		$on = $n.nodeName !== "TEMPLATE" || $n.getAttribute(hideName) === null ? $n : $n.content.firstChild,
+		src = srcBy$src.get(req.$src);
 	for (const [n, v] of src.descr.attr) {
 		if (n === req.str) {
 			break;
@@ -572,7 +553,7 @@ export function q_cloneNode(req, sId, beginIdx, len) {//во время клон
 	for (let i, idx, j = 0; j < $elsLen; j++) {
 		const $jArr = new Array(len),
 			$j = $els[j];
-		q_cloneNodeCreate($j, $j.nodeName !== "TEMPLATE", $jArr, len, asOneVal, 0, baseAsOne);
+		q_cloneNodeCreate($j, $j.nodeName !== "TEMPLATE" || $j.getAttribute(hideName) === null, $jArr, len, asOneVal, 0, baseAsOne);
 		q_cloneNodeCreateChildren($j, $jArr, len, asOneVal);
 		for (i = 0; i < len; i++) {
 			const arrI = arr[i],
@@ -595,79 +576,61 @@ export function q_cloneNode(req, sId, beginIdx, len) {//во время клон
 	}
 	return arr;
 }
-/*
-export function ___q_cloneNode(req, $els, beginIdx, len) {//во время клонирования будут созданы описания
-	const $arr = new Array(len),
-		on = [],
-		$elsLen = $els.length;
-	let fSrc;
-	for (let i = 0, f; i < $elsLen; i++) {
-		const $i = $els[i];
-		fSrc = srcBy$src.get($i);
-		if (fSrc === undefined || !fSrc.isCmd) {
-//todo
-console.log($i)
+function q_cloneNodeCreateChildren($i, $arr, $arrLen, asOneVal) {
+	const $tP = new Array($arrLen),
+		$parent = $i.parentNode,
+		$p = [];
+	for (let i = 0; i < $arrLen; i++) {
+		$tP[i] = [];
+	}
+	do {
+//////////////////////
+		if ($i.firstChild !== null) {
+			q_cloneNodeCreate($i = $i.firstChild, true, $arr, $arrLen, asOneVal, 1, null);
 			continue;
 		}
-		break;
-	}
-	if (fSrc === undefined) {
-		console.warn(">>>mw dom:q_cloneNode:", req, $els, beginIdx, len);
-		throw getErr(new Error(`>>>mw dom:q_cloneNode: среди элементов для клонирования нет элемента с командой, такого не должно быть`), req.$src, req);
-	}
-	const fDescr = fSrc.descr;
-	for (const [n, v] of fDescr.attr) {
-		if (n === req.str) {
+//		const iSrc = srcBy$src.get($i);
+//		if (iSrc !== undefined && iSrc.isHide) {
+		if ($i.nodeName === "TEMPLATE" && $i.getAttribute(hideName) !== null) {
+			$p.push($i);
+			for (let i = 0; i < $arrLen; i++) {
+				$tP[i].push($arr[i]);
+			}
+			q_cloneNodeCreate($i = $i.content.firstChild, false, $arr, $arrLen, asOneVal, 1, null);
+			continue;
+		}
+		if ($i.parentNode === $parent) {//если мы не ушли вглубь - значит и вправо двигаться нельзя
 			break;
 		}
-		const rc = reqCmd.get(n);
-		if (rc.cmdName === onCmdName) {
-			on.push(type_q_cloneNodeOn(rc.cmd, n, v));
-		}
-	}
-	const onLen = on.length,
-		l = loadingCount.get(fSrc.id),
-		baseAsOne = new Set(),
-		asOneVal = new Array(len),
-		aIt = fDescr.asOnes.keys();
-	for (let i = aIt.next(); !i.done; i = aIt.next()) {
-		if (i.value !== req.str) {
+		if ($i.nextSibling !== null) {
+			q_cloneNodeCreate($i = $i.nextSibling, true, $arr, $arrLen, asOneVal, 2, null);
 			continue;
 		}
-		for (i = aIt.next(); !i.done; i = aIt.next()) {
-			baseAsOne.add(i.value);
-		}
-	}
-	for (let i = 0; i < len; i++) {
-		$arr[i] = new Array($elsLen);
-		asOneVal[i] = new Map();
-	}
-	for (let i, idx, j = 0; j < $elsLen; j++) {
-		const $jArr = new Array(len),
-			$j = $els[j];
-		q_cloneNodeCreate($j, $jArr, len, asOneVal, 0, baseAsOne);
-		q_cloneNodeCreateChildren($j, $jArr, len, asOneVal);
-		for (i = 0, idx = beginIdx; i < len; i++, idx++) {
-			const $i = $arr[i][j] = $jArr[i],
-				iSrc = srcBy$src.get($i);
-			if (iSrc === undefined) {
-				continue;
-			}
-			setIdx(iSrc, req.str, idx);
-			if (onLen !== 0) {
-				for (k = 0; k < onLen; k += 3) {
-					const o = on[k];
-					o.cmd.render(type_req($i, o.str, o.expr, req.scope, req.sync));
+		do {
+			$i = $i.parentNode;
+//			if ($i.nodeType === 11) {
+			if ($i.nodeType !== 11) {
+				for (let i = 0; i < $arrLen; i++) {
+					$arr[i] = $arr[i].parentNode;
+				}
+			} else {
+				$i = $p.pop();
+				for (let i = 0; i < $arrLen; i++) {
+					$arr[i] = $tP[i].pop();
 				}
 			}
-			if (l !== undefined) {
-				loadingCount.set($i, l);
+			if ($i.parentNode === $parent)  {
+				$i = null;
+				break;
 			}
-		}
-	}
-	return $arr;
-}*/
-function q_cloneNodeCreate($e, isNotTemplate, $arr, $arrLen, asOneVal, type, baseAsOne) {
+			if ($i.nextSibling !== null) {
+				q_cloneNodeCreate($i = $i.nextSibling, true, $arr, $arrLen, asOneVal, 2, null);
+				break;
+			}
+		} while (true);
+	} while ($i !== null);
+}
+function q_cloneNodeCreate($e, isNotHide, $arr, $arrLen, asOneVal, type, baseAsOne) {
 	const src = srcBy$src.get($e);
 	if (src === undefined) {
 		if (type === 2) {
@@ -677,7 +640,7 @@ function q_cloneNodeCreate($e, isNotTemplate, $arr, $arrLen, asOneVal, type, bas
 			return;
 		}
 		if (type === 1) {
-			if (isNotTemplate) {
+			if (isNotHide) {
 				for (let i = 0; i < $arrLen; i++) {
 					$arr[i] = $arr[i].appendChild($e.cloneNode());
 				}
@@ -697,56 +660,39 @@ function q_cloneNodeCreate($e, isNotTemplate, $arr, $arrLen, asOneVal, type, bas
 		idx = src.idx,
 		save = src.save,
 		asOneIdx = src.asOneIdx;
-	if (asOneIdx === null) {
-//	if (descr.asOnes === null) {
-		if (type === 2) {
-			for (let i = 0; i < $arrLen; i++) {
-				createSrc($arr[i] = $arr[i].parentNode.appendChild($e.cloneNode()), descr, null, idx === null ? null : type_idx(idx)).save = save;
-			}
-			return;
-		}
-		if (type === 1) {
-			if (isNotTemplate) {
-				for (let i = 0; i < $arrLen; i++) {
-					createSrc($arr[i] = $arr[i].appendChild($e.cloneNode()), descr, null, idx === null ? null : type_idx(idx)).save = save;
-				}
-				return;
-			}
-			for (let i = 0; i < $arrLen; i++) {
-				createSrc($arr[i] = $arr[i].content.appendChild($e.cloneNode()), descr, null, idx === null ? null : type_idx(idx)).save = save;
-			}
-			return;
-		}
-		for (let i = 0; i < $arrLen; i++) {
-			createSrc($arr[i] = $e.cloneNode(), descr, null, idx === null ? null : type_idx(idx)).save = save;
-		}
-		return;
-	}
 	if (type === 2) {
 		for (let i = 0; i < $arrLen; i++) {
 			createSrc($arr[i] = $arr[i].parentNode.appendChild($e.cloneNode()), descr, type_asOneIdx(asOneIdx), type_idx(src.idx)).save = save;
 		}
-		q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, asOneIdx);
+		if (asOneIdx !== null) {
+			q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, asOneIdx);
+		}
 		return;
 	}
 	if (type === 1) {
-		if (isNotTemplate) {
+		if (isNotHide) {
 			for (let i = 0; i < $arrLen; i++) {
 				createSrc($arr[i] = $arr[i].appendChild($e.cloneNode()), descr, type_asOneIdx(asOneIdx), type_idx(src.idx)).save = save;
 			}
-			q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, asOneIdx);
+			if (asOneIdx !== null) {
+				q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, asOneIdx);
+			}
 			return;
 		}
 		for (let i = 0; i < $arrLen; i++) {
 			createSrc($arr[i] = $arr[i].content.appendChild($e.cloneNode()), descr, type_asOneIdx(asOneIdx), type_idx(src.idx)).save = save;
 		}
-		q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, asOneIdx);
+		if (asOneIdx !== null) {
+			q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, asOneIdx);
+		}
 		return;
 	}
 	for (let i = 0; i < $arrLen; i++) {
 		createSrc($arr[i] = $e.cloneNode(), descr, type_asOneIdx(asOneIdx), type_idx(src.idx)).save = save;
 	}
-	q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, baseAsOne);
+	if (asOneIdx !== null) {
+		q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, baseAsOne);
+	}
 }
 function q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, asOneIdx) {
 	for (let i = 0; i < $arrLen; i++) {
@@ -764,81 +710,6 @@ function q_cloneNodeChangeAsOne($arr, $arrLen, asOneVal, asOneIdx) {
 			setAsOneIdx(iSrc, n, vv);
 		}
 	}
-}
-function q_cloneNodeCreateChildren($i, $arr, $arrLen, asOneVal) {
-	const $tP = new Array($arrLen),
-		$parent = $i.parentNode,
-		$p = [];
-	for (let i = 0; i < $arrLen; i++) {
-		$tP[i] = [];
-	}
-	do {
-//////////////////////
-/*
-		const iSrc = srcBy$src.get($i);
-		if (iSrc !== undefined && !iSrc.descr.isCustomHtml) {
-			if ($i.firstChild !== null) {
-				$i = q_cloneNodeCreate($i.firstChild, $arr, $arrLen, asOneVal, 1);
-				continue;
-			}
-			//todo а что если это просто тег?
-			if ($i.nodeName === "TEMPLATE") {
-//				if (iSrc !== undefined && iSrc.isCmd && $i.content.firstChild.firstChild !== null) {
-					$p.push($i);
-					for (let i = 0; i < $arrLen; i++) {
-						$tP[i].push($arr[i]);
-					}
-					$i = q_cloneNodeCreate($i.content.firstChild.firstChild, $arr, $arrLen, asOneVal, 1);
-					continue;
-//				}
-			}
-		}*/
-		if ($i.firstChild !== null) {
-			q_cloneNodeCreate($i = $i.firstChild, true, $arr, $arrLen, asOneVal, 1, null);
-			continue;
-		}
-		//todo а что если это просто тег?
-		if ($i.nodeName === "TEMPLATE" && $i.content.firstChild !== null) {
-			$p.push($i);
-			for (let i = 0; i < $arrLen; i++) {
-				$tP[i].push($arr[i]);
-			}
-			q_cloneNodeCreate($i = $i.content.firstChild, false, $arr, $arrLen, asOneVal, 1, null);
-			continue;
-		}
-		if ($i.parentNode === $parent) {//если мы не ушли вглубь - значит и вправо двигаться нельзя
-			break;
-		}
-		if ($i.nextSibling !== null) {
-			q_cloneNodeCreate($i = $i.nextSibling, true, $arr, $arrLen, asOneVal, 2, null);
-			continue;
-		}
-		do {
-			$i = $i.parentNode;
-//todo
-			for (let i = 0; i < $arrLen; i++) {
-				$arr[i] = $arr[i].parentNode;
-			}
-			if ($i.parentNode === $parent)  {
-				$i = null;
-				break;
-			}
-			if ($i.parentNode.nodeType === 11) {
-				$i = $p.pop();
-				for (let i = 0; i < $arrLen; i++) {
-					$arr[i] = $tP[i].pop();
-				}
-				if ($i.parentNode === $parent)  {
-					$i = null;
-					break;
-				}
-			}
-			if ($i.nextSibling !== null) {
-				q_cloneNodeCreate($i = $i.nextSibling, true, $arr, $arrLen, asOneVal, 2, null);
-				break;
-			}
-		} while (true);
-	} while ($i !== null);
 }
 export function type_q$i($els, idx) {
 	return {
@@ -912,19 +783,21 @@ export function removeAttribute($e, name) {
 }
 
 export function show(req, $e) {
-	if ($e.nodeName !== "TEMPLATE") {
+	const src = srcBy$src.get($e);
+	if (src !== undefined ? !src.isHide : ($e.nodeName !== "TEMPLATE" || $e.getAttribute(hideName) === null)) {
 		return;
 	}
-	req.sync.animations.add(type_animation(() => _show(req, $e), req.sync.local, 0));//srcBy$src.get($e).id]));
+	req.sync.animations.add(type_animation(() => _show(req, $e, src), req.sync.local, 0));//srcBy$src.get($e).id]));
 }
-function _show(req, $e) {
+function _show(req, $e, src) {
 	const $new = $e.content.firstChild;
 	if (!$new || $new.nextSibling !== null) {
 		//todo была ошибка, что $e ет в srcBy$src - овоторить не получается
 		throw getErr(new Error(">>>mw show:01: Template element invalid structure on show function. <template>.content.childNodes.length must be only one element."), $e);
 	}
-	if ($new.nodeType === 1 && srcBy$src.has($e)) {
-		moveProps($e, $new, true);
+//	if ($new.nodeType === 1 && srcBy$src.has($e)) {
+	if (src !== undefined) {
+		moveProps($e, src, $new, false);
 	}
 	if (req.$src === $e) {
 		req.$src = $new;
@@ -932,17 +805,25 @@ function _show(req, $e) {
 	$e.parentNode.replaceChild($new, $e);
 }
 export function hide(req, $e) {
-	if ($e.nodeName === "TEMPLATE") {
-		return;// $e;
+	const src = srcBy$src.get($e);
+	if (src !== undefined) {
+		if (!src.isHide) {
+			req.sync.animations.add(type_animation(() => _hide($e, src), req.sync.local, src.id));
+		}
+		return;
 	}
-	req.sync.animations.add(type_animation(() => _hide($e), req.sync.local, srcBy$src.get($e).id));
+	if ($e.nodeType === 1 ? $e.nodeName === "TEMPLATE" && $e.getAttribute(hideName) !== null : $e.nodeType !== 8) {
+		req.sync.animations.add(type_animation(() => _hide($e, src), req.sync.local, 0));
+	}
 }
-function _hide($e) {
+function _hide($e, src) {
 	let $i = $e;
 	const $new = mw_doc.createElement("template"),
 		$parent = $i.parentNode,
 		$p = [];
+	$new.setAttribute(hideName, "");
 	do {
+//////////////////////
 		const iSrc = srcBy$src.get($i);
 		if (iSrc !== undefined) {
 			const c = iSrc.cache;//это тоже самое что и $i.isCmd
@@ -950,17 +831,16 @@ function _hide($e) {
 				c.value = type_cacheValue();
 				c.current = type_cacheCurrent();
 			}
-		}
-//////////////////////
-		if ($i.firstChild !== null) {
-			$i = $i.firstChild;
-			continue;
-		}
-		//todo а что если это просто тег?
-		if ($i.nodeName === "TEMPLATE" && iSrc.isCmd && $i.content.firstChild.firstChild !== null) {//проверку на кастом не делается из соображений экономичности
-			$p.push($i);
-			$i = $i.content.firstChild.firstChild;
-			continue;
+			if ($i.firstChild !== null) {
+				$i = $i.firstChild;
+				continue;
+			}
+//			if ($i.nodeName === "TEMPLATE" && $i.getAttribute(hideName) !== null) {//iSrc.isCmd) {// && $i.content.firstChild.firstChild !== null) {//проверку на кастом не делается из соображений экономичности
+			if (iSrc.isHide && $i.content.firstChild.firstChild !== null) {
+				$p.push($i);
+				$i = $i.content.firstChild.firstChild;
+				continue;
+			}
 		}
 		if ($i.parentNode === $parent) {//если мы не ушли вглубь - значит и вправо двигаться нельзя
 			break;
@@ -971,16 +851,12 @@ function _hide($e) {
 		}
 		do {
 			$i = $i.parentNode;
+			if ($i.nodeType === 11) {
+				$i = $p.pop();
+			}
 			if ($i.parentNode === $parent) {
 				$i = null;
 				break;
-			}
-			if ($i.parentNode.nodeType === 11) {
-				$i = $p.pop();
-				if ($i.parentNode === $parent) {
-					$i = null;
-					break;
-				}
 			}
 			if ($i.nextSibling !== null) {
 				$i = $i.nextSibling;
@@ -988,24 +864,29 @@ function _hide($e) {
 			}
 		} while (true);
 	} while ($i !== null);
-	if ($e.nodeType === 1) {
-		moveProps($e, $new, false);
+//	if ($e.nodeType === 1) {
+	if (src !== undefined) {
+		moveProps($e, src, $new, true);
 	}
 	//!!переписывать req.$src в данном случаи не имет смысла
 	$e.parentNode.replaceChild($new, $e);
 	$new.content.appendChild($e);
 }
-function moveProps($from, $to, isShow) {
+function moveProps($from, fromSrc, $to, isHide) {
 //!!<-- show hide
-	const src = srcBy$src.get($from);
-	$srcById.set(src.id, $to);
-	srcById.set(src.id, src);
+//	const fromSrc = srcBy$src.get($from);
+	fromSrc.isHide = isHide;
+	$srcById.set(fromSrc.id, $to);
+	srcById.set(fromSrc.id, fromSrc);
 //	srcBy$src.delete($from);
-	srcBy$src.set($to, src);
+	srcBy$src.set($to, fromSrc);
 
 	$to[p_topUrl] = $from[p_topUrl];
-
-	if (isShow) {
+	if (self.mw_debugLevel === 0) {
+		return;
+	}
+	//это какбы не нужно - мы же подготовленной структуре проходим
+	if (!isHide) {
 		return;
 	}
 	const attrs = $from.attributes,
@@ -1070,7 +951,8 @@ export function setAsOneIdx(src, str, idx) {
 	const $src = $srcById.get(src.id),
 		n = asOneIdxName + str;
 	$src.setAttribute(n, idx);
-	if ($src.nodeName === "TEMPLATE" && $src.content.firstChild !== null) {//при q_cloneNode мы клонируем не рекурсивно, а это значит что нет внутренностей - они появятся позже
+//	if ($src.nodeName === "TEMPLATE" && $src.getAttribute(hideName) !== null) {// && $src.content.firstChild !== null) {//при q_cloneNode мы клонируем не рекурсивно, а это значит что нет внутренностей - они появятся позже
+	if (src.isHide && $src.content.firstChild !== null) {//todo!!!!! тут проблема в цустановке атрибута из-за алгоритма q_clone - он не клонирует рекурсивно - todo после можно переделать алгоритм
 		$src.content.firstChild.setAttribute(n, idx);
 	}
 }
@@ -1091,7 +973,8 @@ export function setIdx(src, str, idx) {
 	const $src = $srcById.get(src.id),
 		n = idxName + str;
 	$src.setAttribute(n, idx);
-	if ($src.nodeName === "TEMPLATE") {
+//	if ($src.nodeName === "TEMPLATE" && $src.getAttribute(hideName) !== null) {
+	if (src.isHide) {
 		$src.content.firstChild.setAttribute(n, idx);
 	}
 }

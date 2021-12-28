@@ -50,6 +50,7 @@ export const cmdPref = "";
 export const cmdArgsDiv = ".";
 export const cmdArgsDivLen = cmdArgsDiv.length;
 export const descrIdName = "_did" + cmdArgsDiv;
+export const hideName = "_hide";
 export const asOneIdxName = "_aidx" + cmdArgsDiv;
 export const idxName = "_idx" + cmdArgsDiv;
 export const isFillingName = "is_filling";

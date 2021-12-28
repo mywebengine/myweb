@@ -590,23 +590,19 @@ function prepareRenderParam(toCancleSync) {
 		}
 		byD.set(dId, r);
 		if (descr.asOnes === null) {
-//11			byD.set(dId, type_prepareByD(sId, new Set([sId]), r));
 			r.srcIds.add(sId);
 			continue;
 		}
-		//<div foreach><div foreach<-если мы здесь
-		const $parents = new Set();//,
-//11			srcIds = new Set();
+		//<div foreach.1><div foreach.2<-если мы здесь, т.е во всех 1 собраем все 2
+		const $parents = new Set();
 		for (const jId of descr.srcIds) {
 			const $p = $srcById.get(jId).parentNode;
 			if ($parents.has($p)) {
 				continue;
 			}
 			$parents.add($p);
-//11			srcIds.add(jId);
 			r.srcIds.add(jId);
 		}
-//11		byD.set(dId, type_prepareByD(sId, srcIds, r));
 	}
 //console.timeEnd("p1")
 //console.time("p2")
@@ -922,15 +918,6 @@ function type_renderParam(sId, scope, str, isLinking) {
 		$els: null
 	};
 }
-/*--
-function type_prepareByD(sId, srcIds, renderParam) {
-	return {
-		sId,
-		srcIds,
-		$els: null,
-		renderParam
-	};
-}*/
 function type_prepareMerge(len, firstAsOneIdx) {
 	return {
 		len,

@@ -1,4 +1,4 @@
-﻿template,*[is_filling] >*{display: none !important}
+﻿template[_hide],*[is_filling] >*{display: none !important}
 *[is_filling-spinner]{display:flex !important;align-items:center;justify-content:center;height:100%;background:none}
 *[is_filling-spinner]::before{content:"";display:block;color:#ccc;font-size:5px;margin:40px;width:1em;height:1em;border-radius:50%;position:relative;animation:is_filling_spinner 1.3s infinite linear;transform:translateZ(0)}
 @keyframes is_filling_spinner{0%,100%{box-shadow:0 -3em 0 0.2em,2em -2em 0 0em,3em 0 0 -1em,2em 2em 0 -1em,0 3em 0 -1em,-2em 2em 0 -1em,-3em 0 0 -1em,-2em -2em 0 0}
