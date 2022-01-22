@@ -198,6 +198,11 @@ function _render(byD, delayP) {
 //}
 		if (arrLen === 1) {
 //			renderPack.push({$src: $sync, renderParam: r, sync});
+//todo
+if ($sync.className === `mw_timetable-hours-i-min-title show`) {
+	console.log(r, $sync);
+	alert(1)
+}
 			pSet.add(renderTag($sync, r.scope, r.str, sync));
 			continue;
 		}
@@ -674,7 +679,7 @@ alert(222);
 			mI.len++;
 			if ($i.getAttribute(lazyRenderName) !== null) {
 				r.isLazyRender = true;
-				//todo
+				//todo, наверное, нужно пробудмать удаление слушателя при изменении атрибута
 				addScrollAnimationsEvent($i);
 			}
                         const iDescr = iSrc.descr;
@@ -715,14 +720,28 @@ alert(222);
 			}
 //			if (mI.len !== mJ.len && mJ.descrId.has(iDId)) {
 			if (mJ.descrId.has(iDId)) {
-				$l = $srcById.get(byD.get(jDId).sId)
-				for (l = mJ.len - mI.len; l !== 0; l--) {
+/*
+				$l = $srcById.get(byD.get(jDId).sId);
+				for (l = mJ.len - mI.len; l !== -1; l--) {
 					$l = $l.parentNode;
 				}
-//console.log(444, mJ.len - mI.len, $l, $srcById.get(byD.get(iDId).sId));
-				if ($srcById.get(byD.get(iDId).sId).parentNode === $l.parentNode) {
+console.log(444, mJ.len - mI.len, $l, $srcById.get(byD.get(iDId).sId), descrById.get(jDId), byD.get(jDId));
+				if ($srcById.get(byD.get(iDId).sId).parentNode === $l) {
 					prpDeleteDescrId(byD, jDId, toCancleSync);
 					byDArr[j] = 0;
+				}*/
+				const $p = $srcById.get(byD.get(iDId).sId).parentNode,
+					lLen = mJ.len - mI.len;
+				for (const lId of descrById.get(jDId).srcIds) {
+					$l = $srcById.get(lId);
+					for (l = lLen; l !== -1; l--) {
+						$l = $l.parentNode;
+					}
+					if ($l === $p) {
+						prpDeleteDescrId(byD, jDId, toCancleSync);
+						byDArr[j] = 0;
+						break;
+					}
 				}
 				continue;
 			}

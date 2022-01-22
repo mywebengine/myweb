@@ -2,7 +2,7 @@ import {renderTag, type_req, setReqCmd, type_localCounter, type_animation, type_
 import {mw_doc, p_target, cmdPref, cmdArgsDiv, cmdArgsDivLen, incCmdName, fetchCmdName, foreachCmdName, elseCmdName, defaultCmdName, onCmdName, isFillingName, isFillingDiv, asOneIdxName, idxName, defRequestInit,
 	reqCmd} from "../config.js";
 import {srcById, srcBy$src, getAttrItAfter, get$els, type_asOneIdx, type_idx, type_save, type_saveI} from "../descr.js";
-import {preRender, joinText, removeChild, cloneNode, getIdx, setIdx, getTopUrl} from "../dom.js";
+import {preRender, joinText, removeChild/*--, cloneNode*/, getIdx, setIdx, getTopUrl, type_cloneNodeOn} from "../dom.js";
 import {getErr} from "../err.js";
 import {eval2, q_eval2} from "../eval2.js";
 import {loadingCount, showLoading} from "../loading.js";
@@ -88,7 +88,8 @@ function inc_render(req, val) {
 	}
 	const loading = type_incLoading(req);
 	if (loading.isShow) {
-		showLoading(req.$src, () => include.readyState === "complete", loading.type, loading.waitTime);
+//		showLoading(req.$src, () => include.readyState === "complete", loading.type, loading.waitTime);
+		showLoading(req.$src, () => false, loading.type, loading.waitTime);
 	}
 	if (!waitingStack.has(include.key)) {
 		waitingStack.set(include.key, (include.res === null ? fetch(include.req)
@@ -147,11 +148,13 @@ function type_include(readyState, url, req, res) {
 }
 function type_incLoading(req) {
 	const a0 = req.reqCmd.args[0],
-		a1 = req.reqCmd.args[1];
+		a1 = req.reqCmd.args[1],
+		type = a0 !== "" && a0 !== undefined ? a0 : "",
+		waitTime = a1 !== "" && a1 !== undefined ? a1 : "";
 	return {
-		isShow: a1 !== "" && a1 !== undefined || a0 !== "" && a0 !== undefined,
-		type: a0 !== "" && a0 !== undefined ? a0 : "",
-		waitTime: a1 !== "" && a1 !== undefined ? a1 : "",
+		type,
+		waitTime,
+		isShow: waitTime !== "" || type !== ""
 	};
 }
 async function createIncFragment(req, include, html) {
@@ -492,7 +495,8 @@ function readyInc(req, include, $last) {
 	return type_renderRes(true, null, $last);
 }
 function cloneIncFragment(req, include, oldVal, loading) {
-	const $fr = cloneNode(req, include.$fr),
+//	const $fr = cloneNode(req, include.$fr),
+	const $fr = include.$fr.cloneNode(true),
 		src = srcBy$src.get(req.$src),
 		descr = src.descr,
 		attrs = req.$src.attributes,
@@ -501,7 +505,8 @@ function cloneIncFragment(req, include, oldVal, loading) {
 		isR = oldVal !== undefined,
 		asOneIdx = src.asOneIdx !== null ? src.asOneIdx : type_asOneIdx(),
 		idx = src.idx !== null ? src.idx : type_idx(),
-		save = src.save !== null ? src.save : type_save();
+		save = src.save !== null ? src.save : type_save(),
+		on = [];
 	for (const n of getAttrItAfter(descr.attr.keys(), req.str, false)) {
 		asOneIdx.delete(n);
 		idx.delete(n);
@@ -542,7 +547,17 @@ function cloneIncFragment(req, include, oldVal, loading) {
 			}
 		}
 	}
-	for (let i = 0, $i = $fr.firstChild; $i !== null; i++, $i = $i.nextSibling) {
+	for (const [n, v] of descr.attr) {
+		if (n === req.str) {
+			break;
+		}
+		const rc = reqCmd.get(n);
+		if (rc.cmdName === onCmdName) {
+			on.push(type_cloneNodeOn(rc.cmd, n, v));
+		}
+	}
+	const onLen = on.length;
+	for (let k, nn, j, i = 0, $i = $fr.firstChild; $i !== null; i++, $i = $i.nextSibling) {
 		if ($i.nodeType !== 1) {
 			continue;
 		}
@@ -558,8 +573,8 @@ function cloneIncFragment(req, include, oldVal, loading) {
 		}
 		const curAttrIt = curAttr.entries(),
 			nSet = new Set();
-		for (let i = curAttrIt.next(); !i.done; i = curAttrIt.next()) {
-			const [n, v] = i.value;
+		for (j = curAttrIt.next(); !j.done; j = curAttrIt.next()) {
+			const [n, v] = j.value;
 			$i.removeAttribute(n);
 			$i.setAttribute(n, v);
 			nSet.add(n);
@@ -572,21 +587,21 @@ function cloneIncFragment(req, include, oldVal, loading) {
 					$i.setAttribute(n, v);
 					continue;
 				}
-				let nn = n;
+				nn = n;
 				while (nSet.has(nn)) {
 					nn += cmdArgsDiv;
 				}
 				nSet.add(nn);
 				$i.setAttribute(nn, v);
 			}
-			for (i = curAttrIt.next(); !i.done; i = curAttrIt.next()) {
-				const [n, v] = i.value;
+			for (j = curAttrIt.next(); !j.done; j = curAttrIt.next()) {
+				const [n, v] = j.value;
 				if (!setReqCmd(n)) {
 					$i.removeAttribute(n);
 					$i.setAttribute(n, v);
 					continue;
 				}
-				let nn = n;
+				nn = n;
 				while (nSet.has(nn)) {
 					nn += cmdArgsDiv;
 				}
@@ -601,6 +616,12 @@ function cloneIncFragment(req, include, oldVal, loading) {
 		}
 		iSrc.idx = type_idx(idx);
 		iSrc.save = type_save(save);
+		if (onLen !== 0) {
+			for (k = 0; k < onLen; k++) {
+				const o = on[k];
+				o.cmd.render(type_req($i, o.str, o.expr, req.scope, req.sync));
+			}
+		}
 //!!2
 		if (self.mw_debugLevel !== 0) {
 			for (const [n, v] of asOneIdx) {

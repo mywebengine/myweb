@@ -311,9 +311,11 @@ function q_addInsert(req, ctx, sId, keysLen, idx, step) {
 		$last = get$last(req, $srcById.get(sId), idx - 1);
 	idx += newElsLen;
 	if (idx >= keysLen) {
+/*
+//todo
 if (!$last.parentNode) {
 	console.error(req, ctx, sId, keysLen, idx, step, $last);
-}
+}*/
 		$last.parentNode.insertBefore($fr, $last.nextSibling);
 		req.sync.afterAnimations.add(type_animation(() => q_forRenderI(req, ctx, newEls), req.sync.local, 0));
 		return;

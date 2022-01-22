@@ -1,33 +1,34 @@
 //import {type_animation} from "./render/render.js";
 import {isFillingName, isFillingDiv} from "./config.js";
-import {srcBy$src} from "./descr.js";
+import {$srcById, srcBy$src} from "./descr.js";
 import {is$hide} from "./dom.js";
 
 export const loadingCount = new Map();
 
 export async function showLoading($e, testFunc, type = "", waitTime) {
 //--	req.sync.animations.add(type_animation(async () => {
-		const lKey = getLoadingKey($e),
-			l = loadingCount.get(lKey);
+//		const lKey = getLoadingKey($e),
+//			l = loadingCount.get(lKey);
+		const src = srcBy$src.get($e),
+			sId = src.id,
+			l = loadingCount.get(sId);
 		if (await testFunc()) {
 			if (l !== undefined) {
 				decLoading($e, type, l);
 			}
 			return;
 		}
-		const ll = l === undefined ? createLoading(lKey) : l;
+//		const ll = l === undefined ? createLoading(lKey) : l;
+		const ll = l === undefined ? createLoading(sId) : l;
+		toggleLoading($e, "", true, ll);
+		if (type === "") {
+			return;
+		}
 		if (waitTime === undefined || waitTime === "") {
 			waitTime = -1;
 		}
 		if (waitTime < 0) {
-			toggleLoading($e, "", true, ll);
-			if (type !== "") {
-				toggleLoading($e, type, true, ll);
-			}
-			return;
-		}
-		toggleLoading($e, "", true, ll);
-		if (type === "") {
+			toggleLoading($e, type, true, ll);
 			return;
 		}
 		setTimeout(async () => {
@@ -42,6 +43,12 @@ export async function showLoading($e, testFunc, type = "", waitTime) {
 		}, waitTime);
 //	}, req.sync.local, 0));
 }
+function createLoading(sId) {
+	const n = type_loading();
+	loadingCount.set(sId, n);
+	return n;
+}
+/*
 function createLoading(lKey) {
 	const n = type_loading();
 	loadingCount.set(lKey, n);
@@ -63,35 +70,50 @@ function getLoadingKey($src) {
 	loadingCount.delete($src);
 	loadingCount.set(src.id, l);
 	return src.id;
-}
+}*/
 function decLoading($e, type, l) {
 	if (type !== "") {
-		const v = l.get(type) - 1
-		l.set(type, v);
-		if (v <= 0) {
-			toggleLoading($e, type, false, l);
-		}
+		const amount = l.get(type) - 1
+		l.set(type, amount);
+//		if (amount <= 0) {
+//			toggleLoading($e, type, false, l);
+//		}
 	}
-	const v = l.get("") - 1;
-	l.set("", v);
-	if (v > 0) {
+	const amount = l.get("") - 1;
+	l.set("", amount);
+	if (amount > 0) {
 		return;
 	}
-	toggleLoading($e, "", false, l);
-	for (const [key, count] of loadingCount) {
-		for (const [tp, v] of count) {
-			if (v > 0) {
+//	toggleLoading($e, "", false, l);
+//	for (const [key, count] of loadingCount) {
+	for (const [iId, iL] of loadingCount) {
+		if (iL !== l) {
+			continue
+		}
+		loadingCount.delete(iId);
+		const $i = $srcById.get(iId);
+		if ($i === undefined) {
+			continue;
+		}
+		for (const type of l.keys()) {
+			toggleLoading($i, type, false, l);
+		}
+/*
+		for (const [type, amount] of l) {
+			if (amount > 0) {
 				continue;
 			}
-			if (tp === "") {
-				loadingCount.delete(key);
+			toggleLoading($e, type, false, l);
+			if (type === "") {
+//				loadingCount.delete(key);
+				loadingCount.delete(sId);
 			}
-		}
+		}*/
 	}
 }
 function toggleLoading($e, type, f, l) {
 /*
-	if (is$hide($e)) {//так как запуст может быть через таймер - многое могло случится
+	if (is$hide($e)) {//так как запуст может быть через таймер - многое могло случится//!!за это состояние нужно что бы отвечали команды...
 console.warn(43243242);
 alert(1);
 		return;

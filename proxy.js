@@ -228,7 +228,11 @@ const changeArrFuncHandler = {
 	apply(f, thisValue, args) {
 		const t = thisValue[p_target];
 		if (t === undefined) {
+console.warning(1111111111, f, thisValue, args);
 			return f.apply(thisValue, args);
+		}
+		for (let i = args.length - 1; i > -1; i--) {
+			args[i] = getProxy(args[i]);
 		}
 		const oldLen = t.length,
 			res = f.apply(t, args);
@@ -241,6 +245,7 @@ const entriesFuncHandler = {
 //console.log(22222222, thisValue, thisValue[p_target], args);
 		const t = thisValue[p_target];
 		if (t === undefined) {
+//console.warning(1111111111, f, thisValue, args);
 			return f.apply(thisValue, args);
 		}
 		const i = f.apply(t, args);
@@ -291,6 +296,8 @@ const setFuncHandler = {
 	apply(f, thisValue, args) {
 		const t = thisValue[p_target];
 		if (t === undefined) {
+//todo
+console.warning(8888, f, thisValue, args);
 			return f.apply(thisValue, args);
 		}
                 const [k, v] = args,
@@ -316,17 +323,20 @@ const addFuncHandler = {
 	apply(f, thisValue, args) {
 		const t = thisValue[p_target];
 		if (t === undefined) {
+//todo
+console.warning(8888, f, thisValue, args);
 			return f.apply(thisValue, args);
 		}
 		const v = args[0],
 			vTarget = getTarget(v);
 //console.log("addF", t, f, args);
-		if (t.has(v)) {
-			const oldVTarget = getTarget(t.get(v));
+		if (t.has(vTarget)) {
+//		if (t.has(v)) {
+//			const oldVTarget = getTarget(t.get(v));
 //связоно с тем что обновить элемент стоит даже если значение такое же та как он может быть изменен как то оначе например через this.value = 1111
-			if (vTarget === oldVTarget) {
+//			if (vTarget === oldVTarget) {
 				return thisValue;
-			}
+//			}
 		}
 		f.apply(t, [getProxy(v)]);
 		setVal(t, vTarget, vTarget, undefined);
@@ -337,6 +347,8 @@ const deleteFuncHandler = {
 	apply(f, thisValue, args) {
 		const t = thisValue[p_target];
 		if (t === undefined) {
+//todo
+console.warning(8888, f, thisValue, args);
 			return f.apply(thisValue, args);
 		}
 		const k = args[0];
@@ -360,6 +372,7 @@ const clearFuncHandler = {
 //console.log("clearF", thisValue, thisValue[p_target], args);
 		const t = thisValue[p_target];
 		if (t === undefined) {
+console.warning(8888, f, thisValue, args);
 			return f.apply(thisValue, args);
 		}
 		const oldSize = t.size;
@@ -509,7 +522,7 @@ console.warn(423423, n, typeof n, t, n, v, oldV)
 		oldScalarId = vIdByProp !== undefined && vIdByProp.get(n) || 0,
 		oId = oldScalarId !== 0 && varIdByVar.get(oldV) || 0;
 	if (self.mw_debugLevel === 2) {
-		console.info("mw_proxy => setVar", "\n\tname=>", n, "\n\tvalue=>", v, "\n\toldVal=>", oldV, "\n\ttId=>", tId, "\n\ttarget=>", t, "\n\toldId=>", oId, "\n\toldScalarId=>", oldScalarId);
+		console.info("mw_proxy => setVar", "\n\tname=>", n, "\n\tvalue=>", v, "\n\toldVal=>", oldV, "\n\ttId=>", tId, "\n\ttarget=>", t, "\n\toldId=>", oId, "\n\toldScalarId=>", oldScalarId);//, "\n\t$current=>", cur$src);
 	}
 //console.error("setVar", n, v, tId, oId, oldV, oldScalarId, cur$src);
 	if (cur$src) {

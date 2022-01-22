@@ -469,6 +469,7 @@ function clearVars(rem) {
 		}
 	}
 }
+/*
 export function cloneNode(req, $e) {//во время клонирования описания не будут созданы - предназначен для клогнирования новго элемента (который ранее не рендерился)
 	if ($e.nodeType === 11) {
 		const $fr = mw_doc.createDocumentFragment();
@@ -498,7 +499,7 @@ export function cloneNode(req, $e) {//во время клонирования �
 		loadingCount.set($n, l);
 	}
 	return $n;
-}
+}*/
 export function q_cloneNode(req, sId, beginIdx, len) {//во время клонирования будут созданы описания
 	sId = getSrcId(req.sync.local, sId);
 	const $src = $srcById.get(sId),
@@ -530,7 +531,7 @@ export function q_cloneNode(req, sId, beginIdx, len) {//во время клон
 		}
 		const rc = reqCmd.get(n);
 		if (rc.cmdName === onCmdName) {
-			on.push(type_q_cloneNodeOn(rc.cmd, n, v));
+			on.push(type_cloneNodeOn(rc.cmd, n, v));
 		}
 	}
 	const onLen = on.length,
@@ -564,13 +565,16 @@ export function q_cloneNode(req, sId, beginIdx, len) {//во время клон
 			}
 			setIdx(iSrc, req.str, arrI.idx);
 			if (onLen !== 0) {
-				for (k = 0; k < onLen; k += 3) {
+				for (k = 0; k < onLen; k++) {
 					const o = on[k];
 					o.cmd.render(type_req($i, o.str, o.expr, req.scope, req.sync));
 				}
 			}
 			if (l !== undefined) {
-				loadingCount.set($i, l);
+//todo заменить $i на iSrc.id
+//				loadingCount.set($i, l);
+//todo не понятно как убирать филилинг с новых элементов
+				loadingCount.set(iSrc.id, l);
 			}
 		}
 	}
@@ -717,7 +721,7 @@ export function type_q$i($els, idx) {
 		idx
 	};
 }
-function type_q_cloneNodeOn(cmd, str, expr) {
+export function type_cloneNodeOn(cmd, str, expr) {
 	return {
 		cmd,
 		str,
@@ -792,7 +796,7 @@ export function show(req, $e) {
 function _show(req, $e, src) {
 	const $new = $e.content.firstChild;
 	if (!$new || $new.nextSibling !== null) {
-		//todo была ошибка, что $e ет в srcBy$src - овоторить не получается
+		//todo была ошибка, что $e ет в srcBy$src - повоторить не получается - эта шибка проявляется если Препаре даёт сбой, на данный момент не замечены проблемы в нём
 		throw getErr(new Error(">>>mw show:01: Template element invalid structure on show function. <template>.content.childNodes.length must be only one element."), $e);
 	}
 //	if ($new.nodeType === 1 && srcBy$src.has($e)) {

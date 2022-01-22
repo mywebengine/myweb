@@ -3,7 +3,7 @@ import {setReqCmd} from "./render/render.js";
 import {type_cache} from "./cache.js";
 import {reqCmd, incCmdName, hideName} from "./config.js";
 import {setAsOneIdx, getIdx, setIdx} from "./dom.js";
-import {loadingCount} from "./loading.js";
+//import {loadingCount} from "./loading.js";
 import {getProxy} from "./proxy.js";
 
 export const $srcById = new Map();
@@ -61,7 +61,7 @@ export function createSrc($e, descr, asOneIdx, idx) {//вызов этой фу�
 			incCache.get(getIdx(src, n)).counter++;
 		}
 	}*/
-	moveLoading($e, sId);
+//	moveLoading($e, sId);
 	return src;
 }
 export function createDescr($e, sId) {
@@ -96,6 +96,7 @@ export function createDescr($e, sId) {
 	descrById.set(id, descr);
 	return descr;
 }
+/*
 function moveLoading($e, sId) {
 	const l = loadingCount.get($e);
 	if (l === undefined) {
@@ -103,7 +104,7 @@ function moveLoading($e, sId) {
 	}
 	loadingCount.set(sId, l);
 	loadingCount.delete($e);
-}
+}*/
 function type_src(id, descr, isCmd, isHide, asOneIdx, idx, cache) {
 	return {
 		id,
