@@ -125,6 +125,7 @@ export function getProxy(v) {
 		v.keys = new Proxy(v.keys, entriesFuncHandler);
 		v.add = new Proxy(v.add, addFuncHandler);
 		v.has = new Proxy(v.has, hasFuncHandler);
+		v.delete = new Proxy(v.delete, setDeleteFuncHandler);
 		v.clear = new Proxy(v.clear, clearFuncHandler);
 		return new Proxy(v, proxyHandler);
 	}
@@ -139,7 +140,7 @@ export function getProxy(v) {
 		v.keys = new Proxy(v.keys, entriesFuncHandler);
 		v.get = new Proxy(v.get, getFuncHandler);
 		v.set = new Proxy(v.set, setFuncHandler);
-		v.delete = new Proxy(v.delete, deleteFuncHandler);
+		v.delete = new Proxy(v.delete, mapDeleteFuncHandler);
 		v.has = new Proxy(v.has, hasFuncHandler);
 		v.clear = new Proxy(v.clear, clearFuncHandler);
 		return new Proxy(v, proxyHandler);
@@ -292,6 +293,30 @@ const getFuncHandler = {
 		return v;
 	}
 };
+const addFuncHandler = {
+	apply(f, thisValue, args) {
+		const t = thisValue[p_target];
+		if (t === undefined) {
+//todo
+console.warning(8888, f, thisValue, args);
+			return f.apply(thisValue, args);
+		}
+		const v = args[0],
+			vTarget = getTarget(v);
+//console.log("addF", t, f, args);
+		if (t.has(vTarget)) {
+//		if (t.has(v)) {
+//			const oldVTarget = getTarget(t.get(v));
+//связоно с тем что обновить элемент стоит даже если значение такое же та как он может быть изменен как то оначе например через this.value = 1111
+//			if (vTarget === oldVTarget) {
+				return thisValue;
+//			}
+		}
+		f.apply(t, [getProxy(v)]);
+		setVal(t, vTarget, vTarget, undefined);
+		return thisValue;
+	}
+};
 const setFuncHandler = {
 	apply(f, thisValue, args) {
 		const t = thisValue[p_target];
@@ -319,31 +344,7 @@ console.warning(8888, f, thisValue, args);
 		return thisValue;
 	}
 };
-const addFuncHandler = {
-	apply(f, thisValue, args) {
-		const t = thisValue[p_target];
-		if (t === undefined) {
-//todo
-console.warning(8888, f, thisValue, args);
-			return f.apply(thisValue, args);
-		}
-		const v = args[0],
-			vTarget = getTarget(v);
-//console.log("addF", t, f, args);
-		if (t.has(vTarget)) {
-//		if (t.has(v)) {
-//			const oldVTarget = getTarget(t.get(v));
-//связоно с тем что обновить элемент стоит даже если значение такое же та как он может быть изменен как то оначе например через this.value = 1111
-//			if (vTarget === oldVTarget) {
-				return thisValue;
-//			}
-		}
-		f.apply(t, [getProxy(v)]);
-		setVal(t, vTarget, vTarget, undefined);
-		return thisValue;
-	}
-};
-const deleteFuncHandler = {
+const setDeleteFuncHandler = {
 	apply(f, thisValue, args) {
 		const t = thisValue[p_target];
 		if (t === undefined) {
@@ -355,9 +356,23 @@ console.warning(8888, f, thisValue, args);
 		if (!t.has(k) || !f.apply(t, args)) {
 			return false;
 		}
-		const oldV = getTarget(t.get(k));
-//console.log("delF", k, oldV);
-		setVal(t, getTarget(k), undefined, oldV);
+		setVal(t, k, undefined, k);
+		return true;
+	}
+};
+const mapDeleteFuncHandler = {
+	apply(f, thisValue, args) {
+		const t = thisValue[p_target];
+		if (t === undefined) {
+//todo
+console.warning(8888, f, thisValue, args);
+			return f.apply(thisValue, args);
+		}
+		const k = args[0];
+		if (!t.has(k) || !f.apply(t, args)) {
+			return false;
+		}
+		setVal(t, getTarget(k), undefined, getTarget(t.get(k)));
 		return true;
 	}
 };
