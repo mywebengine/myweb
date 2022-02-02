@@ -15,6 +15,8 @@ export async function showLoading($e, testFunc, type = "", waitTime) {
 		if (await testFunc()) {
 			if (l !== undefined) {
 				decLoading($e, type, l);
+			} else {
+				toggleLoading($e, type, false, l);
 			}
 			return;
 		}

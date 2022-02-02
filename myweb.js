@@ -1,5 +1,5 @@
 ﻿/*!
- * myweb v0.9.04
+ * myweb 0.9.1
  * (c) 2019-2021 Aleksey Zobnev
  * Released under the MIT License.
  * https://github.com/mywebengine/myweb
@@ -15,6 +15,11 @@ import {getProxy} from "./proxy.js";
 import {getView, setView} from "./view.js";
 
 (() => {
+//	self.onerror = function(errorMsg, url, lineNumber) {
+//		alert(errorMsg);
+//		return false;
+//	}
+//
 	const mwUrl = import.meta.url;
 	self.mw_debugLevel = mwUrl.indexOf("debug=1") !== -1 ? 1 : (mwUrl.indexOf("debug=2") !== -1 ? 2 : 0);
 	self[globVarName] = getProxy(self[globVarName] || {});

@@ -11,6 +11,8 @@ if (!self.requestIdleCallback) {
 			});
 		}, 1);
 	}
+	self.cancelIdleCallback = function(id) {
+	}
 }
 /*
 if (!FormData.prototype.toJSON) {

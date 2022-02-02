@@ -734,7 +734,7 @@ console.log(444, mJ.len - mI.len, $l, $srcById.get(byD.get(iDId).sId), descrById
 					lLen = mJ.len - mI.len;
 				for (const lId of descrById.get(jDId).srcIds) {
 					$l = $srcById.get(lId);
-					for (l = lLen; l !== -1; l--) {
+					for (l = lLen; $l !== null && l !== -1; l--) {//может быть стрытым
 						$l = $l.parentNode;
 					}
 					if ($l === $p) {
