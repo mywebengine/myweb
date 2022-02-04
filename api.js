@@ -15,6 +15,7 @@ import {getProxy
 	} from "./proxy.js";
 import {oset, del} from "./oset.js";
 import {copyToClipboard} from "./str.js";
+import {type} from "./type.js";
 import {getUrl
 //	, isUri, normalizeUrl
 	} from "./url.js";
@@ -43,6 +44,8 @@ function begin() {
 	self.mw_del = del;
 
 	self.mw_copyToClipboard	= copyToClipboard;
+
+	self.mw_type = type;
 
 	self.mw_getUrl = getUrl;
 //	self.mw_isUri = isUri;
