@@ -168,7 +168,16 @@ async function createIncFragment(req, include, html) {
 		self.mw_createLineNo(include.url, html, $fr);
 	}
 	joinText($fr);
-	include.$tags = [...$fr.querySelectorAll("link[rel]")];
+	include.$tags = [];
+//	include.$tags = [...$fr.querySelectorAll("link[rel]")];
+	const $links = $fr.querySelectorAll("link"),
+		$linksLen = $links.length;
+	for (let i = 0; i < $linksLen; i++) {
+		const $i = $links[i];
+		if ($i.getAttribute("rel") !== null) {
+			include.$tags.push($i);
+		}
+	}
 	for (const $i of include.$tags) {
 		const uri = $i.getAttribute("href");
 		if (uri) {
@@ -178,7 +187,13 @@ async function createIncFragment(req, include, html) {
 			}
 		}
 	}
-	include.$tags.push(...$fr.querySelectorAll("style"));
+//	include.$tags.push(...$fr.querySelectorAll("style"));
+	const $styles = $fr.querySelectorAll("style"),
+		$stylesLen = $styles.length;
+	for (let i = 0; i < $stylesLen; i++) {
+		include.$tags.push($styles[i]);
+	}
+//	const $scripts = $fr.querySelectorAll("script");
 	const $scripts = $fr.querySelectorAll("script");
 	if ($scripts.length !== 0) {
 		await createIncScripts(req, include, $scripts);
@@ -633,7 +648,14 @@ function cloneIncFragment(req, include, oldVal, loading) {
 		}
 		setIdx(iSrc, req.str, include.key);
 	}
-	if (!$fr.firstElementChild) {
+	let isHas$e = false;
+	for (let $i = $fr.firstChild; $i !== null; $i = $i.nextSibling) {
+		if ($i.nodeType === 1) {
+			isHas$e = true;
+			break;
+		}
+	}
+	if (!isHas$e) {//!$fr.firstElementChild) {
 		return $fr;
 	}
 //тут что бы не создовать sId => preRender
@@ -647,15 +669,17 @@ function cloneIncFragment(req, include, oldVal, loading) {
 }
 function makeSlots(req, $fr) {
 	const $slots = $fr.querySelectorAll("slot"),
+//	const $slots = $fr.getElementsByTagName("slot"),
 		$slotsLen = $slots.length;
 	let $freeSlot = null;
 	for (let i = 0; i < $slotsLen; i++) {
-		const $i = $slots[i],
+		const $s = $slots[i],
 			n = $i.name;
 		if (n === "" && !$freeSlot) {
-			$freeSlot = $i;
+			$freeSlot = $s;
 			continue;
 		}
+/*
 		const $v = req.$src.querySelectorAll(`[slot="${n}"]`),
 			$vLen = $v.length;
 		for (let j = 0; j < $vLen; j++) {
@@ -668,15 +692,68 @@ function makeSlots(req, $fr) {
 			const $j = $v[j],
 				get$elsByStr = srcBy$src.get($j).descr.get$elsByStr;
 			if (get$elsByStr === null) {
-				$i.appendChild($j);
+				$s.appendChild($j);
 				continue;
 			}
 			const $els = get$els($j, get$elsByStr, ""),
 				$elsLen = $els.length;
 			for (let k = 0; k < $elsLen; k++) {
-				$i.appendChild($els[k]);
+				$s.appendChild($els[k]);
 			}
-		}
+		}*/
+		const $parent = $i.parentNode,
+			$p = [];
+		let $i = req.$src.firstChild;
+		do {
+			if ($i.getAttribute("slot") === n) {
+				const $j = $i,
+					get$elsByStr = srcBy$src.get($j).descr.get$elsByStr;
+				$i = $i.previousSibling;
+				if ($i === null) {
+					$i = $j.parentNode;
+				}
+				if (get$elsByStr === null) {
+					$s.appendChild($j);
+					continue;
+				}
+				const $els = get$els($j, get$elsByStr, ""),
+					$elsLen = $els.length;
+				for (let k = 0; k < $elsLen; k++) {
+					$s.appendChild($els[k]);
+				}
+			}
+//////////////////////
+			if ($i.firstChild !== null) {
+				$i = $i.firstChild;
+				continue;
+			}
+//			if ($i.nodeName === "TEMPLATE" && $i.getAttribute(hideName) !== null) {
+//				$p.push($i);
+//				$i = $i.content.firstChild;
+//				continue;
+//			}
+			if ($i.parentNode === $parent) {//если мы не ушли вглубь - значит и вправо двигаться нельзя
+				break;
+			}
+			if ($i.nextSibling !== null) {
+				$i = $i.nextSibling;
+				continue;
+			}
+			do {
+				$i = $i.parentNode;
+//				if ($i.nodeType === 11) {
+//					$i = $p.pop();
+//				}
+				if ($i.parentNode === $parent) {
+					$i = null;
+					break;
+				}
+				if ($i.nextSibling !== null) {
+					$i = $i.nextSibling;
+					break;
+				}
+			} while (true);
+		} while ($i !== null);
 	}
 	if ($freeSlot === null) {
 		return;

@@ -198,11 +198,6 @@ function _render(byD, delayP) {
 //}
 		if (arrLen === 1) {
 //			renderPack.push({$src: $sync, renderParam: r, sync});
-//todo
-if ($sync.className === `mw_timetable-hours-i-min-title show`) {
-	console.log(r, $sync);
-	alert(1)
-}
 			pSet.add(renderTag($sync, r.scope, r.str, sync));
 			continue;
 		}
@@ -432,7 +427,7 @@ export async function renderLoop(syncInThisRender) {
 				h();
 			}
 		}
-		sync.stat = 7;
+		sync.stat = 7;//ready
 		syncInRender.delete(sync);
 		sync.resolve();
 /*
@@ -484,10 +479,11 @@ a.promise = 1;
 		return new Promise(rafResolve => {
 			const rafId = requestAnimationFrame(() => {
 				sync.animationFrame.delete(rafId);
+/*!!!!!
 				if (sync.stat !== 0) {
 					rafResolve();
 					return;
-				}
+				}*/
 				for (const a of nows) {
 					a.handler();
 				}
@@ -496,14 +492,18 @@ a.promise = 1;
 					rafResolve();
 					return;
 				}
+/*
 				requestIdleCallback(() => {
 					if (sync.stat !== 0) {
 						rafResolve();
 						return;
-					}
+					}*/
+				const ricId = requestIdleCallback(() => {
+					sync.idleCallback.delete(ricId);
 					addAnimation(sync, deferreds, false)
 						.then(rafResolve);
 				}, defIdleCallbackOpt);
+				sync.idleCallback.set(ricId, ricResolve);
 			});
 			sync.animationFrame.set(rafId, rafResolve);
 		});
@@ -514,11 +514,13 @@ a.promise = 1;
 	return new Promise(ricResolve => {
 		const ricId = requestIdleCallback(() => {
 			sync.idleCallback.delete(ricId);
-			requestAnimationFrame(() => {
+			const rafId = requestAnimationFrame(() => {
+				sync.animationFrame.delete(rafId);
+/*!!!!!
 				if (sync.stat !== 0) {
 					ricResolve();
 					return;
-				}
+				}*/
 				for (const a of deferreds) {
 					a.handler();
 				}
@@ -526,6 +528,7 @@ a.promise = 1;
 				ricResolve();
 				return;
 			});
+			sync.animationFrame.set(rafId, rafResolve);
 		}, defIdleCallbackOpt);
 		sync.idleCallback.set(ricId, ricResolve);
 	});
@@ -845,10 +848,10 @@ function checkSync(sync, newRenderParam) {
 //7 - ready
 //8 - cancel
 //console.log("cancel", sync.stat, sync, p);
-	if (sync.stat !== 0) {
-		return getPosStat(sync, newRenderParam);
-	}
 	const stat = getPosStat(sync, newRenderParam);
+	if (sync.stat !== 0) {
+		return stat;
+	}
 	if (stat !== 0) {
 		cancelSync(sync, stat);
 	}

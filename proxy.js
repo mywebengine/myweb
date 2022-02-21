@@ -2,17 +2,16 @@ import {renderBySrcIds} from "./render/algo.js";
 import {type_cacheValue} from "./cache.js";
 import {p_target, defIdleCallbackOpt} from "./config.js";
 import {$srcById, srcById, srcBy$src, descrById, getNewId, get$els} from "./descr.js";
-//--import {getIdx} from "./dom.js";
 
 export const varIdByVar = new Map();
 export const varById = new Map();
 export const varIdByVarIdByProp = new Map();
 export const srcIdsByVarId = new Map();
 
-//self.mw_varIdByVar = varIdByVar;
-//self.mw_varById = varById;
-//self.mw_varIdByVarIdByProp = varIdByVarIdByProp;
-//self.mw_srcIdsByVarId = srcIdsByVarId;
+//self.mVarIdByVar = varIdByVar;
+//self.mVarById = varById;
+//self.mVarIdByVarIdByProp = varIdByVarIdByProp;
+//self.mSrcIdsByVarId = srcIdsByVarId;
 
 //todo--
 self._testVars = function() {
@@ -120,12 +119,12 @@ export function getProxy(v) {
 		for (const vv of s) {
 			v.add(getProxy(vv));
 		}
-		v.entries = new Proxy(v.entries, entriesFuncHandler);
-		v.values = new Proxy(v.values, entriesFuncHandler);
-		v.keys = new Proxy(v.keys, entriesFuncHandler);
+		v.entries = new Proxy(v.entries, getEntriesFuncHandler(true));
+		v.values = new Proxy(v.values, getEntriesFuncHandler(false));
+		v.keys = new Proxy(v.keys, getEntriesFuncHandler(false));
 		v.add = new Proxy(v.add, addFuncHandler);
 		v.has = new Proxy(v.has, hasFuncHandler);
-		v.delete = new Proxy(v.delete, setDeleteFuncHandler);
+		v.delete = new Proxy(v.delete, deleteSetMapFuncHandler(true));
 		v.clear = new Proxy(v.clear, clearFuncHandler);
 		return new Proxy(v, proxyHandler);
 	}
@@ -135,12 +134,12 @@ export function getProxy(v) {
 		for (const [kk, vv] of s) {
 			v.set(getProxy(kk), getProxy(vv));
 		}
-		v.entries = new Proxy(v.entries, entriesFuncHandler);
-		v.values = new Proxy(v.values, entriesFuncHandler);
-		v.keys = new Proxy(v.keys, entriesFuncHandler);
+		v.entries = new Proxy(v.entries, getEntriesFuncHandler(true));
+		v.values = new Proxy(v.values, getEntriesFuncHandler(false));
+		v.keys = new Proxy(v.keys, getEntriesFuncHandler(false));
 		v.get = new Proxy(v.get, getFuncHandler);
 		v.set = new Proxy(v.set, setFuncHandler);
-		v.delete = new Proxy(v.delete, mapDeleteFuncHandler);
+		v.delete = new Proxy(v.delete, deleteSetMapFuncHandler(false));
 		v.has = new Proxy(v.has, hasFuncHandler);
 		v.clear = new Proxy(v.clear, clearFuncHandler);
 		return new Proxy(v, proxyHandler);
@@ -229,7 +228,7 @@ const changeArrFuncHandler = {
 	apply(f, thisValue, args) {
 		const t = thisValue[p_target];
 		if (t === undefined) {
-console.warning(1111111111, f, thisValue, args);
+console.warn(1111111111, f, thisValue, args);
 			return f.apply(thisValue, args);
 		}
 		for (let i = args.length - 1; i > -1; i--) {
@@ -241,43 +240,49 @@ console.warning(1111111111, f, thisValue, args);
 		return res;
 	}
 };
-const entriesFuncHandler = {
-	apply(f, thisValue, args) {
+function getEntriesFuncHandler(isEntries) {
+	const iteratorFuncHandler = getIteratorFuncHandler(isEntries);
+	return {
+		apply(f, thisValue, args) {
 //console.log(22222222, thisValue, thisValue[p_target], args);
-		const t = thisValue[p_target];
-		if (t === undefined) {
-//console.warning(1111111111, f, thisValue, args);
-			return f.apply(thisValue, args);
+			const t = thisValue[p_target];
+			if (t === undefined) {
+//console.warn(1111111111, f, thisValue, args);
+				return f.apply(thisValue, args);
+			}
+			const i = f.apply(t, args);
+			if (cur$src) {
+				i.next = new Proxy(i.next, iteratorFuncHandler);
+				i[p_target] = thisValue;
+			}
+			return i;
 		}
-		const i = f.apply(t, args);
-		if (cur$src) {
-			i.next = new Proxy(i.next, iteratorFuncHandler);
-			i[p_target] = thisValue;
-		}
-		return i;
-	}
+	};
 };
-const iteratorFuncHandler = {
-	apply(f, thisValue, args) {
+function getIteratorFuncHandler(isEntries) {
+	return {
+		apply(f, thisValue, args) {
 //console.log("next", thisValue, thisValue[p_target], f, args, cur$src);
-		const val = f.apply(thisValue, args);
-//		if (!cur$src) {
-//			return val;
-//		}
-		if (val.done) {
+			const val = f.apply(thisValue, args);
+//-- ?
+//			if (!cur$src) {
+			if (!cur$src || val.done) {
+				return val;
+			}
+//			if (val.done) {
+//				return val;
+//			}
+			const t = thisValue[p_target][p_target];
+			if (isEntries) {
+				const [k, v] = val.value;
+				addVar(t, getTarget(k), getTarget(v), cur$src);
+				return val;
+			}
+			const vTarget = getTarget(val.value);
+			addVar(t, vTarget, vTarget, cur$src);
 			return val;
 		}
-		const t = thisValue[p_target][p_target];
-		if (val.value.length !== undefined) {
-			const [k, v] = val.value;
-			addVar(t, getTarget(k), getTarget(v), cur$src);
-			return val;
-		}
-		const v = val.value,
-			vTarget = getTarget(v);
-		addVar(t, vTarget, vTarget, cur$src);
-		return val;
-	}
+	};
 };
 const getFuncHandler = {
 	apply(f, thisValue, args) {
@@ -298,7 +303,7 @@ const addFuncHandler = {
 		const t = thisValue[p_target];
 		if (t === undefined) {
 //todo
-console.warning(8888, f, thisValue, args);
+console.warn(8888, f, thisValue, args);
 			return f.apply(thisValue, args);
 		}
 		const v = args[0],
@@ -322,7 +327,7 @@ const setFuncHandler = {
 		const t = thisValue[p_target];
 		if (t === undefined) {
 //todo
-console.warning(8888, f, thisValue, args);
+console.warn(8888, f, thisValue, args);
 			return f.apply(thisValue, args);
 		}
                 const [k, v] = args,
@@ -344,37 +349,27 @@ console.warning(8888, f, thisValue, args);
 		return thisValue;
 	}
 };
-const setDeleteFuncHandler = {
-	apply(f, thisValue, args) {
-		const t = thisValue[p_target];
-		if (t === undefined) {
+function deleteSetMapFuncHandler(isSet) {
+	return {
+		apply(f, thisValue, args) {
+			const t = thisValue[p_target];
+			if (t === undefined) {
 //todo
-console.warning(8888, f, thisValue, args);
-			return f.apply(thisValue, args);
+console.warn(8888, f, thisValue, args);
+				return f.apply(thisValue, args);
+			}
+			const k = args[0];
+			if (!t.has(k) || !f.apply(t, args)) {
+				return false;
+			}
+			if (isSet) {
+				setVal(t, getTarget(k), undefined, k);
+			} else {
+				setVal(t, getTarget(k), undefined, getTarget(t.get(k)));
+			}
+			return true;
 		}
-		const k = args[0];
-		if (!t.has(k) || !f.apply(t, args)) {
-			return false;
-		}
-		setVal(t, k, undefined, k);
-		return true;
-	}
-};
-const mapDeleteFuncHandler = {
-	apply(f, thisValue, args) {
-		const t = thisValue[p_target];
-		if (t === undefined) {
-//todo
-console.warning(8888, f, thisValue, args);
-			return f.apply(thisValue, args);
-		}
-		const k = args[0];
-		if (!t.has(k) || !f.apply(t, args)) {
-			return false;
-		}
-		setVal(t, getTarget(k), undefined, getTarget(t.get(k)));
-		return true;
-	}
+	};
 };
 const hasFuncHandler = {
 	apply(f, thisValue, args) {
@@ -387,7 +382,7 @@ const clearFuncHandler = {
 //console.log("clearF", thisValue, thisValue[p_target], args);
 		const t = thisValue[p_target];
 		if (t === undefined) {
-console.warning(8888, f, thisValue, args);
+console.warn(8888, f, thisValue, args);
 			return f.apply(thisValue, args);
 		}
 		const oldSize = t.size;
