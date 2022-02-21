@@ -82,7 +82,7 @@ self._testVars = function() {
 const isSkipNameType = new Set([/*todo "undefined", */"symbol"]),
 	isSkipValueType = new Set(["function"]),
 	isScalarType = new Set(["boolean", "number", "string", "undefined"]);
-let cur$src;
+let cur$src = null;
 export function setCur$src($src) {
 	cur$src = $src;
 }
@@ -169,8 +169,8 @@ const proxyHandler = {
 		}
 		const v = t[n],
 			vType = typeof v;
-//		if (cur$src && !isSkipNameType.has(typeof n) && (Array.isArray(t) || !isSkipValueType.has(vType))) {
-		if (cur$src && !isSkipNameType.has(typeof n) && !isSkipValueType.has(vType)) {
+//		if (cur$src !== null && !isSkipNameType.has(typeof n) && (Array.isArray(t) || !isSkipValueType.has(vType))) {
+		if (cur$src !== null && !isSkipNameType.has(typeof n) && !isSkipValueType.has(vType)) {
 			addVar(t, n, getTarget(v), cur$src);
 			return v;
 		}
@@ -251,7 +251,7 @@ function getEntriesFuncHandler(isEntries) {
 				return f.apply(thisValue, args);
 			}
 			const i = f.apply(t, args);
-			if (cur$src) {
+			if (cur$src !== null) {
 				i.next = new Proxy(i.next, iteratorFuncHandler);
 				i[p_target] = thisValue;
 			}
@@ -265,8 +265,8 @@ function getIteratorFuncHandler(isEntries) {
 //console.log("next", thisValue, thisValue[p_target], f, args, cur$src);
 			const val = f.apply(thisValue, args);
 //-- ?
-//			if (!cur$src) {
-			if (!cur$src || val.done) {
+//			if (!cur$src !== null) {
+			if (!cur$src !== null || val.done) {
 				return val;
 			}
 //			if (val.done) {
@@ -292,7 +292,7 @@ const getFuncHandler = {
 			return f.apply(thisValue, args);
 		}
 		const v = f.apply(t, args);
-		if (cur$src) {
+		if (cur$src !== null) {
 			addVar(t, getTarget(args[0]), getTarget(v), cur$src);
 		}
 		return v;
@@ -535,7 +535,7 @@ console.warn(423423, n, typeof n, t, n, v, oldV)
 		console.info("mw_proxy => setVar", "\n\tname=>", n, "\n\tvalue=>", v, "\n\toldVal=>", oldV, "\n\ttId=>", tId, "\n\ttarget=>", t, "\n\toldId=>", oId, "\n\toldScalarId=>", oldScalarId);//, "\n\t$current=>", cur$src);
 	}
 //console.error("setVar", n, v, tId, oId, oldV, oldScalarId, cur$src);
-	if (cur$src) {
+	if (cur$src !== null) {
 //		proxyStat.value = 2;
 		addVar(t, n, v, cur$src);
 	}

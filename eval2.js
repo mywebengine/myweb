@@ -38,7 +38,7 @@ if (c === null) {
 			c.value.set(req.str, val);
 //			proxyStat.value = 0;
 		}
-		setCur$src();
+		setCur$src(null);
 		return val;
 	}
 	const val = func
@@ -147,7 +147,7 @@ for (let i = 0; i < _tpl_len; i++) {
 		c.value.set(_tpl_str, v);
 	}
 }
-_tpl_setCur$src();
+_tpl_setCur$src(null);
 //_tpl_proxyStat.value = 0;
 return _tpl_val;`;
 //console.log(fBody);

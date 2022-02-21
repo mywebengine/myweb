@@ -674,7 +674,7 @@ function makeSlots(req, $fr) {
 	let $freeSlot = null;
 	for (let i = 0; i < $slotsLen; i++) {
 		const $s = $slots[i],
-			n = $i.name;
+			n = $s.name;
 		if (n === "" && !$freeSlot) {
 			$freeSlot = $s;
 			continue;
