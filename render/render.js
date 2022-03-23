@@ -1,21 +1,18 @@
 import {lazyRenderName, mountEventName, renderEventName, defEventInit,
-	p_target, cmdArgsDiv, cmdArgsDivLen,
-		mw_cmd, reqCmd} from "../config.js";
-import {srcById, $srcById, srcBy$src, getAttrAfter} from "../descr.js";
-import {srcSetScope} from "../oset.js";
+	p_target, cmdArgsDiv, cmdArgsDivLen} from "../config/config.js";
+import {getAttrAfter} from "../descr/descr.js";
+import {srcSetScope} from "../oset/oset.js";
 import {addScrollAnimationsEvent} from "./algo.js";
-
-//export const mw_cmd = {};//self.mw_cmd || {};
-//export const reqCmd = self.mw_reqCmd || {};
+import {type_req, type_q_renderCtx, type_isLast, type_q_arr, type_localCounter, type_renderRes} from "./type.js";
 
 export function renderTag($src, scope, str, sync) {
 	if (sync.stat !== 0) {
 //console.log("isCancel", sync.stat, 1);
 		return $src;
 	}
-//console.error("render", sync.syncId, $src, srcBy$src.get($src).id, srcBy$src.get($src).descrId, scope, str);
+//console.error("render", sync.syncId, $src, my.env.srcBy$src.get($src).id, my.env.srcBy$src.get($src).descrId, scope, str);
 //alert(1)
-	const src = srcBy$src.get($src),
+	const src = my.env.srcBy$src.get($src),
 		sId = src.id;
 	if (!sync.local.has(sId)) {
 		sync.local.set(sId, type_localCounter());
@@ -42,7 +39,7 @@ export function renderTag($src, scope, str, sync) {
 				return $ret;
 			}
 //todo если мы дошли до сюда - то тег изменился а дети остались теми же - этого не должно быть - должны были ути по isLast
-//			if (sync.stat !== 0) {//srcBy$src.get($src)?.id !== sId) {
+//			if (sync.stat !== 0) {//my.env.srcBy$src.get($src)?.id !== sId) {
 //				console.warn(sync.stat, "todo если мы дошли до сюда - то тег изменился а дети остались теми же - этого не должно быть - должны были ути по isLast");
 //				return null;
 //			}
@@ -89,6 +86,7 @@ async function attrRender($src, scope, attr, sync) {
 	return type_renderRes(false, $src, $last);
 }
 async function renderChildren($i, scope, sync, sId, $ret) {
+	const srcBy$src = my.env.srcBy$src;
 	if (sync.stat !== 0 || srcBy$src.get($i).descr.isCustomHtml) {
 		return $i;
 	}
@@ -120,7 +118,8 @@ export function q_renderTag(arr, str, isLast, sync) {
 //		return arr;
 		return Promise.resolve(arr);
 	}
-	const arrLen = arr.length;
+	const arrLen = arr.length,
+		srcBy$src = my.env.srcBy$src;
 //--	local = new Map(local);
 //	for (let i = arrLen - 1; i > -1; i--) {
 	for (let i = 0; i < arrLen; i++) {
@@ -149,6 +148,7 @@ export function q_renderTag(arr, str, isLast, sync) {
 function _q_renderTag(arr, isLast, sync, arrLen) {
 	return q_renderChildren(arr, isLast, sync)
 		.then(() => {
+			const srcBy$src = my.env.srcBy$src;
 			for (let i = 0; i < arrLen; i++) {
 				testLocalEventsBySrcId(sync.local, srcBy$src.get(arr[i].$src).id);
 			}
@@ -208,8 +208,8 @@ async function q_attrRender(arr, attr, isLast, ctx, sync) {
 }
 //todo
 function q_addAfterAttr($src, scope, str, ctx) {
-	const attrKey = getAttrKey(getAttrAfter(srcBy$src.get($src).descr.attr, str)),
-		dId = srcBy$src.get($src).descr.id,
+	const attrKey = getAttrKey(getAttrAfter(my.env.srcBy$src.get($src).descr.attr, str)),
+		dId = my.env.srcBy$src.get($src).descr.id,
 		byD = ctx.afterByDescrByAttr.get(dId),
 		arrI = type_q_arr($src, scope);
 	if (!ctx.strByAttrKey.has(attrKey)) {
@@ -228,7 +228,7 @@ function q_addAfterAttr($src, scope, str, ctx) {
 }
 function q_renderChildren(arr, isLast, sync) {
 	const $first = arr[0].$src;
-	if (sync.stat !== 0 || srcBy$src.get($first).descr.isCustomHtml) {
+	if (sync.stat !== 0 || my.env.srcBy$src.get($first).descr.isCustomHtml) {
 //console.log(78979, sync.stat, $first);
 		return Promise.resolve(arr);
 	}
@@ -265,19 +265,19 @@ function q_renderFlow(arr, isFirst, sync) {
 	const pSet = new Set();
 	for (const dArr of byDescr.values()) {
 //		const $i = dArr[0].$src,
-//			iSrc = srcBy$src.get($i);
+//			iSrc = my.env.srcBy$src.get($i);
 //		pSet.add(q_renderTag(dArr, iSrc !== undefined ? iSrc.descr.attr : null, type_isLast(), sync)
 		pSet.add(q_renderTag(dArr, "", type_isLast(), sync)
 			.then(() => sync.stat === 0 && q_renderFlow(dArr, false, sync)));
 //0922
-//		await q_renderTag(dArr, $i[p_isCmd] && descrById.get($i[p_descrId]).attr || null, type_isLast(), sync)
+//		await q_renderTag(dArr, $i[p_isCmd] && my.env.descrById.get($i[p_descrId]).attr || null, type_isLast(), sync)
 //			.then(() => sync.stat === 0 && q_renderFlow(dArr, false, sync));
 
 
 /*
 //		if ($i.nodeType === 1) {
 //!!!как бы так сделать, что бы не идти дальше если рендер говорит что не нужно
-			pSet.add(q_renderTag(dArr, $i[p_isCmd] && descrById.get($i[p_descrId]).attr || null, type_isLast(), sync)
+			pSet.add(q_renderTag(dArr, $i[p_isCmd] && my.env.descrById.get($i[p_descrId]).attr || null, type_isLast(), sync)
 				.then(() => sync.stat === 0 && q_renderFlow(dArr, false, sync)
 //console.log("isCancel", sync.stat, 222);
 				));
@@ -287,7 +287,8 @@ function q_renderFlow(arr, isFirst, sync) {
 }
 function q_nextGroupByDescr(arr, isFirst) {
 	const byDescr = new Map(),
-		arrLen = arr.length;
+		arrLen = arr.length,
+		srcBy$src = my.env.srcBy$src;
 	for (let i = 0; i < arrLen; i++) {
 		if (arr[i].$src.nodeType !== 1) {
 			continue;
@@ -312,11 +313,11 @@ function q_nextGroupByDescr(arr, isFirst) {
 }
 function q_execRender(arr, str, expr, isLast, sync) {
 	const req = type_req(arr[0].$src, str, expr, null, sync);
-	if (req.reqCmd.cmd.q_render) {
+	if (req.reqCmd.cmd.q_render !== null) {
 		return req.reqCmd.cmd.q_render(req, arr, isLast);
 	}
 /*
-	if (!req.reqCmd.cmd.render) {
+	if (req.reqCmd.cmd.render === null) {
 		return null;
 	}*/
 	const arrLen = arr.length,
@@ -337,22 +338,6 @@ function getAttrKey(attr) {
 	}
 	return key;
 }
-export function setReqCmd(str) {
-	const already = reqCmd.get(str);
-//	if (already) {
-	if (already !== undefined && already !== null) {
-		return true;
-	}
-	const i = str.indexOf(cmdArgsDiv),
-		cmdName = i === -1 ? str : str.substr(0, i),
-		cmd = mw_cmd.get(cmdName);
-	if (cmd === undefined) {
-		reqCmd.set(str, null);
-		return false;
-	}
-	reqCmd.set(str, type_reqCmd(cmdName, cmd, i !== -1 ? str.substr(i + cmdArgsDivLen).split(cmdArgsDiv) : []));
-	return true;
-}
 export function dispatchLocalEvents(local) {
 	for (const [sId, l] of local) {
 		if (l.animationsCount === 0) {
@@ -367,7 +352,7 @@ function testLocalEventsBySrcId(local, sId) {
 	}
 }
 function dispatchLocalEventsBySrcId(sId, l) {
-	const $src = $srcById.get(sId);
+	const $src = my.env.$srcById.get(sId);
 	if ($src === undefined) {
 		return;
 	}
@@ -378,75 +363,10 @@ function dispatchLocalEventsBySrcId(sId, l) {
 	}
 //console.log("a-render");//, $src);
 //console.log("a-render", $src);
-	const src = srcById.get(sId);
+	const src = my.env.srcById.get(sId);
 	if (!src.isMounted) {
 		src.isMounted = true;
 		$src.dispatchEvent(new CustomEvent(mountEventName, defEventInit));
 	}
 	$src.dispatchEvent(new CustomEvent(renderEventName, defEventInit));
-}
-export function type_req($src, str, expr, scope, sync) {
-	return {
-		reqCmd: reqCmd.get(str),// || null,//<- in createAttr
-		$src,
-		str,
-		expr,
-		scope,
-		sync
-	};
-}
-function type_reqCmd(cmdName, cmd, args) {
-	return {
-		cmdName,
-		cmd,
-		args
-	};
-}
-function type_q_renderCtx() {
-	return {
-		lastCount: 0,
-		afterByDescrByAttr: new Map(),
-		strByAttrKey: new Map()
-	};
-}
-export function type_isLast() {
-	return new Set();
-}
-export function type_q_arr($src, scope) {
-	return {
-		$src,
-		scope
-	};
-}
-export function type_localCounter() {
-	return {
-		animationsCount: 0,
-		newSrcId: 0
-	};
-}
-export function type_animation(handler, local, viewedSrcId) {
-	for (const p of local.values()) {
-		p.animationsCount++;
-	}
-	return {
-		handler: () => {
-			for (const p of local.values()) {
-				if (p.animationsCount > 0) {
-					p.animationsCount--;
-				}
-			}
-			return handler();
-		},
-		local,
-		viewedSrcId
-	};
-}
-export function type_renderRes(isLast, $src = null, $last = null, $attr = null, attrStr = "") {
-	return {
-		isLast,
-		$src,
-		$last,
-		$attr,
-		attrStr
-	};
 }

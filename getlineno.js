@@ -5,7 +5,7 @@
  * https://github.com/mywebengine/myweb
  */
 
-import {hideName} from "./config.js";
+import {hideName} from "./config/config.js";
 
 const lineNoAttrName = "debug:line";
 
@@ -102,5 +102,8 @@ function getLineNo($e) {
 	return $e.getAttribute(lineNoAttrName);
 }
 //API
-self.mw_createLineNo = createLineNo;
-self.mw_getLineNo = getLineNo;
+if (!self.my) {
+	self.my = {};
+}
+my.createLineNo = createLineNo;
+my.getLineNo = getLineNo;

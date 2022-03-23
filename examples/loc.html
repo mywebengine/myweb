@@ -36,7 +36,7 @@
 				</li>
 				<li>
 					<button onclick="history.pushState(undefined, undefined, `/myweb/examples/loc.html`);
-						mw_setLoc(location.href)">Go to loc example page</button>
+						my.setLoc(location.href)">Go to loc example page</button>
 				</li>
 				<li>
 					<button onclick="history.forward()">history.forward()</button>
@@ -49,8 +49,8 @@
 				<link if="loc.name === `myweb`"
 					inc="`./loc/main.html`" />
 				<link else=""
-					inc="fetch(mw_getUrl(`./loc/${loc.name}.html`, `/myweb/examples/`))
-						.then(res => res.ok ? res : fetch(mw_getUrl(`./loc/${res.status}.html`, `/myweb/examples/`)))"
+					inc="fetch(my.getUrl(`./loc/${loc.name}.html`, `/myweb/examples/`))
+						.then(res => res.ok ? res : fetch(my.getUrl(`./loc/${res.status}.html`, `/myweb/examples/`)))"
 					if="true" />
 			</div>
 		</section>

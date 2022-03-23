@@ -1,9 +1,11 @@
-import {renderTag, q_renderTag, dispatchLocalEvents, type_isLast, type_q_arr, type_animation} from "./render.js";
-import {mw_$src, renderPackSize, lazyRenderName, defIdleCallbackOpt} from "../config.js";
-import {$srcById, srcById, srcBy$src, descrById, getSrcId, get$els} from "../descr.js";
-import {preRender, is$hide, is$visible, isAnimationVisible} from "../dom.js";
-import {loadingCount} from "../loading.js";
-
+import {renderPackSize, lazyRenderName, defIdleCallbackOpt} from "../config/config.js";
+import {getSrcId, get$els} from "../descr/descr.js";
+import {preRender, is$hide, is$visible, isAnimationVisible} from "../dom/dom.js";
+import {loadingCount} from "../loading/loading.js";
+import {renderTag, q_renderTag, dispatchLocalEvents} from "./render.js";
+import {type_isLast, type_q_arr, type_animation,
+	type_delayParam, type_renderParam, type_prepareMerge, type_sync} from "./type.js";
+//!!instance
 const renderParams = new Set();
 let mw_delay = 0,
 	mw_delayId = 0,
@@ -11,22 +13,21 @@ let mw_delay = 0,
 	__oldLocHash = "";
 const delayParams = new Set();
 export const syncInRender = new Set();
-export let curRender = Promise.resolve();
-
+let curRender = Promise.resolve();
 export function getCurRender() {
 	return curRender;
 }
-export function render($src = mw_$src, delay, scope, isLinking = false) {
-	if (!srcBy$src.has($src)) {
+export function render($src = my.rootElement, delay, scope, isLinking = false) {
+	if (!my.env.srcBy$src.has($src)) {
 		preRender($src, isLinking);
 	}
-	const sId = srcBy$src.get($src).id;
+	const sId = my.env.srcBy$src.get($src).id;
 	renderParams.add(type_renderParam(sId, scope || null, "", isLinking));
 	return tryRender(delay, sId);
 }
 export function renderBySrcIds(srcs) {
 	for (const sId of srcs) {
-		if ($srcById.has(sId)) {//!! это тогда, когда мы удалили элемент, но еще не успели очистить его ссылки
+		if (my.env.$srcById.has(sId)) {//!! это тогда, когда мы удалили элемент, но еще не успели очистить его ссылки
 			renderParams.add(type_renderParam(sId, null, "", false));
 		}
 	}
@@ -110,7 +111,7 @@ function _tryRender(delayP) {
 					continue;
 				}
 				if (stat === 3) {//below
-					repeatByD.set(srcById.get(sync.renderParam.sId).descr.id, sync.renderParam);
+					repeatByD.set(my.env.srcById.get(sync.renderParam.sId).descr.id, sync.renderParam);
 					continue;
 				}
 				//above
@@ -165,7 +166,7 @@ function _tryRender(delayP) {
 //		});
 }
 function _render(byD, delayP) {
-	if (self.mw_debugLevel !== 0) {
+	if (my.debugLevel !== 0) {
 		const sIds = new Set();
 		for (const r of byD.values()) {
 			if (r.srcIds.size === 0) {
@@ -184,12 +185,12 @@ function _render(byD, delayP) {
 		pSet = new Set();
 	for (const [dId, r] of byD) {
 		const sync = type_sync(++mw_syncId, r),
-			$sync = $srcById.get(r.sId),
+			$sync = my.env.$srcById.get(r.sId),
 			arrLen = r.srcIds.size;
 		syncInRender.add(sync);
 		syncInThisRender.add(sync);
 //--		if (r.attr === null) {
-//--			r.attr = descrById.get(dId).attr;
+//--			r.attr = my.env.descrById.get(dId).attr;
 //--		}
 //todo
 //if ($sync === undefined) {
@@ -204,14 +205,14 @@ function _render(byD, delayP) {
 		const arr = new Array(arrLen);
 		let i = 0;
 		for (const sId of r.srcIds) {
-			arr[i++] = type_q_arr($srcById.get(sId), r.scope);
+			arr[i++] = type_q_arr(my.env.$srcById.get(sId), r.scope);
 		}
 //todo не могу сообразить, почему этот (1) вариант быстрее! неужелди выполняется в нескольких потоках?
 //console.time(111);
 		pSet.add(_q_renderPack(r, sync, arr));
 //		pSet.add(q_renderTag(arr, "", type_isLast(), sync)
 //.then(() => console.timeEnd(111)));
-//была проблема с с() из-за потери ид для обновлении при отмене				.then(() => !console.log(123, srcIdsByVarId.get(varIdByVarIdByProp[55].get("green")), arr) && q_renderTag(arr, "", type_isLast(), sync)));
+//была проблема с с() из-за потери ид для обновлении при отмене				.then(() => !console.log(123, my.env.srcIdsByVarId.get(my.env.varIdByVarIdByProp[55].get("green")), arr) && q_renderTag(arr, "", type_isLast(), sync)));
 	}
 //	if (renderPack.length !== 0) {
 //		pSet.add(_renderPack(renderPack));
@@ -221,7 +222,7 @@ function _render(byD, delayP) {
 			const pSet = new Set();
 			for (const sync of syncInThisRender) {
 				pSet.add(sync.promise);
-				if (self.mw_debugLevel === 0) {
+				if (my.debugLevel === 0) {
 					continue;
 				}
 				sync.promise
@@ -503,7 +504,7 @@ a.promise = 1;
 					addAnimation(sync, deferreds, false)
 						.then(rafResolve);
 				}, defIdleCallbackOpt);
-				sync.idleCallback.set(ricId, ricResolve);
+				sync.idleCallback.set(ricId, rafResolve);
 			});
 			sync.animationFrame.set(rafId, rafResolve);
 		});
@@ -528,14 +529,15 @@ a.promise = 1;
 				ricResolve();
 				return;
 			});
-			sync.animationFrame.set(rafId, rafResolve);
+			sync.animationFrame.set(rafId, ricResolve);
 		}, defIdleCallbackOpt);
 		sync.idleCallback.set(ricId, ricResolve);
 	});
 }
 export function checkScrollAnimations() {
 	const pSet = new Set(),
-		scrollSync = new Set();
+		scrollSync = new Set(),
+		$srcById = my.env.$srcById;
 	for (const sync of syncInRender) {
 		if (sync.stat !== 0 || sync.scrollAnimations.size === 0) {
 			continue;
@@ -578,7 +580,11 @@ export function addScrollAnimationsEvent($e) {
 }
 function prepareRenderParam(toCancleSync) {
 //	const renderParamByDescrId = new Map(),
-	const byD = new Map();
+	const srcById = my.env.srcById,
+		descrById = my.env.descrById,
+		srcBy$src = my.env.srcBy$src,
+		$srcById = my.env.$srcById,
+		byD = new Map();
 //console.log("prepareRenderParam", new Set(renderParams));
 //console.time("p1")
 	for (const r of renderParams) {
@@ -653,7 +659,7 @@ function prepareRenderParam(toCancleSync) {
 //console.timeEnd("p2")
 //console.time("p3")
 	const mergeByD = new Map(),
-		$top = mw_$src.parentNode;
+		$top = my.rootElement.parentNode;
 	for (const [dId, r] of byD) {//размечаем глубины и расширяем для get$els
 		let $i = $srcById.get(r.sId),
 			iSrc = srcBy$src.get($i);
@@ -873,20 +879,21 @@ export function cancelSync(sync, stat) {
 }
 function getPosStat(sync, newRenderParam) {
 //	let syncSrcId = sync.renderParam.sId;
-//	if (!srcById.has(syncSrcId)) {
+//	if (!my.env.srcById.has(syncSrcId)) {
 //		for (let l = sync.local.get(syncSrcId); l.newSrcId !== 0; l = sync.local.get(syncSrcId)) {
 //			syncSrcId = l.newSrcId;
 //		}
 //	}
 	const syncSrcId = getSrcId(sync.local, sync.renderParam.sId),
-		$sync = $srcById.get(syncSrcId);
+		$sync = my.env.$srcById.get(syncSrcId);
 //todo--
 	if ($sync === undefined) {
 //		throw new Error("!!! checkSync - hz " + syncSrcId);
 		console.warn("!!! checkSync - hz " + syncSrcId);
 		return 5;
 	}
-	const $top = mw_$src.parentNode;
+	const srcBy$src = my.env.srcBy$src,
+		$top = my.rootElement.parentNode;
 	if (newRenderParam.$els === null) {
 		for (let $i = $sync; $i !== $top; $i = $i.parentNode) {
 			const iId = srcBy$src.get($i).id;
@@ -915,64 +922,17 @@ function getPosStat(sync, newRenderParam) {
 		}
 	}
 //todo think about
-	for (let $i = $srcById.get(newRenderParam.sId).parentNode; $i !== $top; $i = $i.parentNode) {
+	for (let $i = my.env.$srcById.get(newRenderParam.sId).parentNode; $i !== $top; $i = $i.parentNode) {
 		if (srcBy$src.get($i).id === syncSrcId) {
 			return 3;
 		}
 	}
 	return 0;
 }
-function type_delayParam(sId, resolve, reject) {
-	return {
-		sId,
-		resolve,
-		reject
-	};
-}
-function type_renderParam(sId, scope, str, isLinking) {
-	return {
-		sId,
-		scope,
-		str,
-		isLinking,
-		isLazyRender: false,
-		srcIds: new Set(),
-		$els: null
-	};
-}
-function type_prepareMerge(len, firstAsOneIdx) {
-	return {
-		len,
-		descrId: new Set(),
-		firstAsOneIdx
-//		asOneIdx: new Set()
-	};
-}
-function type_sync(syncId, renderParam) {
-	let resolve;
-	const promise = new Promise(res => resolve = res);
-	return {
-		syncId,
-		renderParam,
-		local: new Map(),
-
-		beforeAnimations: new Set(),
-		animations: new Set(),
-		afterAnimations: new Set(),
-		scrollAnimations: new Set(),
-		onreadies: new Set(),
-
-		idleCallback: new Map(),
-		animationFrame: new Map(),
-		stat: 0,
-		promise,
-		resolve
-	};
-}
 function infoBySrcIds(sIds) {
 	const i = {};
 	for (const sId of sIds) {
-		i[sId] = $srcById.get(sId);
+		i[sId] = my.env.$srcById.get(sId);
 	}
 	return i;
 }
