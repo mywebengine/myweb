@@ -1,7 +1,6 @@
 import {renderBySrcIds} from "../render/algo.js";
-import {type_cacheValue} from "../cache/type.js";
 import {p_target, defIdleCallbackOpt} from "../config/config.js";
-import {getNewId, get$els} from "../descr/descr.js";
+import {getNewId, get$els} from "../description/descr.js";
 /*
 //!!instance
 export const varIdByVar = new Map();
@@ -16,20 +15,20 @@ export const srcIdsByVarId = new Map();
 
 //todo--
 self._testVars = function() {
-	const v = new Set(Array.from(my.env.varIdByVar.values()));
-	for (const [vId, srcIds] of my.env.srcIdsByVarId) {
+	const v = new Set(Array.from(my.ctx.varIdByVar.values()));
+	for (const [vId, srcIds] of my.ctx.srcIdsByVarId) {
 		let fv;
 		if (!v.has(vId)) {
 			let f;
 			for (const vvId of v) {
-				const vIdByProp = my.env.varIdByVarIdByProp.get(vvId);
+				const vIdByProp = my.ctx.varIdByVarIdByProp.get(vvId);
 				if (vIdByProp === undefined) {
 					continue;
 				}
 				for (const pId of vIdByProp.values()) {
 					if (pId === vId) {
 						for (const sId of srcIds) {
-							if (!my.env.$srcById.has(sId)) {
+							if (!my.ctx.$srcById.has(sId)) {
 								console.log(111222, vId, sId);
 							}
 						}
@@ -46,30 +45,30 @@ self._testVars = function() {
 			}
 		} else {
 			for (const sId of srcIds) {
-				if (!my.env.$srcById.has(sId)) {
+				if (!my.ctx.$srcById.has(sId)) {
 					console.log(11111, vId, sId);
 				}
 			}
 		}
 	}
-	for (const vId of my.env.varIdByVar.keys()) {
-		const s = my.env.srcIdsByVarId.get(vId);
+	for (const vId of my.ctx.varIdByVar.keys()) {
+		const s = my.ctx.srcIdsByVarId.get(vId);
 		if (!s) {// || !s.has(sId)) {
 			continue;
 		}
 		for (const sId of s) {
-			if (!my.env.$srcById.has(sId)) {
+			if (!my.ctx.$srcById.has(sId)) {
 				console.log(1, sId);
 			}
 		}
-		const vIdByProp = my.env.varIdByVarIdByProp.get(vId);
+		const vIdByProp = my.ctx.varIdByVarIdByProp.get(vId);
 		if (vIdByProp !== undefined) {
 			for (const pId of vIdByProp.values()) {
-				const propS = my.env.srcIdsByVarId.get(pId);
+				const propS = my.ctx.srcIdsByVarId.get(pId);
 				if (propS) {// && propS.has(sId)) {
 //					_del(pId, propS, sId);//, d, dId);
 					for (const sId of propS) {
-						if (!my.env.$srcById.has(sId)) {
+						if (!my.ctx.$srcById.has(sId)) {
 							console.log(2, sId);
 						}
 					}
@@ -396,8 +395,8 @@ function getTarget(v) {
 }
 //export 
 function addVar(t, n, v, $src) {
-	const tId = my.env.varIdByVar.get(t),
-		src = my.env.srcBy$src.get($src),
+	const tId = my.ctx.varIdByVar.get(t),
+		src = my.ctx.srcBy$src.get($src),
 		sId = src.id,
 		descr = src.descr;
 //	if (!sId) {
@@ -412,63 +411,63 @@ console.warn(445435345, n, typeof n, t, n, v, $src);
 			n = Number(n);
 		}*/
 		if (tId) {
-			const s = my.env.srcIdsByVarId.get(tId);
+			const s = my.ctx.srcIdsByVarId.get(tId);
 			if (s !== undefined) {
 				s.add(sId);
 			} else {
-				my.env.srcIdsByVarId.set(tId, new Set([sId]));
+				my.ctx.srcIdsByVarId.set(tId, new Set([sId]));
 //todo
 //console.warn(-1, tId);
 			}
 //1
 			descr.varIds.add(tId);
 
-			const vIdByProp = my.env.varIdByVarIdByProp.get(tId);
+			const vIdByProp = my.ctx.varIdByVarIdByProp.get(tId);
 			if (vIdByProp !== undefined) {
 				const propId = vIdByProp.get(n);
 				if (propId !== undefined) {
 //1
 					descr.varIds.add(propId);//<--100%
 
-					const s = my.env.srcIdsByVarId.get(propId);
+					const s = my.ctx.srcIdsByVarId.get(propId);
 					if (s !== undefined) {
 						s.add(sId);
 						return;
 					}
-					my.env.srcIdsByVarId.set(propId, new Set([sId]));
+					my.ctx.srcIdsByVarId.set(propId, new Set([sId]));
 //console.log(-2, propId, tId, n, v);
 					return;
 				}
 				const newPropId = getNewId();
-//console.log(-33, my.env.varIdByVarIdByProp.get(tId));
+//console.log(-33, my.ctx.varIdByVarIdByProp.get(tId));
 //console.log(-3, newPropId, tId, n, v);
 //alert(1);
 //1
 				vIdByProp.set(n, newPropId);
-				my.env.srcIdsByVarId.set(newPropId, new Set([sId]));
+				my.ctx.srcIdsByVarId.set(newPropId, new Set([sId]));
 				descr.varIds.add(newPropId);
 				return;
 			}
 			const newPropId = getNewId();
-			my.env.varIdByVarIdByProp.set(tId, new Map([[n, newPropId]]));
-			my.env.srcIdsByVarId.set(newPropId, new Set([sId]));
-//console.log(-44, new Set(my.env.varIdByVarIdByProp.get(tId)));
+			my.ctx.varIdByVarIdByProp.set(tId, new Map([[n, newPropId]]));
+			my.ctx.srcIdsByVarId.set(newPropId, new Set([sId]));
+//console.log(-44, new Set(my.ctx.varIdByVarIdByProp.get(tId)));
 //console.log(-4, newPropId, tId, n, v);
 //1
 			descr.varIds.add(newPropId);
 			return;
 		}
 		const nId = getNewId();
-		my.env.varIdByVar.set(t, nId);
-		my.env.varById.set(nId, t);
-		my.env.srcIdsByVarId.set(nId, new Set([sId]));
+		my.ctx.varIdByVar.set(t, nId);
+		my.ctx.varById.set(nId, t);
+		my.ctx.srcIdsByVarId.set(nId, new Set([sId]));
 //console.log(-5, nId);
 //1
 		descr.varIds.add(nId);
 
 		const newPropId = getNewId();
-		my.env.varIdByVarIdByProp.set(nId, new Map([[n, newPropId]]));
-		my.env.srcIdsByVarId.set(newPropId, new Set([sId]));
+		my.ctx.varIdByVarIdByProp.set(nId, new Map([[n, newPropId]]));
+		my.ctx.srcIdsByVarId.set(newPropId, new Set([sId]));
 //console.log(-6, newPropId, nId, t, n, v, $src);
 //alert(1)
 //1
@@ -476,31 +475,31 @@ console.warn(445435345, n, typeof n, t, n, v, $src);
 		return;
 	}
 	if (tId) {
-		const s = my.env.srcIdsByVarId.get(tId);
+		const s = my.ctx.srcIdsByVarId.get(tId);
 		if (s !== undefined) {
 			s.add(sId);
 		} else {
-			my.env.srcIdsByVarId.set(tId, new Set([sId]));
+			my.ctx.srcIdsByVarId.set(tId, new Set([sId]));
 //console.log(-7, tId);
 		}
 //1
 		descr.varIds.add(tId);
 	} else {
 		const nId = getNewId();
-		my.env.varIdByVar.set(t, nId);
-		my.env.varById.set(nId, t);
-		my.env.srcIdsByVarId.set(nId, new Set([sId]));
+		my.ctx.varIdByVar.set(t, nId);
+		my.ctx.varById.set(nId, t);
+		my.ctx.srcIdsByVarId.set(nId, new Set([sId]));
 //console.log(-8, sId);
 //1
 		descr.varIds.add(nId);
 	}
-	const vId = my.env.varIdByVar.get(v);
+	const vId = my.ctx.varIdByVar.get(v);
 	if (vId) {
-		const s = my.env.srcIdsByVarId.get(vId);
+		const s = my.ctx.srcIdsByVarId.get(vId);
 		if (s !== undefined) {
 			s.add(sId);
 		} else {
-			my.env.srcIdsByVarId.set(vId, new Set([sId]));
+			my.ctx.srcIdsByVarId.set(vId, new Set([sId]));
 //console.log(-9, sId);
 		}
 //1
@@ -508,15 +507,15 @@ console.warn(445435345, n, typeof n, t, n, v, $src);
 		return;
 	}
 	const newValId = getNewId();
-	my.env.varIdByVar.set(v, newValId);
-	my.env.varById.set(newValId, v);
-	my.env.srcIdsByVarId.set(newValId, new Set([sId]));
+	my.ctx.varIdByVar.set(v, newValId);
+	my.ctx.varById.set(newValId, v);
+	my.ctx.srcIdsByVarId.set(newValId, new Set([sId]));
 //console.log(-10, sId);
 //1
 	descr.varIds.add(newValId);
 }
-function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); - если так сделалть, то после первого - будут удалены my.env.varIdByVar.get(oldId), что приведет к тому что все пойдет по ветке !oldId - непонятно нужно ли что-то с этим делать??
-	const tId = my.env.varIdByVar.get(t);
+function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); - если так сделалть, то после первого - будут удалены my.ctx.varIdByVar.get(oldId), что приведет к тому что все пойдет по ветке !oldId - непонятно нужно ли что-то с этим делать??
+	const tId = my.ctx.varIdByVar.get(t);
 //console.info("setVar", "name=>", n, typeof n, "\nvalue=>", v, "\ntarget=>", t, "\ntId=>", tId, "\noldVal=>", oldV);
 	if (!tId) {//!tId - такое получается когда данные изменяются, а отрисовки ещё небыло - первая загрузка странцы и добавление данных на старте - это корректно
 		return;
@@ -527,12 +526,12 @@ function setVal(t, n, v, oldV) {//!! data.arr.unshift(1); data.arr.unshift(2); -
 console.warn(423423, n, typeof n, t, n, v, oldV)
 		n = Number(n);
 	}*/
-	const vIdByProp = my.env.varIdByVarIdByProp.get(tId),
+	const vIdByProp = my.ctx.varIdByVarIdByProp.get(tId),
 //		oldScalarId = vIdByProp !== undefined ? vIdByProp.get(n) : 0,
-//		oId = oldScalarId ? my.env.varIdByVar.get(oldV) : 0;
+//		oId = oldScalarId ? my.ctx.varIdByVar.get(oldV) : 0;
 		oldScalarId = vIdByProp !== undefined && vIdByProp.get(n) || 0,
-		oId = oldScalarId !== 0 && my.env.varIdByVar.get(oldV) || 0;
-	if (my.envdebugLevel === 2) {
+		oId = oldScalarId !== 0 && my.ctx.varIdByVar.get(oldV) || 0;
+	if (my.debugLevel === 2) {
 		console.info("my.proxy => setVar", "\n\tname=>", n, "\n\tvalue=>", v, "\n\toldVal=>", oldV, "\n\ttId=>", tId, "\n\ttarget=>", t, "\n\toldId=>", oId, "\n\toldScalarId=>", oldScalarId);//, "\n\t$current=>", cur$src);
 	}
 //console.error("setVar", n, v, tId, oId, oldV, oldScalarId, cur$src);
@@ -547,17 +546,17 @@ console.warn(423423, n, typeof n, t, n, v, oldV)
 			if (vIdByProp) {
 				vIdByProp.set(n, newPropId);
 			} else {
-				my.env.varIdByVarIdByProp.set(tId, new Map([[n, newPropId]]));
+				my.ctx.varIdByVarIdByProp.set(tId, new Map([[n, newPropId]]));
 			}
 		} else {
 			const newId = getNewId();
-			my.env.varIdByVar.set(v, newId);
-			my.env.varById.set(newId, v);
+			my.ctx.varIdByVar.set(v, newId);
+			my.ctx.varById.set(newId, v);
 		}
 	}*/
 /*--
 	if (!oId) {
-		const s = my.env.srcIdsByVarId.get(tId);//для push - нового элемента нет, а обновить надо - это актуально когда нет if .length
+		const s = my.ctx.srcIdsByVarId.get(tId);//для push - нового элемента нет, а обновить надо - это актуально когда нет if .length
 		if (s) {
 //			for (const sId of s) {//
 //console.log(sId, cache[sId]);
@@ -572,13 +571,13 @@ console.warn(423423, n, typeof n, t, n, v, oldV)
 		vIdByProp.delete(n);
 //!!todo GC
 		if (vIdByProp.size === 0) {
-			my.env.varIdByVarIdByProp.delete(tId);
+			my.ctx.varIdByVarIdByProp.delete(tId);
 		}
 	}
-//	_setVal(t, n, oldV, my.env.srcIdsByVarId.get(oId || tId), oId);
+//	_setVal(t, n, oldV, my.ctx.srcIdsByVarId.get(oId || tId), oId);
 //}
 //function _setVal(t, n, oldV, s, oId) {
-	const s = my.env.srcIdsByVarId.get(oId || tId);
+	const s = my.ctx.srcIdsByVarId.get(oId || tId);
 	if (s === undefined) {
 //!!todo
 //console.error("!S!", t, n, oldV, s, oId);
@@ -588,9 +587,9 @@ console.warn(423423, n, typeof n, t, n, v, oldV)
 //console.error("_setVal", t, n, oldV, s, oId);
 	const toRender = new Set(s),
 		toClear = new Set(),
-		srcBy$src = my.env.srcBy$src;//s);
+		srcBy$src = my.ctx.srcBy$src;//s);
 	for (const sId of s) {
-		const $i = my.env.$srcById.get(sId);
+		const $i = my.ctx.$srcById.get(sId);
 		if ($i === undefined || toClear.has(sId)) {//похоже это при удалении элементов
 //			console.warn(2, sId);
 			continue;
@@ -615,16 +614,16 @@ console.warn(423423, n, typeof n, t, n, v, oldV)
 //console.log(1, toClear, n);
 /*
 for (const sId of toClear) {
-	console.log(2, sId, my.env.$srcById[sId]);
+	console.log(2, sId, my.ctx.$srcById[sId]);
 }*/
 	if (oId !== 0) {
 		const deletedVarId = new Set();
 		for (const sId of toClear) {
-			const c = my.env.srcById.get(sId).cache;
+			const c = my.ctx.srcById.get(sId).cache;
 //			if (c === null) {
 //				continue;
 //			}
-			c.value = type_cacheValue();
+			c.value = new Map();
 //console.log(61, sId)
 /*todo
 			if (!t[p_isUnshift]) {
@@ -636,7 +635,7 @@ console.log(11111111, sId);
 		if (deletedVarId.size !== 0) {
 //todo
 			requestIdleCallback(() => {
-				for (const d of my.env.descrById.values()) {
+				for (const d of my.ctx.descrById.values()) {
 					if (d.varIds === null) {
 						continue;
 					}
@@ -651,11 +650,11 @@ console.log(11111111, sId);
 	} else {
 //console.log(1111, n, oldV, toClear);
 		for (const sId of toClear) {
-			const c = my.env.srcById.get(sId).cache;
+			const c = my.ctx.srcById.get(sId).cache;
 //			if (c === null) {
 //				continue;
 //			}
-			c.value = type_cacheValue();//<-если это новый элемент массива
+			c.value = new Map();//<-если это новый элемент массива
 //console.log(62, sId)
 //todo c.current нужен для храниения текущего значения команды, удаляя его мы нарушаем идею его использования
 //			c.current = type_cacheCurrent();
@@ -666,7 +665,7 @@ console.log(11111111, sId);
 	renderBySrcIds(toRender);
 }
 function setInnerSrcIdSetBy$src(toClear, $i) {
-	const srcBy$src = my.env.srcBy$src,
+	const srcBy$src = my.ctx.srcBy$src,
 		$parent = $i.parentNode;
 	do {
 		const iSrc = srcBy$src.get($i);
@@ -702,7 +701,7 @@ function setInnerSrcIdSetBy$src(toClear, $i) {
 function decVar(t, n, v, sId, vId, deletedVarId) {
 	if (vId === 0) {
 		if (isScalarType.has(typeof v) || v === null) {
-			const vIdByProp = my.env.varIdByVarIdByProp.get(my.env.varIdByVar.get(t));
+			const vIdByProp = my.ctx.varIdByVarIdByProp.get(my.ctx.varIdByVar.get(t));
 			if (vIdByProp !== undefined) {
 				vId = vIdByProp.get(n);
 				if (vId === undefined) {
@@ -710,14 +709,14 @@ function decVar(t, n, v, sId, vId, deletedVarId) {
 				}
 			}
 		} else {
-			vId = my.env.varIdByVar.get(v);
+			vId = my.ctx.varIdByVar.get(v);
 			if (vId === undefined) {
 				vId = 0;
 			}
 		}
 	}
 	if (vId !== 0) {
-		const s = my.env.srcIdsByVarId.get(vId);
+		const s = my.ctx.srcIdsByVarId.get(vId);
 		if (s === undefined || !s.has(sId)) {
 			delVar(vId, v, t, n, deletedVarId);
 			return;
@@ -745,29 +744,29 @@ function decVar(t, n, v, sId, vId, deletedVarId) {
 function delVar(vId, v, t, n, deletedVarId) {
 //console.log("DEL", vId);
 	deletedVarId.add(vId);
-	my.env.srcIdsByVarId.delete(vId);
+	my.ctx.srcIdsByVarId.delete(vId);
 	if (isScalarType.has(typeof v) || v === null) {
-		const vIdByProp = my.env.varIdByVarIdByProp.get(vId = my.env.varIdByVar.get(t));
+		const vIdByProp = my.ctx.varIdByVarIdByProp.get(vId = my.ctx.varIdByVar.get(t));
 		if (vIdByProp === undefined) {
 			return;
 		}
 		vIdByProp.delete(n);
 		if (vIdByProp.size === 0) {
-			my.env.varIdByVarIdByProp.delete(vId);
+			my.ctx.varIdByVarIdByProp.delete(vId);
 		}
 		return;
 	}
 	//пробегать по свойствам объекта и удалять их - не нужно, так как свойства могут быть (объекты и скаляры) использоваться где-нибудь ещё
-	my.env.varIdByVar.delete(v);
-	my.env.varById.delete(vId);
-//!!	my.env.varIdByVarIdByProp.delete(vId);
-	const vIdByProp = my.env.varIdByVarIdByProp.get(vId);
+	my.ctx.varIdByVar.delete(v);
+	my.ctx.varById.delete(vId);
+//!!	my.ctx.varIdByVarIdByProp.delete(vId);
+	const vIdByProp = my.ctx.varIdByVarIdByProp.get(vId);
 //!! не надо - там должно быть песто, но если нет - то можно будет заметить
 //!! сейчас там то что не используется, - по какойто причине в get прокси запрашивается "then" - хотя в шаблоне нет такого запроса
 	if (vIdByProp !== undefined) {
-		my.env.varIdByVarIdByProp.delete(vId);
+		my.ctx.varIdByVarIdByProp.delete(vId);
 		for (const pId of vIdByProp.values()) {
-			my.env.srcIdsByVarId.delete(pId);
+			my.ctx.srcIdsByVarId.delete(pId);
 		}
 	}
 }

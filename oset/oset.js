@@ -1,4 +1,3 @@
-//import {type_cacheValue} from "../cache/type.js";
 import {p_target} from "../config/config.js";
 
 export function oset(t, n, v) {

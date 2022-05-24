@@ -1,12 +1,12 @@
-﻿import {locVarName} from "../config/config.js";
+﻿import Config from "../config/Config.js";
 import {oset} from "../oset/oset.js";
-import {getProxy} from "../proxy/proxy.js";
-import {type_loc} from "./type.js";
+//import {getProxy} from "../proxy/proxy.js";
+//import {Loc} from "./Loc.js";
 
 //const trimSlashRe = /(^\/|\/$)/g;
 
 export function setLoc(url) {
-	oset(self, locVarName, getLoc(url));
+	oset(self, Config.locVarName, getLoc(url));
 }
 export function getLoc(url) {//, defPageName = "") {
 	url = new URL(url);
@@ -18,11 +18,24 @@ export function getLoc(url) {//, defPageName = "") {
 	for (const [n, v] of url.searchParams) {
 		query.set(n, v);
 	}
-	return type_loc(url.origin, url.href, url.pathname, query, url.hash);
+	return {
+		origin: url.origin,
+		href: url.href,
+		pathname: url.pathname,
+//		name,
+//		args,
+//		param: {},
+		query,
+		hash: {
+//			href: url.hash,
+			path: url.hash.substr(1)
+		}
+	};
+//	return new Loc(url.origin, url.href, url.pathname, query, url.hash);
 }
 //function parsePath(href, path, defPageName) {
 //	const args = path.replace(trimSlashRe, "").split("/"),
-//		loc = type_loc(href, path, args[0] || defPageName, args);
+//		loc = new Loc(href, path, args[0] || defPageName, args);
 //	for (let i = args.length - 1; i > 0; i -= 2) {
 //		loc.param[args[i - 1]] = decodeURIComponent(args[i]);
 //	}

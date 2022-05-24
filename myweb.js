@@ -8,15 +8,14 @@ import {render, setDelay, renderLoop, addAnimation, checkScrollAnimations} from 
 import "./addons/addons.js";
 import "./api/api.js";
 import {globVarName, locVarName, viewVarName} from "./config/config.js";
-import {type_env} from "./env/type.js";
+import {Env} from "./env/Env.js";
 import {isAnimationVisible} from "./dom/dom.js";
 import {getLoc, setLoc} from "./loc/loc.js";
 import {getProxy} from "./proxy/proxy.js";
 import {getView, setView} from "./view/view.js";
 
 import {attrCmdName, execCmdName, fetchCmdName, foreachCmdName, htmlCmdName,
-	ifCmdName, elseifCmdName, elseCmdName,
-	switchCmdName, caseCmdName, defaultCmdName,
+	ifCmdName, elseifCmdName, elseCmdName, switchCmdName, caseCmdName, defaultCmdName,
 	incCmdName, onCmdName, scopeCmdName, fillingCmdName, watchCmdName} from "./config/config.js";
 
 import {addCommand} from "./cmd/cmd.js";
@@ -37,13 +36,14 @@ import watchCmd from "./cmd/watch/watch.js";
 //	return false;
 //}
 //
-function clientInit() {
-	if (!self.my) {
-		self.my = {};
-	}
+if (self.my === undefined) {
+	self.my = {};
+}
+
+function clientInit(env = new Env()) {
 	my.document = document;
 	my.rootElement = document.documentElement;
-	my.env = type_env();
+	my.ctx = env;
 
 
 addCommand(attrCmdName, attrCmd);
@@ -66,8 +66,8 @@ addCommand(scopeCmdName, scopeCmd);
 addCommand(fillingCmdName, fillingCmd);
 addCommand(watchCmdName, watchCmd);
 //ssr
-//for (const [str, r] of my.env.reqCmd) {
-//	r.cmd = my.env.cmd.get(str.substr(0, str.indexOf(cmdArgsDiv)));
+//for (const [str, r] of my.ctx.reqCmd) {
+//	r.cmd = my.ctx.cmd.get(str.substr(0, str.indexOf(cmdArgsDiv)));
 //}
 
 

@@ -101,7 +101,6 @@ function createLineNo(url, html, $src) {
 function getLineNo($e) {
 	return $e.getAttribute(lineNoAttrName);
 }
-//API
 if (!self.my) {
 	self.my = {};
 }
