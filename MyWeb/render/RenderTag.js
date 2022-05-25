@@ -35,9 +35,9 @@ export default RenderTag extends Loading {
 //		}
 		const attr = str === "" ? src.descr.attr : this.getAttrAfter(src.descr.attr, str);
 		if (attr === null || attr.size === 0) {
-			return this._renderChildren($src, scope, sync, sId, $src);
+			return this.renderChildren($src, scope, sync, sId, $src);
 		}
-		return this._attrRender($src, scope, attr, sync)
+		return this.attrRender($src, scope, attr, sync)
 			.then(res => {
 				if (sync.stat !== 0) {
 					return $src;
@@ -54,11 +54,11 @@ export default RenderTag extends Loading {
 //					console.warn(sync.stat, "todo если мы дошли до сюда - то тег изменился а дети остались теми же - этого не должно быть - должны были ути по isLast");
 //					return null;
 //				}
-				return this._renderChildren($src, scope, sync, sId, $ret);
+				return this.renderChildren($src, scope, sync, sId, $ret);
 			});
 	}
 	//private
-	async _attrRender($src, scope, attr, sync) {
+	async attrRender($src, scope, attr, sync) {
 		let $last = null;
 		for (const [n, v] of attr) {
 			const req = this.createReq($src, n, v, scope, sync),
@@ -97,7 +97,7 @@ export default RenderTag extends Loading {
 		}
 		return new RenderRes(false, $src, $last);
 	}
-	async _renderChildren($i, scope, sync, sId, $ret) {
+	async renderChildren($i, scope, sync, sId, $ret) {
 		const srcBy$src = this.ctx.srcBy$src;
 		if (sync.stat !== 0 || srcBy$src.get($i).descr.isCustomHtml) {
 			return $i;
@@ -131,10 +131,11 @@ export default RenderTag extends Loading {
 	testLocalEventsBySrcId(local, sId) {
 		const l = local.get(sId);
 		if (l.animationsCount === 0) {
-			this._dispatchLocalEventsBySrcId(sId, l);
+			this.dispatchLocalEventsBySrcId(sId, l);
 		}
 	}
-	_dispatchLocalEventsBySrcId(sId, l) {
+	//private
+	dispatchLocalEventsBySrcId(sId, l) {
 		const $src = this.ctx.$srcById.get(sId);
 		if ($src === undefined) {
 			return;

@@ -32,7 +32,7 @@ export default class Dom extends Description {
 				$i = $i.content.firstChild;
 				continue;
 			}
-			$i = this._preRenderCreate($i, idAlias, isLinking);
+			$i = this.preRenderCreate($i, idAlias, isLinking);
 			if ($i.parentNode === $parent) {//если мы не ушли вглубь - значит и вправо двигаться нельзя
 				break;
 			}
@@ -45,7 +45,7 @@ export default class Dom extends Description {
 				if ($i.nodeType === 11) {
 					$i = $p.pop();
 				}
-				$i = this._preRenderCreate($i, idAlias, isLinking);
+				$i = this.preRenderCreate($i, idAlias, isLinking);
 				if ($i.parentNode === $parent) {
 					$i = null;
 					break;
@@ -58,7 +58,7 @@ export default class Dom extends Description {
 		} while ($i !== null);
 	}
 	//private
-	_preRenderCreate($e, idAlias, isLinking) {
+	preRenderCreate($e, idAlias, isLinking) {
 		if ($e.nodeType !== 1) {
 			return $e.nodeType === 3 ? this.replaceTextBlocks($e) : $e;
 		}
@@ -66,7 +66,7 @@ export default class Dom extends Description {
 			this.createSrc($e);
 			return $e;
 		}
-		const src = this._preRenderGetSrc($e, idAlias);
+		const src = this.preRenderGetSrc($e, idAlias);
 		if (!src.isCmd) {
 			return $e;
 		}
@@ -115,7 +115,7 @@ export default class Dom extends Description {
 		return $e;
 	}
 	//private
-	_preRenderGetSrc($e, idAlias) {
+	preRenderGetSrc($e, idAlias) {
 		const dId = $e.getAttribute(Config.descrIdName);
 		if (dId === null) {
 			return this.createSrc($e);
@@ -131,7 +131,7 @@ export default class Dom extends Description {
 	}
 /*
 	//private
-	_preRenderCopy($f, fDescr, $i) {
+	preRenderCopy($f, fDescr, $i) {
 		const $parent = $f.parentNode,
 			$p = [],
 			$fP = [];
@@ -808,10 +808,10 @@ if (!$e.parentNode) {
 		if (src !== undefined ? !src.isHide : ($e.nodeName !== "TEMPLATE" || $e.getAttribute(Config.hideName) === null)) {
 			return;
 		}
-		req.sync.animations.add(new Animation(() => this._show(req, $e, src), req.sync.local, 0));//my.ctx.srcBy$src.get($e).id]));
+		req.sync.animations.add(new Animation(() => this.executeShowAnimation(req, $e, src), req.sync.local, 0));//my.ctx.srcBy$src.get($e).id]));
 	}
 	//private
-	_show(req, $e, src) {
+	executeShowAnimation(req, $e, src) {
 		const $new = $e.content.firstChild;
 		if (!$new || $new.nextSibling !== null) {
 			//todo была ошибка, что $e ет в srcBy$src - повоторить не получается - эта шибка проявляется если Препаре даёт сбой, на данный момент не замечены проблемы в нём
@@ -830,16 +830,16 @@ if (!$e.parentNode) {
 		const src = my.ctx.srcBy$src.get($e);
 		if (src !== undefined) {
 			if (!src.isHide) {
-				req.sync.animations.add(new Animation(() => this._hide($e, src), req.sync.local, src.id));
+				req.sync.animations.add(new Animation(() => this.executeHideAnimation($e, src), req.sync.local, src.id));
 			}
 			return;
 		}
 		if ($e.nodeType === 1 ? $e.nodeName === "TEMPLATE" && $e.getAttribute(Config.hideName) !== null : $e.nodeType !== 8) {
-			req.sync.animations.add(new Animation(() => this._hide($e, src), req.sync.local, 0));
+			req.sync.animations.add(new Animation(() => this.executeHideAnimation($e, src), req.sync.local, 0));
 		}
 	}
 	//private
-	_hide($e, src) {
+	executeHideAnimation($e, src) {
 		let $i = $e;
 		const srcBy$src = my.ctx.srcBy$src,
 			$new = my.document.createElement("template"),

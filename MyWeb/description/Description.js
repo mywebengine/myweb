@@ -75,7 +75,7 @@ export default class Description extends Cmd {
 	}
 	createDescr($e, sId) {
 		const id = this.getNewId(),
-			attr = this._createAttr($e);
+			attr = this.createAttr($e);
 		if (attr.size === 0) {
 			const descr = new Descr(id, sId, null, null);
 			my.ctx.descrById.set(id, descr);
@@ -115,7 +115,8 @@ export default class Description extends Cmd {
 		this.ctx.loadingCount.set(sId, l);
 		this.ctx.loadingCount.delete($e);
 }*/
-	_createAttr($e) {
+	//private
+	createAttr($e) {
 		const attr = new Map(),
 			attrs = $e.attributes,
 			attrsLen = attrs.length;

@@ -5,7 +5,7 @@ import MyWeb from "./MyWeb/api/Api.js";
 import {getView, setView} from "./view/view.js";
 
 const myWeb = new MyWeb();
-myWeb.initCommands();
+myWeb.addCommands();
 myWeb.setContext(new Context());
 myWeb.createApi();
 

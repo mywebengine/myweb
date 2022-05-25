@@ -19,7 +19,7 @@ export default class Attr extends Command {
 	render(req) {
 		return this.eval2(req, req.$src, true)
 			.then(val => {
-				this._render(req, req.$src, this.getName(req), val);
+				this.renderByValue(req, val, this.getName(req), req.$src);
 				return null;
 			});
 	}
@@ -30,14 +30,14 @@ export default class Attr extends Command {
 					n = this.getName(req);
 				for (let i = 0; i < arrLen; i++) {
 					if (!isLast.has(i)) {
-						this._render(req, arr[i].$src, n, vals[i]);
+						this.renderByValue(req, vals[i], n, arr[i].$src);
 					}
 				}
 				return null;
 			});
 	}
 	//private
-	_render(req, $src, n, v) {
+	renderByValue(req, v, n, $src) {
 //console.log(1111, req, $src, n, v);
 		const toggleVal = req.reqCmd.args[1],
 //			c = getCacheBySrcId($src[p_srcId]),

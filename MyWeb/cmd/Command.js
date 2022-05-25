@@ -1,4 +1,10 @@
 export default class Command {
+	my  = null;
+	isCustomHtml = false;
+	isAsOne = false;
+	constructor(my) {
+		this.my = my;
+	}
 //	render(req) {
 //		...
 //	}
@@ -11,6 +17,4 @@ export default class Command {
 //	get$els($src, str, expr, pos) {
 //		...
 //	}
-	isCustomHtml = false;
-	isAsOne = false;
 };

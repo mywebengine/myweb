@@ -15,7 +15,7 @@ import fillingCmd from "./filling/filling.js";
 import watchCmd from "./watch/watch.js";
 
 export default class Cmd extends MyWeb {
-	initCommands() {
+	addCommands() {
 		this.addCommand(Config.attrCmdName, attrCmd);
 		this.addCommand(Config.execCmdName, execCmd);
 		this.addCommand(Config.fetchCmdName, fetchCmd);
@@ -37,7 +37,7 @@ export default class Cmd extends MyWeb {
 		this.addCommand(Config.watchCmdName, watchCmd);
 	}
 	addCommand(cmdName, cmd) {
-		this.cmd.set(cmdName, new cmd());
+		this.cmd.set(cmdName, new cmd(this));
 	}
 	setReqCmd(str) {
 		const already = this.ctx.reqCmd.get(str);

@@ -44,14 +44,14 @@ export default QRenderTag extends RenderTag {
 		const src = srcBy$src.get(arr[0].$src),
 			attr = str === "" ? src.descr.attr : this.getAttrAfter(src.descr.attr, str);
 		if (attr !== null && attr.size !== 0) {
-			return this._q_attrRender(arr, attr, isLast, new Q_renderCtx(), sync)
+			return this.q_attrRender(arr, attr, isLast, new Q_renderCtx(), sync)
 				.then(lastCount => lastCount === arrLen ? arr : this._q_renderTag(arr, isLast, sync, arrLen));
 		}
 		return this._q_renderTag(arr, isLast, sync);
 	}
 	//private
 	_q_renderTag(arr, isLast, sync, arrLen) {
-		return this._q_renderChildren(arr, isLast, sync)
+		return this.q_renderChildren(arr, isLast, sync)
 			.then(() => {
 				const srcBy$src = this.ctx.srcBy$src;
 				for (let i = 0; i < arrLen; i++) {
@@ -61,10 +61,10 @@ export default QRenderTag extends RenderTag {
 			});
 	}
 	//private
-	async _q_attrRender(arr, attr, isLast, ctx, sync) {
+	async q_attrRender(arr, attr, isLast, ctx, sync) {
 		const arrLen = arr.length;
 		for (const [n, v] of attr) {
-			const res = await this._q_execRender(arr, n, v, isLast, sync);
+			const res = await this.q_execRender(arr, n, v, isLast, sync);
 			if (sync.stat !== 0) {
 //console.log("isCancel", sync.stat, n, v, 2);
 				return ctx.lastCount;
@@ -83,8 +83,8 @@ export default QRenderTag extends RenderTag {
 				}
 				if (resI.attrStr !== "") {
 					const arrI = arr[i];
-//					this._q_addAfterAttr(resI.$attr || resI.$src || arrI.$src, arrI.scope, resI.attrStr, ctx);
-					this._q_addAfterAttr(resI.$attr, arrI.scope, resI.attrStr, ctx);
+//					this.q_addAfterAttr(resI.$attr || resI.$src || arrI.$src, arrI.scope, resI.attrStr, ctx);
+					this.q_addAfterAttr(resI.$attr, arrI.scope, resI.attrStr, ctx);
 					arrI.$src = resI.$last || resI.$src || resI.$attr || arrI.$src;
 					isLast.add(i);
 					ctx.lastCount++;
@@ -114,8 +114,8 @@ export default QRenderTag extends RenderTag {
 	}
 //todo
 	//private
-	_q_addAfterAttr($src, scope, str, ctx) {
-		const attrKey = this._getAttrKey(this.getAttrAfter(this.ctx.srcBy$src.get($src).descr.attr, str)),
+	q_addAfterAttr($src, scope, str, ctx) {
+		const attrKey = this.getAttrKey(this.getAttrAfter(this.ctx.srcBy$src.get($src).descr.attr, str)),
 			dId = this.ctx.srcBy$src.get($src).descr.id,
 			byD = ctx.afterByDescrByAttr.get(dId),
 			arrI = new Q_arr($src, scope);
@@ -134,7 +134,7 @@ export default QRenderTag extends RenderTag {
 		ctx.afterByDescrByAttr.set(dId, new Map([[attrKey, [arrI]]]));
 	}
 	//private
-	_q_renderChildren(arr, isLast, sync) {
+	q_renderChildren(arr, isLast, sync) {
 		const $first = arr[0].$src;
 		if (sync.stat !== 0 || this.ctx.srcBy$src.get($first).descr.isCustomHtml) {
 //console.log(78979, sync.stat, $first);
@@ -161,12 +161,12 @@ export default QRenderTag extends RenderTag {
 		if (iArr.length === 0) {
 			return arr;
 		}
-		return this._q_renderFlow(iArr, true, sync)
+		return this.q_renderFlow(iArr, true, sync)
 			.then(() => arr);
 	}
 	//private
-	_q_renderFlow(arr, isFirst, sync) {
-		const byDescr = this._q_nextGroupByDescr(arr, isFirst);
+	q_renderFlow(arr, isFirst, sync) {
+		const byDescr = this.q_nextGroupByDescr(arr, isFirst);
 //		if (byDescr.size === 0) {
 //			return;
 //		}
@@ -177,17 +177,17 @@ export default QRenderTag extends RenderTag {
 //				iSrc = this.ctx.srcBy$src.get($i);
 //			pSet.add(this.q_renderTag(dArr, iSrc !== undefined ? iSrc.descr.attr : null, new Set(), sync)
 			pSet.add(this.q_renderTag(dArr, "", new Set(), sync)
-				.then(() => sync.stat === 0 && this._q_renderFlow(dArr, false, sync)));
+				.then(() => sync.stat === 0 && this.q_renderFlow(dArr, false, sync)));
 //0922
 //			await this.q_renderTag(dArr, $i[p_isCmd] && this.ctx.descrById.get($i[p_descrId]).attr || null, new Set(), sync)
-//				.then(() => sync.stat === 0 && this._q_renderFlow(dArr, false, sync));
+//				.then(() => sync.stat === 0 && this.q_renderFlow(dArr, false, sync));
 
 
 /*
 //			if ($i.nodeType === 1) {
 //!!!как бы так сделать, что бы не идти дальше если рендер говорит что не нужно
 				pSet.add(this.q_renderTag(dArr, $i[p_isCmd] && this.ctx.descrById.get($i[p_descrId]).attr || null, new Set(), sync)
-					.then(() => sync.stat === 0 && this._q_renderFlow(dArr, false, sync)
+					.then(() => sync.stat === 0 && this.q_renderFlow(dArr, false, sync)
 //console.log("isCancel", sync.stat, 222);
 					));
 //			}*/
@@ -195,7 +195,7 @@ export default QRenderTag extends RenderTag {
 		return Promise.all(pSet);
 	}
 	//private
-	_q_nextGroupByDescr(arr, isFirst) {
+	q_nextGroupByDescr(arr, isFirst) {
 		const byDescr = new Map(),
 			arrLen = arr.length,
 			srcBy$src = this.ctx.srcBy$src;
@@ -222,7 +222,7 @@ export default QRenderTag extends RenderTag {
 		return byDescr;
 	}
 	//private
-	_q_execRender(arr, str, expr, isLast, sync) {
+	q_execRender(arr, str, expr, isLast, sync) {
 		const req = this.createReq(arr[0].$src, str, expr, null, sync);
 		if (req.reqCmd.cmd.q_render !== null) {
 			return req.reqCmd.cmd.q_render(req, arr, isLast);
@@ -243,7 +243,7 @@ export default QRenderTag extends RenderTag {
 		return Promise.all(res);
 	}
 	//private
-	_getAttrKey(attr) {
+	getAttrKey(attr) {
 		let key = "";
 		for (const [n, v] of attr) {
 			key += n + ":" + v + ";";
