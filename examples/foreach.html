@@ -3,19 +3,18 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
-		<script src="../myweb.js?debug=1" type="module" async="async"></script>
+		<script src="../client.js?debug=1" type="module" async="async"></script>
 		<link href="../myweb.css" type="text/css" rel="stylesheet" />
 		<script>
-			if (!self.glob) {
-				glob = {};
-			}
 			const h1 = "foreach command";
-			glob.text = "baa";
-			glob.arr = glob.text.split("");
+			self.glob = {
+				text: "baa"
+			};
+			self.glob.arr = self.glob.text.split("");
 		</script>
 		<title>${h1} - myweb</title>
 	</head>
-	<body>
+	<body exec.glob="self.glob">
 		<h1>${h1} - example</h1>
 		<section>
 			<h2>String as Array</h2>
@@ -23,7 +22,7 @@
 				<label for="text">glob.text</label>
 				<input id="text" type="text"
 					attr.value="glob.text"
-					oninput="glob.text = this.value" />
+					oninput="getReact(glob).text = this.value" />
 			</fieldset>
 			<ul if="glob.text">
 				<li foreach.val.key="glob.text">
@@ -36,13 +35,13 @@
 			<div>
 				<label for="unshift">Unshift to glob.arr</label>
 				<input id="unshift" type="text"
-					oninput="glob.arr.unshift(this.value)" />
+					on.input="glob.arr.unshift(this.value)" />
 			</div>
 			<br />
 			<div>
 				<label for="push">Push to glob.arr</label>
 				<input id="push" type="text"
-					oninput="glob.arr.push(this.value)" />
+					oninput="getReact(glob.arr).push(this.value)" />
 			</div>
 		</fieldset>
 		<!--section>

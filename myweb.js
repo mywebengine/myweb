@@ -18,18 +18,18 @@ import {attrCmdName, execCmdName, fetchCmdName, foreachCmdName, htmlCmdName,
 	ifCmdName, elseifCmdName, elseCmdName, switchCmdName, caseCmdName, defaultCmdName,
 	incCmdName, onCmdName, scopeCmdName, fillingCmdName, watchCmdName} from "./config/config.js";
 
-import {addCommand} from "./cmd/cmd.js";
-import attrCmd from "./cmd/attr/attr.js";
-import execCmd from "./cmd/exec/exec.js";
-import fetchCmd from "./cmd/fetch/fetch.js";
-import foreachCmd from "./cmd/foreach/foreach.js";
-import htmlCmd from "./cmd/html/html.js";
-import {ifCmd, switchCmd} from "./cmd/if/if.js";
-import incCmd from "./cmd/inc/inc.js";
-import onCmd from "./cmd/on/on.js";
-import scopeCmd from "./cmd/scope/scope.js";
-import fillingCmd from "./cmd/filling/filling.js";
-import watchCmd from "./cmd/watch/watch.js";
+import {addCommand} from "./command/command.js";
+import attrCmd from "./command/attr/attr.js";
+import execCmd from "./command/exec/exec.js";
+import fetchCmd from "./command/fetch/fetch.js";
+import foreachCmd from "./command/foreach/foreach.js";
+import htmlCmd from "./command/html/html.js";
+import {ifCmd, switchCmd} from "./command/if/if.js";
+import incCmd from "./command/inc/inc.js";
+import onCmd from "./command/on/on.js";
+import scopeCmd from "./command/scope/scope.js";
+import fillingCmd from "./command/filling/filling.js";
+import watchCmd from "./command/watch/watch.js";
 
 //self.onerror = function(errorMsg, url, lineNumber) {
 //	alert(errorMsg);
@@ -43,7 +43,7 @@ if (self.my === undefined) {
 function clientInit(env = new Env()) {
 	my.document = document;
 	my.rootElement = document.documentElement;
-	my.ctx = env;
+	my.context = env;
 
 
 addCommand(attrCmdName, attrCmd);
@@ -66,8 +66,8 @@ addCommand(scopeCmdName, scopeCmd);
 addCommand(fillingCmdName, fillingCmd);
 addCommand(watchCmdName, watchCmd);
 //ssr
-//for (const [str, r] of my.ctx.reqCmd) {
-//	r.cmd = my.ctx.cmd.get(str.substr(0, str.indexOf(cmdArgsDiv)));
+//for (const [str, r] of my.context.commandWithArgsByStr) {
+//	r.command = my.context.command.get(str.substr(0, str.indexOf(commandArgsDiv)));
 //}
 
 

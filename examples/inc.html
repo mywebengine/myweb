@@ -3,20 +3,19 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
-		<script src="../myweb.js?debug=1" type="module" async="async"></script>
+		<script src="../client.js?debug=1" type="module" async="async"></script>
 		<link href="../myweb.css" type="text/css" rel="stylesheet" />
 		<script>
-			if (!self.glob) {
-				glob = {};
-			}
 			const h1 = "inc command",
 				incs = [1, 2, 3];
-				glob.incs = incs;
-			glob.dynamicUrl = "/myweb/examples/inc/inc3.html";
+			self.glob = {
+				incs,
+				dynamicUrl: "/myweb/examples/inc/inc3.html"
+			};
 		</script>
 		<title>${h1} - myweb</title>
 	</head>
-	<body>
+	<body exec.glob="self.glob">
 		<h1>${h1} - example</h1>
 		<section>
 			<fieldset>

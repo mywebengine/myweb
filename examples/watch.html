@@ -3,36 +3,35 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
-		<script src="../myweb.js?debug=1" type="module" async="async"></script>
+		<script src="../client.js?debug=1" type="module" async="async"></script>
 		<link href="../myweb.css" type="text/css" rel="stylesheet" />
 		<script>
-			if (!self.glob) {
-				glob = {};
-			}
 			const h1 = "watch command";
-			glob.text = "abcdefg";
-			glob.obj1 = {
-				text: "hij"
+			self.glob = {
+				text: "abcdefg",
+				obj1: {
+					text: "hij"
+				}
 			};
 		</script>
 		<title>${h1} - myweb</title>
 	</head>
-	<body>
+	<body exec.glob="self.glob">
 		<h1>${h1} - example</h1>
 		<fieldset>
 			<label for="text">glob.text</label>
 			<input id="text" type="text"
 				attr.value="glob.text" 
-				oninput="glob.text = this.value"/>
+				on.input="glob.text = this.value"/>
 		</fieldset>
 		<fieldset>
-			<button onclick="glob.obj1 = { text: `new val` }">Change glob.obj1</button>
+			<button on.click="glob.obj1 = { text: `new val` }">Change glob.obj1</button>
 		</fieldset>
 		<fieldset>
 			<label for="obj1_text">glob.obj1.text</label>
 			<input id="obj1_text" type="text"
 				attr.value="glob.obj1.text" 
-				oninput="glob.obj1.text = this.value"/>
+				on.input="glob.obj1.text = this.value"/>
 		</fieldset>
 		<p watch="glob.text">
 			glob.text is changed - ${Math.random()}

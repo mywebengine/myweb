@@ -1,11 +1,6 @@
-import {viewVarName} from "../config/config.js";
-import {oset} from "../oset/oset.js";
-import {getProxy} from "../proxy/proxy.js";
+import config from "../config/config.js";
+import oset from "../oset/oset.js";
 
-export function setView(doc) {
-	oset(self, viewVarName, getView(doc));
-//console.log("resize", self.view.clientWidth);
-}
 export function getView(doc) {
 	const $s = doc.scrollingElement;
 //	return type_view(doc.scrollingElement);
@@ -17,4 +12,8 @@ export function getView(doc) {
 		clientWidth: $s.clientWidth,
 		clientHeight: $s.clientHeight
 	};
+}
+export function setView(doc) {
+	oset(self, config.viewVarName, getView(doc));
+//console.log("resize", self.view.clientWidth);
 }

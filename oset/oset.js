@@ -1,6 +1,4 @@
-import {p_target} from "../config/config.js";
-
-export function oset(t, n, v) {
+export default function oset(t, n, v) {
 	const o = t[n];
 	if (typeof o !== "object" || o === null || typeof v !== "object" || v === null) {
 //		return Reflect.set(t, n, v);
@@ -101,48 +99,3 @@ function osetMap(t, n, v) {
 	o.clear();
 	return Reflect.set(t, n, v);
 }
-export function del(obj, prop) {
-	const val = obj[prop];
-	delete obj[prop];
-	return val;
-}
-export function ocopy(val) {
-//	if (typeof val !== "object" || val === null) {
-//		return val;
-//	}
-	const cpy = {};
-	for (const i in val) {
-		cpy[i] = val[i];
-	}
-	return cpy;
-}
-export function srcSetScope(src, scope) {
-	const srcScope = src.scopeCache,
-		srcScopeT = srcScope[p_target],
-		scopeT = scope[p_target],
-		s = scopeT !== undefined ? scopeT : scope;
-	for (const i in s) {
-		srcScopeT[i] = s[i];
-	}
-	return srcScope;
-}
-/*
-export function copy(val) {
-	if (Array.isArray(val)) {
-		return val.slice();
-	}
-	if (typeof val !== "object" || val === null) {
-		return val;
-	}
-	if (val instanceof Map) {
-		return new Map(val);
-	}
-	if (val instanceof Set) {
-		return new Set(val);
-	}
-	const c = {};
-	for (const key in val) {
-		c[key] = copy(val[key]);
-	}
-	return c;
-}*/

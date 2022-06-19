@@ -3,14 +3,13 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
-		<script src="../myweb.js?debug=1" type="module" async="async"></script>
+		<script src="../client.js?debug=1" type="module" async="async"></script>
 		<link href="../myweb.css" type="text/css" rel="stylesheet" />
 		<script>
-			if (!self.glob) {
-				glob = {};
-			}
 			const h1 = "fetch command";
-			glob.red = "red";
+			self.glob = {
+				red: "red"
+			};
 			function getRes(res) {
 				if (res.ok) {
 					return res.headers.get('content-type').toLowerCase().indexOf("json") !== -1 ? res.json() : res.text();
@@ -24,7 +23,7 @@
 				alert(`req status: ${res.status}`);
 				return null;
 			}
-			function getErr(err) {
+			function getError(err) {
 				if (err instanceof Error) {
 					throw err;
 				}
@@ -41,22 +40,23 @@
 		<title>${h1} - myweb</title>
 		<!--link inc--u="./ctrl/modal.html" /-->
 	</head>
-	<body>
+	<body exec.glob="self.glob">
 		<h1>${h1} - example</h1>
 		<section scope.ex="">
 			<h2>Ex1</h2>
 			<p>В этом примере запрос идёт 3-и раза, так как после первго пришедшего ответа и сета ex.val* чистится кэш всех кто связан с ex</p>
 			<p>Если сделать так: if="ex.val === undefined" exec="ex.aa = 1" то мы отменим текущий рендер, а фетчи будут то же отменены и мы нпчего не получим</p>
-			<p>Схема с exeс="fetch" облодает пролемой: если загрузка произойдет до окончанию прохода рендера по документу (а токое возможно), то буде сет и будет отмена рендера и повтор, а манта fetch лишина подобной проблемы</p>
+			<p>Схема с exeс="fetch" облодает пролемой: если загрузка произойдет до окончанию прохода рендера по документу (а токое возможно),
+				то буде сет и будет отмена рендера и повтор, -- команда fetch лишина подобной проблемы</p>
 			<link if="ex.val === undefined" exec1="ex.aa = 1"
 				fetch="`./fetch/ex1.json`"
 				on.load="ex.val = await getRes(evt.detail.res)"
-				on.error="getErr(evt.detail.err)" />
+				on.error="getError(evt.detail.err)" />
 			<!--link or="that" if="ex.val2 === undefined"
 				exec="try {
 					ex.val2 = await getRes(await fetch(`./fetch/ex1.json`));
 				} catch (err) {
-					getErr(err);
+					getError(err);
 				}" /-->
 			<p if="ex.val">Result: ${JSON.stringify(ex.val)}, ${JSON.stringify(ex.val2)}</p>
 		</section>
@@ -65,7 +65,7 @@
 			<link if="ex.val === undefined"
 				fetch="new Request(`./fetch/ex1.json`, {method: `post`})"
 				on.ok="ex.val = await evt.detail.res.json()"
-				on.error="getErr(evt.detail.err)" />
+				on.error="getError(evt.detail.err)" />
 			<p if="ex.val">Result: ${JSON.stringify(ex.val)}</p>
 		</section>
 		<section scope.ex="">
@@ -74,7 +74,7 @@
 				fetch="fetch(404)
 					.then(res => res.ok ? res : `./fetch/ex2.json`)"
 				on.ok="ex.val = await evt.detail.res.json()"
-				on.error="getErr(evt.detail.err)" />
+				on.error="getError(evt.detail.err)" />
 			<p if="ex.val">Result: ${JSON.stringify(ex.val)}</p>
 		</section>
 		<section>
@@ -88,7 +88,7 @@
 							body: new FormData(this)
 						}));
 					} catch (err) {
-						getErr(err);
+						getError(err);
 					}
 					formScope.isDisabled = false;"
 

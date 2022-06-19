@@ -3,27 +3,26 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
-		<script src="../myweb.js?debug=1" type="module" async="async"></script>
+		<script src="../client.js?debug=1" type="module" async="async"></script>
 		<link href="../myweb.css" type="text/css" rel="stylesheet" />
 		<script>
-			if (!self.data) {
-				data = {};
-			}
 			const h1 = "exec command";
-			data.text = "abcdefg";
+			self.data = {
+				text: "abcdefg"
+			};
 		</script>
 		<title>${h1} - myweb</title>
 	</head>
-	<body exec.d="data">
+	<body exec.data="self.data">
 		<h1>${h1} - example</h1>
 		<fieldset>
 			<label for="text">data.text</label>
 			<input id="text" type="text"
-				attr.value="d.text"
-				on.input="d.text = this.value" />
+				attr.value="data.text"
+				on.input="data.text = this.value" />
 		</fieldset>
-		<ul exec="d.text += `_`">
-			<li foreach.val.key="d.text"
+		<ul exec1="d.text += `_`">
+			<li foreach.val.key="data.text"
 				exec.str="`${key} => ${val}`">
 				${str}
 			</li>

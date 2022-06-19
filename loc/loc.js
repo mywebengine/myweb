@@ -1,13 +1,9 @@
-﻿import Config from "../config/Config.js";
-import {oset} from "../oset/oset.js";
+﻿import config from "../config/config.js";
+import oset from "../oset/oset.js";
 //import {getProxy} from "../proxy/proxy.js";
 //import {Loc} from "./Loc.js";
 
 //const trimSlashRe = /(^\/|\/$)/g;
-
-export function setLoc(url) {
-	oset(self, Config.locVarName, getLoc(url));
-}
 export function getLoc(url) {//, defPageName = "") {
 	url = new URL(url);
 
@@ -28,7 +24,7 @@ export function getLoc(url) {//, defPageName = "") {
 		query,
 		hash: {
 //			href: url.hash,
-			path: url.hash.substr(1)
+			pathname: url.hash.substr(1)
 		}
 	};
 //	return new Loc(url.origin, url.href, url.pathname, query, url.hash);
@@ -41,3 +37,6 @@ export function getLoc(url) {//, defPageName = "") {
 //	}
 //	return loc;
 //}
+export function setLoc(url) {
+	oset(self, config.locVarName, getLoc(url));
+}

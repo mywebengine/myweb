@@ -1,11 +1,13 @@
-import {Config} from "../config/Config.js";
+import config from "../config/config.js";
 
 export default function dispatchCustomEvent($src, evtName, detail) {
 	const p = {
 		detail
 	};
-	for (const i in Config.defEventInit) {
-		p[i] = defEventInit[i];
+	for (const i in config.defEventInit) {
+		if (!(i in p)) {
+			p[i] = config.defEventInit[i];
+		}
 	}
 	$src.dispatchEvent(new CustomEvent(evtName, p));
 }

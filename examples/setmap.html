@@ -3,19 +3,18 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
-		<script src="../myweb.js?debug=1" type="module" async="async"></script>
+		<script src="../client.js?debug=1" type="module" async="async"></script>
 		<link href="../myweb.css" type="text/css" rel="stylesheet" />
 		<script>
-			if (!self.glob) {
-				glob = {};
-			}
 			const h1 = "Set and Map";
-			glob.s = new Set([1, 2, {name: 5}]);
-			glob.m = new Map([[1, "first"], [3, 4], [{name: 5}, {value: 6}]]);
+			self.glob = {
+				s: new Set([1, 2, {name: 5}]),
+				m: new Map([[1, "first"], [3, 4], [{name: 5}, {value: 6}]])
+			};
 		</script>
 		<title>${h1} - myweb</title>
 	</head>
-	<body>
+	<body exec.glob="self.glob">
 		<h1>${h1} - example</h1>
 		<fieldset>
 			<label for="text">glob.s.add and glob.m.set</label>

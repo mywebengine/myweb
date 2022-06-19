@@ -5,7 +5,7 @@
  * https://github.com/mywebengine/myweb
  */
 
-import {hideName} from "./config/config.js";
+import config from "./config/config.js";
 
 const lineNoAttrName = "debug:line";
 
@@ -69,7 +69,7 @@ function createLineNo(url, html, $src) {
 				$i = $i.firstChild;
 				continue;
 			}
-			if ($i.nodeName === "TEMPLATE" && $i.getAttribute(hideName) !== null) {
+			if ($i.nodeName === "TEMPLATE" && $i.getAttribute(config.hideName) !== null) {
 				$p.push($i);
 				$i = $i.content.firstChild;
 				continue;

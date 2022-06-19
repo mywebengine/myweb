@@ -3,24 +3,23 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
-		<script src="../myweb.js?debug=1" type="module" async="async"></script>
+		<script src="../client.js?debug=1" type="module" async="async"></script>
 		<link href="../myweb.css" type="text/css" rel="stylesheet" />
 		<script>
-			if (!self.glob) {
-				glob = {};
-			}
 			const h1 = "html command";
-			glob.text = "row1<br />\n<b>row2</b>";
+			self.glob = {
+				text: "row1<br />\n<b>row2</b>"
+			};
 		</script>
 		<title>${h1} - myweb</title>
 	</head>
-	<body>
+	<body exec.glob="self.glob">
 		<h1>${h1} - example</h1>
 		<fieldset>
 			<label for="text">glob.text</label>
 			<textarea id="text" style="width: 100%; height: 100px;"
 				attr.value="glob.text"
-				oninput="glob.text = this.value"></textarea>
+				on.input="glob.text = this.value"></textarea>
 		</fieldset>
 		<section>
 			<h2>HTML format</h2>

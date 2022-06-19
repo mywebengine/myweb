@@ -1,20 +1,14 @@
-import Config from "../../config/config.js";
-import {srcSetScope} from "../../oset/oset.js";
-
-//import {lazyRenderName, mountEventName, renderEventName, defEventInit,
-//	p_target, cmdArgsDiv, cmdArgsDivLen} from "../config/config.js";
-//import {getAttrAfter} from "../description/descr.js";
-//import {srcSetScope} from "../oset/oset.js";
-//import {addScrollAnimationsEvent} from "./algo.js";
-
-//import {type_isLast} from "./IsLast.js";
+import config from "../../config/config.js";
+import Command from "../command/Command.js";
 import LocalCounter from "./LocalCounter.js";
 import RenderTag from "./RenderTag.js";
 import Q_arr from "./Q_arr.js";
 import Q_renderCtx from "./Q_renderCtx.js";
 import Req from "./Req.js";
 
-export default QRenderTag extends RenderTag {
+const null_q_render = Command.prototype.q_render;
+
+export default class QRenderTag extends RenderTag {
 	q_renderTag(arr, str, isLast, sync) {
 //console.log("q_render", arr.map(i => [i.$src, i.scope]), str);
 //alert(1);
@@ -23,7 +17,7 @@ export default QRenderTag extends RenderTag {
 			return Promise.resolve(arr);
 		}
 		const arrLen = arr.length,
-		srcBy$src = this.ctx.srcBy$src;
+		srcBy$src = this.context.srcBy$src;
 //--		local = new Map(local);
 //		for (let i = arrLen - 1; i > -1; i--) {
 		for (let i = 0; i < arrLen; i++) {
@@ -33,16 +27,16 @@ export default QRenderTag extends RenderTag {
 				iId = iSrc.id;
 			if (!sync.local.has(iId)) {
 				sync.local.set(iId, new LocalCounter());
-//!!см выше		$i.dispatchEvent(new CustomEvent(renderStartEventName, Config.defEventInit));
+//!!см выше		$i.dispatchEvent(new CustomEvent(renderStartEventName, config.defEventInit));
 //console.log("q_rend - local create", $i);
 			}
-			aI.scope = aI.scope === null ? iSrc.scopeCache : srcSetScope(iSrc, aI.scope);
+			aI.scope = aI.scope !== null ? iSrc.setScope(aI.scope) : iSrc.scopeCache;
 //			if (aI.scope !== null) {//todo условия можно оптимизировать
-//				aI.scope = srcSetScope(iSrc, aI.scope);
+//				aI.scope = iSrc.setScope(aI.scope);
 //			}
 		}
 		const src = srcBy$src.get(arr[0].$src),
-			attr = str === "" ? src.descr.attr : this.getAttrAfter(src.descr.attr, str);
+			attr = str === "" ? src.descr.attr : src.getAttrAfter(str);
 		if (attr !== null && attr.size !== 0) {
 			return this.q_attrRender(arr, attr, isLast, new Q_renderCtx(), sync)
 				.then(lastCount => lastCount === arrLen ? arr : this._q_renderTag(arr, isLast, sync, arrLen));
@@ -53,7 +47,7 @@ export default QRenderTag extends RenderTag {
 	_q_renderTag(arr, isLast, sync, arrLen) {
 		return this.q_renderChildren(arr, isLast, sync)
 			.then(() => {
-				const srcBy$src = this.ctx.srcBy$src;
+				const srcBy$src = this.context.srcBy$src;
 				for (let i = 0; i < arrLen; i++) {
 					this.testLocalEventsBySrcId(sync.local, srcBy$src.get(arr[i].$src).id);
 				}
@@ -61,13 +55,13 @@ export default QRenderTag extends RenderTag {
 			});
 	}
 	//private
-	async q_attrRender(arr, attr, isLast, ctx, sync) {
+	async q_attrRender(arr, attr, isLast, q_context, sync) {
 		const arrLen = arr.length;
 		for (const [n, v] of attr) {
 			const res = await this.q_execRender(arr, n, v, isLast, sync);
 			if (sync.stat !== 0) {
 //console.log("isCancel", sync.stat, n, v, 2);
-				return ctx.lastCount;
+				return q_context.lastCount;
 			}
 			if (!res) {
 				continue;
@@ -83,11 +77,11 @@ export default QRenderTag extends RenderTag {
 				}
 				if (resI.attrStr !== "") {
 					const arrI = arr[i];
-//					this.q_addAfterAttr(resI.$attr || resI.$src || arrI.$src, arrI.scope, resI.attrStr, ctx);
-					this.q_addAfterAttr(resI.$attr, arrI.scope, resI.attrStr, ctx);
+//					this.q_addAfterAttr(resI.$attr || resI.$src || arrI.$src, arrI.scope, resI.attrStr, q_context);
+					this.q_addAfterAttr(resI.$attr, arrI.scope, resI.attrStr, q_context);
 					arrI.$src = resI.$last || resI.$src || resI.$attr || arrI.$src;
 					isLast.add(i);
-					ctx.lastCount++;
+					q_context.lastCount++;
 					continue;
 				}
 				if (resI.$last !== null) {
@@ -95,32 +89,33 @@ export default QRenderTag extends RenderTag {
 				}
 				if (resI.isLast) {
 					isLast.add(i);
-					ctx.lastCount++;
+					q_context.lastCount++;
 				}
 			}
 		}
 //todo
 //		const pArr = [];
-		for (const byAttr of ctx.afterByDescrByAttr.values()) {
+		for (const byAttr of q_context.afterByDescrByAttr.values()) {
 			for (const [attrKey, arr] of byAttr) {
-//				pArr.push(this.q_renderTag(arr, ctx.strByAttrKey[attrKey], new Set(), sync));
-				await this.q_renderTag(arr, ctx.strByAttrKey.get(attrKey), new Set(), sync);
+//				pArr.push(this.q_renderTag(arr, q_context.strByAttrKey[attrKey], new Set(), sync));
+				await this.q_renderTag(arr, q_context.strByAttrKey.get(attrKey), new Set(), sync);
 			}
 		}
 //		if (pArr.length) {
 //			await Promise.all(pArr);
 //		}
-		return ctx.lastCount;
+		return q_context.lastCount;
 	}
 //todo
 	//private
-	q_addAfterAttr($src, scope, str, ctx) {
-		const attrKey = this.getAttrKey(this.getAttrAfter(this.ctx.srcBy$src.get($src).descr.attr, str)),
-			dId = this.ctx.srcBy$src.get($src).descr.id,
-			byD = ctx.afterByDescrByAttr.get(dId),
+	q_addAfterAttr($src, scope, str, q_context) {
+		const src = this.context.srcBy$src.get($src),
+			attrKey = this.getAttrKey(src.getAttrAfter(str)),
+			dId = src.descr.id,
+			byD = q_context.afterByDescrByAttr.get(dId),
 			arrI = new Q_arr($src, scope);
-		if (!ctx.strByAttrKey.has(attrKey)) {
-			ctx.strByAttrKey.set(attrKey, str);
+		if (!q_context.strByAttrKey.has(attrKey)) {
+			q_context.strByAttrKey.set(attrKey, str);
 		}
 		if (byD !== undefined) {
 			const arr = byD.get(attrKey);
@@ -131,16 +126,16 @@ export default QRenderTag extends RenderTag {
 			byD.set(attrKey, [arrI]);
 			return;
 		}
-		ctx.afterByDescrByAttr.set(dId, new Map([[attrKey, [arrI]]]));
+		q_context.afterByDescrByAttr.set(dId, new Map([[attrKey, [arrI]]]));
 	}
 	//private
 	q_renderChildren(arr, isLast, sync) {
 		const $first = arr[0].$src;
-		if (sync.stat !== 0 || this.ctx.srcBy$src.get($first).descr.isCustomHtml) {
+		if (sync.stat !== 0 || this.context.srcBy$src.get($first).descr.isCustomHtml) {
 //console.log(78979, sync.stat, $first);
 			return Promise.resolve(arr);
 		}
-		if (!sync.renderParam.isLazyRender && $first.getAttribute(Config.lazyRenderName) !== null) {
+		if (!sync.renderParam.isLazyRender && $first.getAttribute(config.lazyRenderName) !== null) {
 			sync.renderParam.isLazyRender = true;
 		}
 		const iArr = [],
@@ -174,19 +169,19 @@ export default QRenderTag extends RenderTag {
 		const pSet = new Set();
 		for (const dArr of byDescr.values()) {
 //			const $i = dArr[0].$src,
-//				iSrc = this.ctx.srcBy$src.get($i);
+//				iSrc = this.context.srcBy$src.get($i);
 //			pSet.add(this.q_renderTag(dArr, iSrc !== undefined ? iSrc.descr.attr : null, new Set(), sync)
 			pSet.add(this.q_renderTag(dArr, "", new Set(), sync)
 				.then(() => sync.stat === 0 && this.q_renderFlow(dArr, false, sync)));
 //0922
-//			await this.q_renderTag(dArr, $i[p_isCmd] && this.ctx.descrById.get($i[p_descrId]).attr || null, new Set(), sync)
+//			await this.q_renderTag(dArr, $i[p_isCmd] && this.context.descrById.get($i[p_descrId]).attr || null, new Set(), sync)
 //				.then(() => sync.stat === 0 && this.q_renderFlow(dArr, false, sync));
 
 
 /*
 //			if ($i.nodeType === 1) {
 //!!!как бы так сделать, что бы не идти дальше если рендер говорит что не нужно
-				pSet.add(this.q_renderTag(dArr, $i[p_isCmd] && this.ctx.descrById.get($i[p_descrId]).attr || null, new Set(), sync)
+				pSet.add(this.q_renderTag(dArr, $i[p_isCmd] && this.context.descrById.get($i[p_descrId]).attr || null, new Set(), sync)
 					.then(() => sync.stat === 0 && this.q_renderFlow(dArr, false, sync)
 //console.log("isCancel", sync.stat, 222);
 					));
@@ -198,7 +193,7 @@ export default QRenderTag extends RenderTag {
 	q_nextGroupByDescr(arr, isFirst) {
 		const byDescr = new Map(),
 			arrLen = arr.length,
-			srcBy$src = this.ctx.srcBy$src;
+			srcBy$src = this.context.srcBy$src;
 		for (let i = 0; i < arrLen; i++) {
 			if (arr[i].$src.nodeType !== 1) {
 				continue;
@@ -224,19 +219,19 @@ export default QRenderTag extends RenderTag {
 	//private
 	q_execRender(arr, str, expr, isLast, sync) {
 		const req = this.createReq(arr[0].$src, str, expr, null, sync);
-		if (req.reqCmd.cmd.q_render !== null) {
-			return req.reqCmd.cmd.q_render(req, arr, isLast);
+		if (req.commandWithArgs.command.q_render !== null_q_render) {
+			return req.commandWithArgs.command.q_render(req, arr, isLast);
 		}
 /*
-		if (req.reqCmd.cmd.render === null) {
+		if (req.commandWithArgs.command.render === null) {
 			return null;
 		}*/
 		const arrLen = arr.length,
 			res = new Array(arrLen);
 		for (let i = 0; i < arrLen; i++) {
 			if (!isLast.has(i)) {
-//				res[i] = await req.reqCmd.cmd.render(this.createReq(arr[i].$src, str, expr, arr[i].scope, sync));
-				res[i] = req.reqCmd.cmd.render(this.createReq(arr[i].$src, str, expr, arr[i].scope, sync));
+//				res[i] = await req.commandWithArgs.command.render(this.createReq(arr[i].$src, str, expr, arr[i].scope, sync));
+				res[i] = req.commandWithArgs.command.render(this.createReq(arr[i].$src, str, expr, arr[i].scope, sync));
 			}
 		}
 //		return res;
