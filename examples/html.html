@@ -1,45 +1,47 @@
 <!doctype html>
 <html>
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
-		<script src="../client.js?debug=1" type="module" async="async"></script>
-		<link href="../myweb.css" type="text/css" rel="stylesheet" />
-		<script>
-			const h1 = "html command";
-			self.glob = {
-				text: "row1<br />\n<b>row2</b>"
-			};
-		</script>
-		<title>${h1} - myweb</title>
-	</head>
-	<body exec.glob="self.glob">
-		<h1>${h1} - example</h1>
-		<fieldset>
-			<label for="text">glob.text</label>
-			<textarea id="text" style="width: 100%; height: 100px;"
-				attr.value="glob.text"
-				on.input="glob.text = this.value"></textarea>
-		</fieldset>
-		<section>
-			<h2>HTML format</h2>
-			<div html="glob.text"></div>
-		</section>
-		<section>
-			<h2>Text format</h2>
-			<div html.t="glob.text"></div>
-		</section>
-		<section>
-			<h2>$<span>{...}</span> format</h2>
-			<div>${glob.text}</div>
-		</section>
-		<section>
-			<h2>Pre HTML</h2>
-			<pre html="glob.text"></pre>
-		</section>
-		<section>
-			<h2>Pre text</h2>
-			<pre html.t="glob.text"></pre>
-		</section>
-	</body>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
+	<script src="../dist/client.js?debug=1" type="module" async="async"></script>
+	<link href="../src/myweb.css" type="text/css" rel="stylesheet" />
+	<script>
+		const h1 = "html command";
+		self.glob = {
+			text: "row1<br />\n<b>row2</b>",
+		};
+	</script>
+	<title>${h1} - myweb</title>
+</head>
+<body exec.glob="self.glob">
+<h1>${h1} - example</h1>
+<fieldset>
+	<label for="text">glob.text</label>
+	<textarea id="text" style="width: 100%; height: 100px;"
+		  attr.value="({glob: {text}}) => text"
+		  on.input="({glob}) => {
+					glob.text = this.value;
+				}"></textarea>
+</fieldset>
+<section>
+	<h2>HTML format</h2>
+	<div html="({glob: {text}}) => text"></div>
+</section>
+<section>
+	<h2>Text format</h2>
+	<div html.t="({glob: {text}}) => text"></div>
+</section>
+<section>
+	<h2>$<span>{...}</span> format</h2>
+	<div>${({glob: {text}}) => text}</div>
+</section>
+<section>
+	<h2>Pre HTML</h2>
+	<pre html="({glob: {text}}) => text"></pre>
+</section>
+<section>
+	<h2>Pre text</h2>
+	<pre html.t="({glob: {text}}) => text"></pre>
+</section>
+</body>
 </html>

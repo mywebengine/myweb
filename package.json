@@ -1,0 +1,31 @@
+{
+  "name": "myweb",
+  "version": "1.0.0",
+  "description": "Система myweb - это расширение функций языка разметки HTML, в попытке превратить его в язык программирования. Для того что бы сделать разработку более понятно и простой.",
+  "main": "./src/client",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mywebengine/myweb.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mywebengine/myweb/issues"
+  },
+  "homepage": "https://github.com/mywebengine/myweb#readme",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.59.0",
+    "@typescript-eslint/parser": "^5.59.0",
+    "eslint": "^8.38.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-simple-import-sort": "^10.0.0",
+    "prettier": "^2.8.7",
+    "typescript": "^5.0.4"
+  }
+}

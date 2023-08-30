@@ -1,0 +1,48 @@
+import { Context } from "./Context.js";
+import { CustomElement } from "./CustomElement.js";
+import { Descr } from "./Descr.js";
+import { ICommand } from "./ICommand.js";
+import { ICommandConstructor, IMyWeb } from "./IMyWeb.js";
+import { LocalState } from "./LocalState.js";
+import { MyWebProxyController } from "./MyWebProxyController.js";
+import { Q_arr } from "./Q_arr.js";
+import { Req } from "./Req.js";
+import { Src } from "./Src.js";
+import { Sync } from "./Sync.js";
+export declare abstract class Base_MyWeb implements IMyWeb {
+    context: Context;
+    protected commands: Map<string, ICommand>;
+    protected customElementByKey: Map<string, CustomElement>;
+    protected proxyController: MyWebProxyController;
+    constructor();
+    abstract createSrc($e: HTMLElement, descr: Descr | null, asOneIdx: Map<string, number> | null, idx: Map<string, number> | null): Src;
+    abstract createDescr($e: HTMLElement, srcId: number): Descr;
+    abstract prepare$src($i: Node, isLinking: boolean): void;
+    abstract joinText($e: HTMLElement | DocumentFragment): void;
+    abstract removeChild($e: Node): void;
+    abstract show(req: Req, $e: HTMLElement): void;
+    abstract hide(req: Req, $e: HTMLElement): void;
+    abstract is$visible($e: HTMLElement): boolean;
+    abstract eval2(req: Req, $src: HTMLElement, isReactive: boolean): Promise<unknown>;
+    abstract eval2Execute(req: Req, $src: HTMLElement): Promise<unknown>;
+    abstract q_eval2(req: Req, arr: Q_arr[], isLast: Set<number>): Promise<unknown[]>;
+    abstract showLoading($e: HTMLElement, testFunc: Function, type: string, waitTime?: number | string): Promise<void>;
+    abstract checkScrollAnimations(): void;
+    abstract renderTag($src: HTMLElement, scope: Record<string | symbol, unknown>, str: string, sync: Sync): Promise<HTMLElement>;
+    abstract createReq($src: HTMLElement, str: string, expr: string, scope: Record<string | symbol, unknown> | null, event: Event | null, sync: Sync): Req;
+    abstract q_renderTag(arr: Q_arr[], str: string, isLast: Set<number>, sync: Sync): Promise<Q_arr[]>;
+    abstract render($src: HTMLElement, delay?: number, scope?: Record<string | symbol, unknown> | null, isLinking?: boolean): Promise<unknown>;
+    abstract renderBySrcIds(srcIds: Set<number>): Promise<unknown>;
+    abstract setDelay(time: number, cb?: Function): void;
+    abstract getCurRender(): Promise<void>;
+    abstract get$srcScope($e: HTMLElement): Record<string | symbol, unknown>;
+    reset(context?: Context): void;
+    getReact<T>(value: T): T;
+    getScopeReact<T>(value: T): T;
+    addCommand(name: string, command: ICommandConstructor): void;
+    addStrToCommandWithArgsIfThatCommend(str: string): boolean;
+    getNewId(): number;
+    getSrcId(local: Map<number, LocalState>, srcId: number): number;
+    getError(err: Error, $src: Node, req?: Req, scope?: Record<string, unknown>, fileName?: string, lineNum?: number, colNum?: number): Error;
+}
+//# sourceMappingURL=Base_MyWeb.d.ts.map

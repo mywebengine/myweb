@@ -1,0 +1,1 @@
+{"version":3,"file":"CommandWithArgs.d.ts","sourceRoot":"","sources":["../../src/MyWeb/CommandWithArgs.ts"],"names":[],"mappings":"AAAA,OAAO,EAAC,QAAQ,EAAC,MAAM,eAAe,CAAC;AAEvC,qBAAa,eAAe;IAC3B,WAAW,EAAE,MAAM,CAAC;IACpB,OAAO,EAAE,QAAQ,CAAC;IAClB,IAAI,EAAE,MAAM,EAAE,CAAC;gBAEH,WAAW,EAAE,MAAM,EAAE,OAAO,EAAE,QAAQ,EAAE,IAAI,EAAE,MAAM,EAAE;CAKlE"}

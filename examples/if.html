@@ -1,51 +1,50 @@
 <!doctype html>
 <html>
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
-		<script src="../client.js?debug=1" type="module" async="async"></script>
-		<link href="../myweb.css" type="text/css" rel="stylesheet" />
-		<script>
-			const h1 = "if (elseif, else), switch (case, default) command";
-			self.glob = {
-				color: "blue1"
-			};
-		</script>
-		<title>${h1} - myweb</title>
-	</head>
-	<body exec.glob="self.glob">
-		<h1>${h1} - example</h1>
-		<section>
-			<h2>if - example</h2>
-			<fieldset>
-				<label for="color">glob.color</label>
-				<input id="color" type="text"
-					attr.value="glob.color"
-					on.input="glob.color = this.value" />
-			</fieldset>
-			<p if="glob.color.toUpperCase() === `RED`">RED</p>
-			<p elseif="glob.color.toUpperCase() === `BLUE`">BLUE</p>
-			<p elseif.color="glob.color">Color isn't red or blue, color is <b>"${color}"</b></p>
-			<p else="">Color is empty</p>
-		</section>
-		<section>
-			<h2>switch - example</h2>
-			<p switch="glob.color.toUpperCase()"
-				case="`RED`">
-				RED
-			</p>
-			<p case.a="`BLUE`">
-				switch - ${a}
-			</p>
-			<p default="">
-				<span if.c="glob.color">Color isn't red or blue, color is <b>${c}</b></span>
-				<span else="">Color is empty</span>
-			</p>
-		</section>
-		<section>
-			<h2>if inc - example</h2>
-			<link if="!glob.ff" inc="`./inc/1.html`" />
-			<link else="" inc="`./inc/2.html`" />
-		</section>
-	</body>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
+	<script src="../dist/client.js?debug=1" type="module" async="async"></script>
+	<link href="../src/myweb.css" type="text/css" rel="stylesheet" />
+	<script>
+		const h1 = "if (elseif, else), switch (case, default) command";
+		self.glob = {
+			color: "blue1",
+		};
+	</script>
+	<title>${h1} - myweb</title>
+</head>
+<body exec.glob="self.glob">
+<h1>${h1} - example</h1>
+<section>
+	<h2>if - example</h2>
+	<fieldset>
+		<label for="color">glob.color</label>
+		<input id="color" type="text"
+		       attr.value="({glob: {color}}) => color"
+		       on.input="({glob}) => {
+				glob.color = this.value;
+			}" />
+	</fieldset>
+	<p if="({glob: {color}}) => color.toUpperCase() === `RED`">RED</p>
+	<p elseif="({glob: {color}}) => color.toUpperCase() === `BLUE`">BLUE</p>
+	<p elseif.color="({glob: {color}}) => color">
+		Color isn't red or blue, color is <b>"${({glob: {color}}) => color}"</b>
+	</p>
+	<p else="">Color is empty</p>
+</section>
+<section>
+	<h2>switch - example</h2>
+	<p switch="({glob: {color}}) => color.toUpperCase()" case="`RED`">RED</p>
+	<p case.a="`BLUE`">switch - ${({a}) => a}</p>
+	<p default="">
+		<span if.c="({glob: {color}}) => color">Color isn't red or blue, color is <b>${({c}) => c}</b></span>
+		<span else="">Color is empty</span>
+	</p>
+</section>
+<section>
+	<h2>if inc - example</h2>
+	<link if="({glob: {ff}}) => !ff" inc="`./inc/1.html`" />
+	<link else="" inc="`./inc/2.html`" />
+</section>
+</body>
 </html>

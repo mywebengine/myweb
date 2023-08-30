@@ -1,0 +1,1 @@
+{"version":3,"file":"LocalState.d.ts","sourceRoot":"","sources":["../../src/MyWeb/LocalState.ts"],"names":[],"mappings":"AAAA,OAAO,EAAC,aAAa,EAAC,MAAM,oBAAoB,CAAC;AAEjD,qBAAa,UAAU;IACtB,eAAe,SAAK;IACpB,QAAQ,SAAK;IAEb,mBAAmB,EAAE,GAAG,CAAC,MAAM,EAAE,aAAa,CAAC,CAAa;CAC5D"}

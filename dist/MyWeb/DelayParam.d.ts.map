@@ -1,0 +1,1 @@
+{"version":3,"file":"DelayParam.d.ts","sourceRoot":"","sources":["../../src/MyWeb/DelayParam.ts"],"names":[],"mappings":"AAAA,qBAAa,UAAU;IACtB,KAAK,EAAE,MAAM,CAAC;IACd,OAAO,EAAE,QAAQ,CAAC;IAClB,MAAM,EAAE,QAAQ,CAAC;gBAEL,KAAK,EAAE,MAAM,EAAE,OAAO,EAAE,QAAQ,EAAE,MAAM,EAAE,QAAQ;CAK9D"}

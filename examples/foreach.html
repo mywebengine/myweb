@@ -1,87 +1,95 @@
 <!doctype html>
 <html>
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
-		<script src="../client.js?debug=1" type="module" async="async"></script>
-		<link href="../myweb.css" type="text/css" rel="stylesheet" />
-		<script>
-			const h1 = "foreach command";
-			self.glob = {
-				text: "baa"
-			};
-			self.glob.arr = self.glob.text.split("");
-		</script>
-		<title>${h1} - myweb</title>
-	</head>
-	<body exec.glob="self.glob">
-		<h1>${h1} - example</h1>
-		<section>
-			<h2>String as Array</h2>
-			<fieldset>
-				<label for="text">glob.text</label>
-				<input id="text" type="text"
-					attr.value="glob.text"
-					oninput="getReact(glob).text = this.value" />
-			</fieldset>
-			<ul if="glob.text">
-				<li foreach.val.key="glob.text">
-					${key * 1 + 1}) ${val.toUpperCase()}
-				</li>
-			</ul>
-		</section>
-		<h2>Array</h2>
-		<fieldset>
-			<div>
-				<label for="unshift">Unshift to glob.arr</label>
-				<input id="unshift" type="text"
-					on.input="glob.arr.unshift(this.value)" />
-			</div>
-			<br />
-			<div>
-				<label for="push">Push to glob.arr</label>
-				<input id="push" type="text"
-					oninput="getReact(glob.arr).push(this.value)" />
-			</div>
-		</fieldset>
-		<!--section>
-			<ul if="glob.arr.length > 0">
-				<li foreach.i="[1, 2]">
-					<ul>
-						<li attr.style="`color: ${glob.color || 'red'}`"
-							foreach.val="glob.arr">
-							${val}
-						</li>
-					</ul>
-				</li>
-			</ul>
-		</section-->
-		<section>
-			<h2>Chain</h2>
-			<ul if="glob.arr.length > 0">
-				<li foreach.foo.idx="glob.arr"
-					if="isNaN(foo)"
-						foreach.bar="foo + `-bar`"
-							attr.style="`color: ${idx % 2 ? 'red' : 'green'}`">
-							${idx} => ${"bar".toUpperCase()}
-				</li>
-			</ul>
-		</section>
-		<section>
-			<h2>if - foreach</h2>
-			<div foreach.foo.idx="glob.arr">
-				<div if="isNaN(foo)"
-					foreach.bar="foo + `-bar`"
-						attr.style="`color: ${idx % 2 ? 'red' : 'green'}`">
-						${idx} => ${"bar".toUpperCase()}
-				</div>
-				<div else="">Is num</div>
-			</div>
-		</section>
-		<section>
-			<h2>foreach inc - example</h2>
-			<link foreach="glob.arr"
-				inc="!glob.ff ? `./inc/1.html` : `./inc/2.html`" />
-		</section>
-	</body>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
+	<script src="../dist/client.js?debug=1" type="module" async="async"></script>
+	<link href="../src/myweb.css" type="text/css" rel="stylesheet" />
+	<script>
+		const h1 = "foreach command";
+		self.glob = {
+			text: "bar",
+			color: "red",
+		};
+		self.glob.arr = self.glob.text.split("");
+	</script>
+	<title html="`${h1} - myweb`"></title>
+</head>
+<body exec.glob="self.glob">
+<h1>${h1} - example</h1>
+<!--<section>-->
+<!--	<h2>String as Array</h2>-->
+<!--	<fieldset>-->
+<!--		<label for="text">glob.text</label>-->
+<!--		<input id="text" type="text"-->
+<!--		       attr.value="({glob: {text}}) => text"-->
+<!--		       oninput="myweb.getReact(glob).text = this.value" />-->
+<!--	</fieldset>-->
+<!--	<ul if="({glob: {text}}) => text">-->
+<!--		<li foreach.val.key="({glob: {text}}) => text">-->
+<!--			${({key, val}) => `${key * 1 + 1} -> ${val.toUpperCase()}`}-->
+<!--		</li>-->
+<!--	</ul>-->
+<!--</section>-->
+<h2>Array</h2>
+<fieldset>
+	<div>
+		<label for="unshift">Unshift to glob.arr</label>
+		<input id="unshift" type="text"
+		       on.input="({glob: {arr}}) => arr.unshift(this.value)" />
+	</div>
+	<br />
+	<div>
+		<label for="push">Push to glob.arr</label>
+		<input id="push" type="text"
+		       oninput="myweb.getReact(glob.arr).push(this.value)" />
+	</div>
+</fieldset>
+<!--<section>-->
+<!--	<ul>-->
+<!--		<li foreach.val="({glob: {arr}}) => arr">-->
+<!--			${({val}) => val}-->
+<!--		</li>-->
+<!--	</ul>-->
+<!--</section>-->
+<!--<section>-->
+<!--	<ul if="({glob: {arr}}) => arr.length > 0">-->
+<!--		<li foreach..idx="({glob: {arr}}) => arr">-->
+<!--			${({idx}) => idx}-->
+<!--			<ul>-->
+<!--				<li attr.style="({glob: {color}}) => color && `color: ${color}`"-->
+<!--				    foreach.val="({glob: {arr}}) => arr">-->
+<!--					${({val}) => val}-->
+<!--				</li>-->
+<!--			</ul>-->
+<!--		</li>-->
+<!--	</ul>-->
+<!--</section>-->
+<section>
+	<h2>Chain</h2>
+	<ul if="({glob: {arr}}) => arr.length > 0">
+		<li foreach.foo.idx="({glob: {arr}}) => arr"
+		    foreach.bar="({foo}) => foo + `-bar`"
+		    attr.style="({idx}) => `color: ${idx % 2 ? 'red' : 'green'}`">
+			${({idx, bar}) => `${idx} -> ${bar.toUpperCase()}`}
+		</li>
+	</ul>
+</section>
+<!--<section>-->
+<!--	<h2>if - foreach</h2>-->
+<!--	<div foreach.foo.idx="({glob: {arr}}) => arr">-->
+<!--		<div if="({foo}) => isNaN(foo)"-->
+<!--		     foreach.bar="({foo}) => foo + `-bar`"-->
+<!--		     attr.style="({idx}) => `color: ${idx % 2 ? 'red' : 'green'}`">-->
+<!--			${({idx, bar}) => `${idx} -> ${bar.toUpperCase()}`}-->
+<!--		</div>-->
+<!--		<div else="">Is num</div>-->
+<!--	</div>-->
+<!--</section>-->
+<!--<section>-->
+<!--	<h2>foreach inc - example</h2>-->
+<!--	<link foreach="({glob: {arr}}) => arr"-->
+<!--	      inc="!glob.ff ? `./inc/1.html` : `./inc/2.html`" />-->
+<!--</section>-->
+</body>
 </html>

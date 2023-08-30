@@ -1,0 +1,114 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
+		<script src="../src/client.ts?debug=1" type="module" async="async"></script>
+		<link href="../src/myweb.css" type="text/css" rel="stylesheet" />
+		<script>
+			const h1 = "fetch command";
+			self.glob = {
+				red: "red"
+			};
+			function getRes(res) {
+				if (res.ok) {
+					return res.headers.get('content-type').toLowerCase().indexOf("json") !== -1 ? res.json() : res.text();
+				}
+				switch (res.status) {
+					case 401:
+					case 403:
+						alert(`todo auth: ${res.status}`);
+						return null;
+				}
+				alert(`req status: ${res.status}`);
+				return null;
+			}
+			function getError(err) {
+				if (err instanceof Error) {
+					throw err;
+				}
+				if (!self.Modal) {
+					console.error("Err:", err);
+					return;
+				}
+				new Modal().show({
+					url: "./modal/err.html",
+					err
+				});
+			}
+		</script>
+		<title>${h1} - myweb</title>
+		<!--link inc--u="./ctrl/modal.html" /-->
+	</head>
+	<body exec.glob="self.glob">
+		<h1>${h1} - example</h1>
+		<section scope.ex="">
+			<h2>Ex1</h2>
+			<p>В этом примере запрос идёт 3-и раза, так как после первого пришедшего ответа и сета ex.val* чистится кэш всех кто связан с ex</p>
+			<p>Если сделать так: if="ex.val === undefined" exec="ex.aa = 1" то мы отменим текущий рендер, а фетчи будут то же отменены и мы ничего не получим</p>
+			<p>Схема с exeс="fetch" обладает проблемой: если загрузка произойдет до окончанию прохода рендера по документу (а такое возможно),
+				то буде сет и будет отмена рендера и повтор, -- команда fetch лишена подобной проблемы</p>
+			<link if="ex.val === undefined" exec1="ex.aa = 1"
+				fetch="`./fetch/ex1.json`"
+				on.load="ex.val = await getRes(evt.detail.res)"
+				on.error="getError(evt.detail.err)" />
+			<!--link or="that" if="ex.val2 === undefined"
+				exec="try {
+					ex.val2 = await getRes(await fetch(`./fetch/ex1.json`));
+				} catch (err) {
+					getError(err);
+				}" /-->
+			<p if="ex.val">Result: ${JSON.stringify(ex.val)}, ${JSON.stringify(ex.val2)}</p>
+		</section>
+		<section scope.ex="">
+			<h2>POST</h2>
+			<link if="ex.val === undefined"
+				fetch="new Request(`./fetch/ex1.json`, {method: `post`})"
+				on.ok="ex.val = await evt.detail.res.json()"
+				on.error="getError(evt.detail.err)" />
+			<p if="ex.val">Result: ${JSON.stringify(ex.val)}</p>
+		</section>
+		<section scope.ex="">
+			<h2>404</h2>
+			<link if="ex.val === undefined"
+				fetch="fetch(404)
+					.then(res => res.ok ? res : `./fetch/ex2.json`)"
+				on.ok="ex.val = await evt.detail.res.json()"
+				on.error="getError(evt.detail.err)" />
+			<p if="ex.val">Result: ${JSON.stringify(ex.val)}</p>
+		</section>
+		<section>
+			<h2>Form</h2>
+			<form scope.form-scope=""
+				on.submit.prevent="
+					formScope.isDisabled = true;
+					try {
+						formScope.val = await getRes(await fetch(`./fetch/ex1.json`, {
+							method: `post`,
+							body: new FormData(this)
+						}));
+					} catch (err) {
+						getError(err);
+					}
+					formScope.isDisabled = false;"
+
+				_on.submit.prevent="formScope.fglob = new FormData(this)">
+				<link watch="formScope.fglob"
+					fetch="formScope.fglob && new Request(`./fetch/ex1.json`, {
+							method: `post`,
+							body: formScope.fglob
+						})"
+					on.load="formScope.val = await evt.detail.res.json()"
+					on.error="onError(evt.detail.res)" />
+
+				<fieldset attr.disabled="formScope.isDisabled">
+					<legend>Form to submit</legend>
+					<input name="a" value="123" required="" />
+					<input id="b" name="bb" value="456" />
+					<button>Send</button>
+				</fieldset>
+				<p if="formScope.val">Result: ${JSON.stringify(formScope.val)}</p>
+			</form>
+		</section>
+	</body>
+</html>

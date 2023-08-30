@@ -1,36 +1,40 @@
 <!doctype html>
 <html>
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
-		<script src="../client.js?debug=1" type="module" async="async"></script>
-		<link href="../myweb.css" type="text/css" rel="stylesheet" />
-		<script>
-			const h1 = "on command";
-			self.glob = {
-				text: "abcdefg"
-			};
-		</script>
-		<title>${h1} - myweb</title>
-	</head>
-	<body exec.glob="self.glob"
-		on.mount="console.log(`mount`, evt.target)"
-		on.render="console.log(`render`, req, evt.target)">
-		<h1>${h1} - example</h1>
-		<fieldset>
-			<label for="text">glob.text</label>
-			<input id="text" type="text"
-				attr.value="glob.text"
-				on.mousedown.ctrl.0="glob.text = this.value"
-				on.keyup.alt.s.exact="glob.text = this.value" />
-		</fieldset>
-		<ul on.click="alert(evt.target.tagName)">
-			<li foreach.val.key="glob.text"
-				exec.str="`${key} => ${val}`">
-				<a href="#"
-					html.t="str"
-					on.click.prevent="alert(str);"></a>
-			</li>
-		</ul>
-	</body>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
+	<script src="../dist/client.js?debug=1&line=1" type="module" async="async"></script>
+	<link href="../src/myweb.css" type="text/css" rel="stylesheet" />
+	<script>
+		const h1 = "on command";
+		self.glob = {
+			text: "abcdefg",
+		};
+	</script>
+	<title>${h1} - myweb</title>
+</head>
+<body exec.glob="self.glob"
+      on.mount="(_, evt) => console.log(`mount`, this, evt.target)"
+      on.render="(_, evt) => console.log(`render`, this, evt.target)">
+<h1>${h1} - example</h1>
+<fieldset>
+	<label for="text">glob.text</label>
+	<input id="text" type="text"
+	       attr.value="({glob: {text}}) => text"
+	       on.mousedown.ctrl.0="({glob}) => {
+			glob.text = this.value;
+		}"
+	       on.keyup.alt.s.exact="({glob}) => {
+			glob.text = this.value;
+		}" />
+</fieldset>
+<ul on.click="(_, evt) => alert(evt.target.tagName)">
+	<li foreach.val.key="({glob: {text}}) => text"
+	    exec.str="({key, val}) => `${key} -> ${val}`">
+		<a href="#"
+		   html.t="({str}) => str"
+		   on.click.prevent="({str}) => alert(str);"></a>
+	</li>
+</ul>
+</body>
 </html>

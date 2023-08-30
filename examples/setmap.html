@@ -1,38 +1,40 @@
 <!doctype html>
 <html>
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
-		<script src="../client.js?debug=1" type="module" async="async"></script>
-		<link href="../myweb.css" type="text/css" rel="stylesheet" />
-		<script>
-			const h1 = "Set and Map";
-			self.glob = {
-				s: new Set([1, 2, {name: 5}]),
-				m: new Map([[1, "first"], [3, 4], [{name: 5}, {value: 6}]])
-			};
-		</script>
-		<title>${h1} - myweb</title>
-	</head>
-	<body exec.glob="self.glob">
-		<h1>${h1} - example</h1>
-		<fieldset>
-			<label for="text">glob.s.add and glob.m.set</label>
-			<input id="text" type="text"
-				on.input="glob.s.add(this.value);
-					glob.m.set(this.value, this.value)" />
-		</fieldset>
-		<h2>map.get</h2>
-		<p>${JSON.stringify(glob.m.get(1))}</p>
-		<h2>map.has</h2>
-		<p>${glob.m.has(1)}</p>
-		<h2>Set</h2>
-		<ul if="glob.s.size !== 0">
-			<li foreach.val.key="glob.s">${JSON.stringify(key)} => ${JSON.stringify(val)}</li>
-		</ul>
-		<h2>Map</h2>
-		<ul if="glob.m.size !== 0">
-			<li foreach.val.key="glob.m">${JSON.stringify(key)} => ${JSON.stringify(val)}</li>
-		</ul>
-	</body>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
+	<script src="../dist/client.js?debug=1&line=1" type="module" async="async"></script>
+	<link href="../src/myweb.css" type="text/css" rel="stylesheet" />
+	<script>
+		const h1 = "Set and Map";
+		self.glob = {
+			s: new Set([1, 2, {name: 5}]),
+			m: new Map([[1, "first"], [3, 4], [{name: 5}, {value: 6}]]),
+		};
+	</script>
+	<title>${h1} - myweb</title>
+</head>
+<body exec.glob="self.glob">
+<h1>${h1} - example</h1>
+<fieldset>
+	<label for="text">glob.s.add and glob.m.set</label>
+	<input id="text" type="text"
+	       on.input="({glob: {s, m}}) => {
+			s.add(this.value);
+			m.set(this.value, this.value);
+		}" />
+</fieldset>
+<h2>m.get(1)</h2>
+<p>${({glob: {m}}) => `${JSON.stringify(m.get(1))}`}</p>
+<h2>m.has(1)</h2>
+<p>${({glob: {m}}) => m.has(1)}</p>
+<h2>Set</h2>
+<ul if="glob.s.size !== 0">
+	<li foreach.val.key="({glob: {s}}) => s">${({key, val}) => `${JSON.stringify(key)} -> ${JSON.stringify(val)}`}</li>
+</ul>
+<h2>Map</h2>
+<ul if="({glob: {m}}) => m.size !== 0">
+	<li foreach.val.key="({glob: {m}}) => m">${({key, val}) => `${JSON.stringify(key)} -> ${JSON.stringify(val)}`}</li>
+</ul>
+</body>
 </html>

@@ -1,0 +1,1 @@
+{"version":3,"file":"RenderRes.d.ts","sourceRoot":"","sources":["../../src/MyWeb/RenderRes.ts"],"names":[],"mappings":"AAAA,qBAAa,SAAS;IACrB,KAAK,EAAE,WAAW,GAAG,IAAI,CAAC;IAC1B,IAAI,EAAE,WAAW,GAAG,IAAI,CAAC;IACzB,OAAO,EAAE,MAAM,CAAC;gBAEJ,KAAK,GAAE,WAAW,GAAG,IAAW,EAAE,IAAI,GAAE,WAAW,GAAG,IAAW,EAAE,OAAO,SAAK;CAK3F"}

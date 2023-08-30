@@ -1,57 +1,58 @@
 <!doctype html>
 <html>
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
-		<script src="../client.js?debug=1" type="module" async="async"></script>
-		<link href="../myweb.css" type="text/css" rel="stylesheet" />
-		<script>
-			const h1 = "loc object, routing";
-			self.glob = {
-				text: "abcdefg"
-			};
-		</script>
-		<title>${h1} - myweb</title>
-	</head>
-	<body exec.glob="self.glob">
-		<h1>${h1} - example</h1>
-		<pre>${JSON.stringify(loc, null, 8)}</pre>
-		<section>
-			<h2>Change address</h2>
-			<ul>
-				<li>
-					<a attr.href.push="`/next_page`">Next page</a>
-				</li>
-				<li>
-					<a attr.href.push="`/new_page`">New page</a>
-				</li>
-				<li>
-					<a attr.href.push="`/231__NOT_FOUND__4323452`">Not found page</a>
-				</li>
-			</ul>
-			<ul>
-				<li>
-					<button onclick="history.back()">history.back()</button>
-				</li>
-				<li>
-					<button onclick="history.pushState(undefined, undefined, `/myweb/examples/loc.html`);
-						my.setLoc(location.href)">Go to loc example page</button>
-				</li>
-				<li>
-					<button onclick="history.forward()">history.forward()</button>
-				</li>
-			</ul>
-		</section>
-		<section>
-			<h2>Content</h2>
-			<div style="padding: 20px; background: #eee">
-				<link if="loc.pathname.indexOf(`/myweb`) === 0"
-					inc="`./loc/main.html`" />
-				<link else=""
-					inc="fetch(my.getUrl(`./loc/${loc.pathname}.html`, `/myweb/examples/`))
-						.then(res => res.ok ? res : fetch(my.getUrl(`./loc/${res.status}.html`, `/myweb/examples/`)))"
-					if="true" />
-			</div>
-		</section>
-	</body>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
+	<script src="../dist/client.js?debug=1" type="module" async="async"></script>
+	<link href="../src/myweb.css" type="text/css" rel="stylesheet" />
+	<script>
+		const h1 = "loc object, routing";
+		self.glob = {
+			text: "abcdefg",
+		};
+	</script>
+	<title>${h1} - myweb</title>
+</head>
+<body exec.glob="self.glob">
+<h1>${h1} - example</h1>
+<pre>${JSON.stringify(loc, null, 8)}</pre>
+<section>
+	<h2>Change address</h2>
+	<ul>
+		<li>
+			<a attr.href.push="`/next_page`">Next page</a>
+		</li>
+		<li>
+			<a attr.href.push="`/new_page`">New page</a>
+		</li>
+		<li>
+			<a attr.href.push="`/231__NOT_FOUND__4323452`">Not found page</a>
+		</li>
+	</ul>
+	<ul>
+		<li>
+			<button onclick="history.back()">history.back()</button>
+		</li>
+		<li>
+			<button onclick="history.pushState(undefined, undefined, `/myweb/examples/loc.html`);
+						my.loc.setState(location.href)">Go to loc example page
+			</button>
+		</li>
+		<li>
+			<button onclick="history.forward()">history.forward()</button>
+		</li>
+	</ul>
+</section>
+<section>
+	<h2>Content</h2>
+	<div style="padding: 20px; background: #eee">
+		<link if="loc.pathname.indexOf(`/myweb`) === 0"
+		      inc="`./loc/main.html`" />
+		<link else=""
+		      inc="fetch(my.getUrl(`./loc/${loc.pathname}.html`, `/myweb/examples/`))
+		      	.then(res => res.ok ? res : fetch(my.getUrl(`./loc/${res.status}.html`, `/myweb/examples/`)))"
+		      if="true" />
+	</div>
+</section>
+</body>
 </html>

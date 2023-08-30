@@ -3,8 +3,8 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes" />
-		<script src="../client.js?debug=1" type="module" async="async"></script>
-		<link href="../myweb.css" type="text/css" rel="stylesheet" />
+		<script src="../src/client.ts?debug=1" type="module" async="async"></script>
+		<link href="../src/myweb.css" type="text/css" rel="stylesheet" />
 		<script>
 			const h1 = "inc command",
 				incs = [1, 2, 3];
@@ -50,7 +50,7 @@
 			</div>
 		</section>
 		<section>
-			<h2>Chain include</h2>
+			<h2>Chain import</h2>
 			<div inc="`inc/inc11.html`" data-name="Part chain" 
 				inc.="glob.dynamicUrl"
 				inc..="`inc3.html`">
@@ -58,7 +58,7 @@
 			</div>
 		</section>
 		<section>
-			<h2>Dynaminc include before</h2>
+			<h2>Dynaminc import before</h2>
 			<ul>
 				<li foreach.foo.idx="incs"
 					inc="idx % 2 === 0 ? `./inc/foreach_inc1.html` : `./inc/foreach_inc2.html`">
@@ -69,7 +69,7 @@
 			</ul>
 		</section>
 		<section>
-			<h2>Foreach and include after</h2>
+			<h2>Foreach and import after</h2>
 			<ul>
 				<li foreach.foo.i="glob.incs"
 					foreach.bar.j="[1, 2]"
